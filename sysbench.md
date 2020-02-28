@@ -7,7 +7,6 @@ The MariaDB server's configuration that should be changed from defaults as follo
 In particular, `max_connections` should be more than the number of threads you run for sysbench test.
 
 ```txt
-autocommit       = off
 max_connections  = 1000
 open-files-limit = 4000
 table_open_cache = 4000
@@ -73,7 +72,7 @@ MariaDB [(none)]>
 
 #### Generate the Initial Data Volume
 
-The following will use the following parameters:
+The `sysbench` will use the following parameters:
 
 - --db-driver=mysql
   - Use MySQL drivers which works for MariaDB as well
@@ -91,8 +90,11 @@ The following will use the following parameters:
   - If you are using more than one nodes in the cluster, this will distribute the load equally on each node, however with MaxScale, it dosent make any differece since MaxScale will do the distribution automatically, given you have configured only one MaxScale server.
 - /usr/share/sysbench/tests/include/oltp_legacy/oltp.lua
   - You have to look for this file and make sure the path is correct after the installation.
-- --mysql-host=192.168.56.1 --mysql-port=3306 --mysql-user=dba --mysql-password=password
+- --mysql-host=192.168.56.1 --mysql-port=3306 --mysql-user=sb_user --mysql-password=password
   - These point to your MariaDB server or the MaxScale, if you have more than one MaxScale nodes, it can be a coma separated list for `--mysql-host` parameter
+  - Make sure the user `sb_user@'%'` (as in this example) or any other user account exists on the database server that has `ALL` privileges on the `sbtest` database.
+    - CREATE USER sb_user@'%' identified by 'password';
+    - GRANT ALL ON sbtest.* to sb_user@'%';
 - --time=60
   - The duration of the test
 - --report-interval=10
@@ -151,7 +153,7 @@ Once the database is ready, we can now run the actual test.
 The following is exaxctly the same as the previous, just the last parameter, instead of `prepare` we will use `run`
 
 ```txt
-root@61e409ed04e6:/# sysbench --db-driver=mysql --threads=8 --events=250000 --oltp-tables-count=12 --oltp-table-size=100000 --oltp-test-mode=complex --oltp-dist-type=uniform /usr/share/sysbench/tests/include/oltp_legacy/oltp.lua --mysql-host=192.168.56.1 --mysql-port=3306 --mysql-user=dba --mysql-password=password --time=60 --report-interval=10 run
+root@61e409ed04e6:/# sysbench --db-driver=mysql --threads=8 --events=250000 --oltp-tables-count=12 --oltp-table-size=100000 --oltp-test-mode=complex --oltp-dist-type=uniform /usr/share/sysbench/tests/include/oltp_legacy/oltp.lua --mysql-host=192.168.56.1 --mysql-port=3306 --mysql-user=sb_user --mysql-password=password --time=60 --report-interval=10 run
 sysbench 1.0.17 (using bundled LuaJIT 2.1.0-beta2)
 
 Running the test with following options:

@@ -240,8 +240,6 @@ Use `root` user to perform the following steps.
     | datadir       | /var/lib/mysql/ |
     +---------------+-----------------+
     1 row in set (0.001 sec)
-
-    MariaDB [(none)]>
     ```
 
 - Stop mariadb with `systemctl stop mariadb`
