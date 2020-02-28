@@ -1,0 +1,243 @@
+Version=$1
+PortNumber=$2
+UserName=${USER}
+SirtSize=$4
+
+FileName=$(ls *${Version}*.tar.gz)
+clear
+if [[ ${UserName} == "root" ]]
+then
+   echo "ROOT user not allowed for deployment, Aborting!"
+   echo
+   exit
+fi
+
+CreateServerCNF() {
+DataDir=$1/data
+RedoLogs=$1/redo_logs
+LogDir=$1/logs
+TmpDir=$1/tmp
+ShirtSize=$2
+
+mkdir -p ${DataDir} ${RedoLogs} ${LogDir} ${TmpDir}
+
+if [ ! -d ${DataDir} ] || [ ! -d ${RedoLogs} ] || [ ! -d ${LogDir} ] || [ ! -d ${TmpDir} ]
+then
+   echo "Failed to create folder(s) ${DataDir} ${RedoLogs} ${LogDir} ${TmpDir}"
+   echo "Aborting!!!"
+   echo
+   exit -1
+fi
+
+cat > ${ServerCNF} <<EOF
+[mysqld]
+datadir=${DataDir}
+log_error=${LogDir}/mariadb.err
+tmpdir=${TmpDir}
+innodb_log_group_home_dir=${RedoLogs}
+socket=${SocketPath}
+innodb_buffer_pool_instances=4
+innodb_log_files_in_group=4
+innodb_flush_log_at_trx_commit=2
+port=${PortNumber}
+EOF
+
+echo Shirt Size is ${ShirtSize}
+
+if [[ ${ShirtSize} == "TINY" ]]
+then
+   cat >> ${ServerCNF} <<EOF
+
+#TINY Configuration
+innodb_buffer_pool_size = 512M
+innodb_log_file_size=128M
+innodb_log_buffer_size=128M
+max_allowed_packet=64M
+innodb_io_capacity = 2000
+table_open_cache = 2000
+table_definition_cache = 2000
+EOF
+
+elif [[ ${ShirtSize} == "SMALL" ]]
+then
+   cat >> ${ServerCNF} <<EOF
+
+#SMALL Configuration
+innodb_buffer_pool_size = 16G
+innodb_log_file_size=750M
+innodb_log_buffer_size=256M
+max_allowed_packet=128M
+nnodb_io_capacity = 2000
+table_open_cache = 2000
+table_definition_cache = 2000
+EOF
+
+elif [[ ${ShirtSize} == "MEDIUM" ]]
+then
+   cat >> ${ServerCNF} <<EOF
+
+#MEDIUM Configuration
+innodb_buffer_pool_size = 64G
+innodb_log_file_size=1G
+innodb_log_buffer_size=1G
+max_allowed_packet=256M
+innodb_io_capacity = 2000
+table_open_cache = 3000
+table_definition_cache = 3000
+EOF
+
+elif [[ ${ShirtSize} == "LARGE" ]]
+then
+   cat >> ${ServerCNF} <<EOF
+
+#LARGE Configuration
+innodb_buffer_pool_size = 128G
+innodb_log_file_size=4G
+innodb_log_buffer_size=2G
+max_allowed_packet=512M
+innodb_io_capacity = 2000
+table_open_cache = 4000
+table_definition_cache = 4000
+EOF
+
+else
+   echo "#DEFAULT Configuration selected" >> ${ServerCNF}
+
+fi
+
+}
+
+
+if [[ $# -ne 4 ]]
+then
+   echo "Missing arguments!"
+   echo "usage: deployDb <version> <port> <shirt size>"
+   echo
+   echo "*** Make sure that the tar.gz file is in the same location as this script ***"
+   echo "If deploying mariadb.10.3.8.tar.gz using 3306 port with SMALL configuration"
+   echo
+   echo "shell> ./deployDb 10.3.8 3306 /MariaDB SMALL"
+   echo Shirt Size can be: TINY, SMALL, MEDIUM, LARGE or DEFAULT
+   echo
+   echo Multiple versions or instances of MariaDB can be deployed on the same server using different ports
+   echo
+   echo For instance:
+   echo "shell> ./deployDb 10.3 3306 /MariaDB SMALL"
+   echo "* Make sure the folder specified above already exists with sufficient permission to write *"
+   echo
+   exit -1
+fi
+
+if [ ! -f ${FileName} ]
+then
+   echo "No Such Version tarball found for ${Version}"
+   echo
+   exit -1
+fi
+
+export DirName=${FileName%.*.*}
+export BasePath=$(pwd)
+export AliasName=mariadb.${PortNumber}
+export DestinationDir=${BasePath}/${AliasName}
+export ServerCNF=${DestinationDir}/server.cnf
+export SocketPath=/tmp/${AliasName}.sock
+
+DestinationDataDir=$3/${AliasName}
+ParentDestinationDir=$(dirname "${DestinationDataDir}")
+
+if [ -f ${DestinationDataDir} ] || [ ! -d ${ParentDestinationDir} ]
+then
+   echo "Invalid Destination Path ${ParentDestinationDir}"
+   echo
+   exit
+fi
+
+if [ -d ${DestinationDir} ] || [ -d ${DestinationDataDir} ]
+then
+   echo "MariaDB folder(s) ${DestinationDir} or ${DestinationDataDir} already exist!"
+   echo
+   exit
+fi
+mkdir -p ${DestinationDir}
+mkdir -p ${DestinationDataDir}
+
+if [ ! -d ${DestinationDir} ] || [ ! -d ${DestinationDataDir} ]
+then
+   echo "FAILED to create folder(s) ${DestinationDir} or ${DestinationDataDir}"
+   echo
+   exit
+fi
+
+if [ -d ${BasePath}/${DirName} ]
+then
+   echo "${BasePath}/${DirName} already existsi, SKIP untar!"
+   echo
+fi
+
+echo "extracting ${FileName} into ${DestinationDir} folder"
+
+tar -zxvf ${FileName} -C ${DestinationDir}
+if [ ! -d ${DestinationDir}/${DirName} ]
+then
+   echo "Unable to Extract the ${FileName}" 
+   exit
+fi
+
+mv ${DestinationDir}/${DirName}/* ${DestinationDir}/
+rm -rf ${DestinationDir}/${DirName}
+
+cd ${DestinationDir}
+
+# Create server.cnf
+CreateServerCNF ${DestinationDataDir} ${SirtSize}
+
+installDBScriptPath=$(find . -name mysql_install_db)
+
+echo
+echo "****************"
+echo "${installDBScriptPath}/mysql_install_db --defaults-file=${ServerCNF}"
+echo "****************"
+echo
+${installDBScriptPath} --defaults-file=${ServerCNF}
+
+#chown -R root .
+#chown -R mysql data
+
+#Identify and kill if the process is already runninf on the port
+ps -ef | grep mysqld | grep -i "\-\-port=${PortNumber}" | grep -v grep | awk '{print $2}' | xargs kill 2> /dev/null
+
+echo "#Start" > ../${AliasName}.sh
+echo "MySQLProcess=\$(ps -ef | grep mysqld | grep -i '\-\-port=${PortNumber}' | grep -v grep | awk '{print \$2}')" >> ../${AliasName}.sh
+echo "if [ ! \${MySQLProcess} ]" >> ../${AliasName}.sh
+echo "then" >> ../${AliasName}.sh
+echo "   ${DestinationDir}/bin/mysqld_safe --defaults-file=${ServerCNF} &" >> ../${AliasName}.sh
+echo "   sleep 5" >> ../${AliasName}.sh
+echo "fi" >> ../${AliasName}.sh
+echo "${DestinationDir}/bin/mysql -uroot -p -P${PortNumber} -S${SocketPath}" >> ../${AliasName}.sh
+echo "${DestinationDir}/bin/mysqladmin -uroot -p -P${PortNumber} -S${SocketPath} shutdown" > ../${AliasName}.shutdown.sh
+chmod 750 ../${AliasName}.sh
+chmod 750 ../${AliasName}.shutdown.sh
+
+echo "Starting up the instance!"
+${DestinationDir}/bin/mysqld_safe --defaults-file=${ServerCNF} &
+echo
+echo "***********************************************"
+echo "Securing Database running at Port ${PortNumber}"
+echo "***********************************************"
+echo
+sleep 10
+
+#Hardening
+${DestinationDir}/bin/mysql -uroot -P${PortNumber} -S${SocketPath} << EOF
+UPDATE mysql.user SET Password=PASSWORD('my_new_password') WHERE User='root';
+DELETE FROM mysql.user WHERE User='';
+DELETE FROM mysql.user WHERE User='root' AND Host NOT IN ('localhost', '127.0.0.1', '::1');
+DROP DATABASE test;
+DELETE FROM mysql.db WHERE Db='test' OR Db='test\_%';
+FLUSH PRIVILEGES;
+EOF
+
+
+echo "------------------------------------------------"
+echo "Execute ${AliasName}.sh to login to ${AliasName}"
+echo "------------------------------------------------"
