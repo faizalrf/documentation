@@ -1,4 +1,4 @@
-# Sysbench Performance Test for MariaDB 10.4
+# Sysbench Performance Test for MariaDB 10.3+
 
 ## Introduction
 
