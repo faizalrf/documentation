@@ -105,7 +105,7 @@ The `sysbench` will use the following parameters:
 Here is the output you can expect:
 
 ```txt
-root@61e409ed04e6:/# sysbench --db-driver=mysql --threads=8 --events=250000 --oltp-tables-count=12 --oltp-table-size=100000 --oltp-test-mode=complex --oltp-dist-type=uniform /usr/share/sysbench/tests/include/oltp_legacy/oltp.lua --mysql-host=192.168.56.1 --mysql-port=3306 --mysql-user=dba --mysql-password=password --time=60 --report-interval=10 prepare
+root@61e409ed04e6:/# sysbench --db-driver=mysql --threads=8 --events=250000 --oltp-tables-count=12 --oltp-table-size=100000 --oltp-test-mode=complex --oltp-dist-type=uniform /usr/share/sysbench/tests/include/oltp_legacy/oltp.lua --mysql-host=192.168.56.1 --mysql-port=3306 --mysql-user=sb_user --mysql-password=password --time=60 --report-interval=10 prepare
 sysbench 1.0.17 (using bundled LuaJIT 2.1.0-beta2)
 
 Creating table 'sbtest1'...
