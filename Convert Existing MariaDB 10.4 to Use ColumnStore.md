@@ -2,7 +2,7 @@
 
 ## Assumptions
 
-For this to work, it is required to have viersions of both MariaDB and ColumnStore same or higher than:
+For this to work, MariaDB Enterprise X4 is required, following are the exact lowest versions:
 
 - MariaDB 10.4.12
 - CS 1.4.3
