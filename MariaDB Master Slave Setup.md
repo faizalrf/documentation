@@ -337,26 +337,9 @@ We have a two nodes MariaDB server setup, all the above setup has been done on b
 
 Log in to `mysql` on both nodes and create the two users `repl_user` (control replication) and `app_user` (to connect to the database for normal DML operations as the application Functional ID) The name can be anything, but in this guide, we are using these names.
 
-##### Setup DB Users
-
-```sql
-MariaDB [(none)]> CREATE USER repl_user@'%' IDENTIFIED BY 'secretpassword';
-Query OK, 0 rows affected (0.001 sec)
-
-MariaDB [(none)]> GRANT REPLICATION SLAVE ON *.* TO repl_user@'%';
-Query OK, 0 rows affected (0.001 sec)
-
-MariaDB [(none)]> CREATE USER app_user@'%' IDENTIFIED BY 'secretpassword';
-Query OK, 0 rows affected (0.001 sec)
-
-MariaDB [(none)]> GRANT SELECT, INSERT, UPDATE, DELETE ON *.* TO app_user@'%' IDENTIFIED BY 'secretpassword';
-Query OK, 0 rows affected (0.001 sec)
-
-MariaDB [(none)]> FLUSH PRIVILEGES;
-Query OK, 0 rows affected (0.001 sec)
-```
-
 ##### Bin-Logs and Server ID 
+
+Before we do anything on the database servers i.e. create database accounts etc. We need to enable binary logging and other important configuration that will be needed later on.
 
 Edit the `/etc/my.cnf.d/server.cnf` file and add the following confgurations on both nodes.
 
@@ -377,6 +360,29 @@ log_error
 prompt=\H [\d]>\_
 ```
 
+Restart all the MariaDB processes `systemctl restart mariadb` before continuing with the next tasks.
+
+##### Setup DB Users
+
+Now that the binary logging and other configuration is in place, we can proceed with the user accounts setup.
+
+```sql
+MariaDB [(none)]> CREATE USER repl_user@'%' IDENTIFIED BY 'secretpassword';
+Query OK, 0 rows affected (0.001 sec)
+
+MariaDB [(none)]> GRANT REPLICATION SLAVE ON *.* TO repl_user@'%';
+Query OK, 0 rows affected (0.001 sec)
+
+MariaDB [(none)]> CREATE USER app_user@'%' IDENTIFIED BY 'secretpassword';
+Query OK, 0 rows affected (0.001 sec)
+
+MariaDB [(none)]> GRANT SELECT, INSERT, UPDATE, DELETE ON *.* TO app_user@'%' IDENTIFIED BY 'secretpassword';
+Query OK, 0 rows affected (0.001 sec)
+
+MariaDB [(none)]> FLUSH PRIVILEGES;
+Query OK, 0 rows affected (0.001 sec)
+```
+
 ##### Primary DB
 
 Restart the two database services using `systemctl restart mariadb` and log in to the  Primary DB and check the SERVER STATUS
@@ -386,33 +392,120 @@ server1 [(none)]> show master status;
 +--------------------+----------+--------------+------------------+
 | File               | Position | Binlog_Do_DB | Binlog_Ignore_DB |
 +--------------------+----------+--------------+------------------+
-| mariadb-bin.000001 | 330      |              |                  |
+| mariadb-bin.000001 |   129955 |              |                  |
 +--------------------+----------+--------------+------------------+
+1 row in set (0.000 sec)
 
-1 row in set (0.000 sec
+server1 [(none)]> select binlog_gtid_pos('mariadb-bin.000001', 129955);
++-----------------------------------------------+
+| binlog_gtid_pos('mariadb-bin.000001', 129955) |
++-----------------------------------------------+
+| 0-1000-10                                     |
++-----------------------------------------------+
+1 row in set (0.000 sec)
 ```
+
+This tells us that the Primary database has already moved on to 0-1000-10 transaction ID, when we set up the replica (slave) node, these transaction should automatically get pushed over to the replica node.
 
 ##### Replica Nodes
 
-On the Replica DB server, set it up as the SLAVE using the `MASTER STATUS` values from the previous step, The `MASTER_USER` is the one we already created earlier
+Since we are setting this up as a new setup, we don't need to take a backup from the Primary node and restore it on the Replica to setup replication. We don't even need to worry about the GTID, we will let the Replica start with an "EMPTY" GTID and the Primary should push all the transactions over.
 
-Start the Replica service and check `SLAVE STATUS` to ensure no errors
+First step is to tell the Replica node to start with an empty `GTID_SLAVE_POS`
 
 ```sql
-server2 [(none)]> CHANGE MASTER TO MASTER_HOST='192.168.56.102', MASTER_PORT=3306, MASTER_USER='repl_user', MASTER_PASSWORD='secretpassword', MASTER_LOG_FILE='mariadb-bin.000001', MASTER_LOG_POS=330;
-Query OK, 0 rows affected (0.010 sec)
+server2 [(none)]> set global gtid_slave_pos="";
+Query OK, 0 rows affected (0.098 sec)
 
-server2 [(none)]> START SLAVE;
-Query OK, 0 rows affected (0.000 sec
+server2 [(none)]> connect;
+Connection id:    10
+Current database: *** NONE ***
 
-server2 [(none)]> SHOW SLAVE STATUS\G;
-...
-...
+server2 [(none)]> show global variables like 'gtid_slave_pos';
++----------------+-------+
+| Variable_name  | Value |
++----------------+-------+
+| gtid_slave_pos |       |
++----------------+-------+
+1 row in set (0.001 sec)
+
+server2 [(none)]> CHANGE MASTER TO MASTER_HOST='192.168.56.61', MASTER_PORT=3306, MASTER_USER='repl_user', MASTER_PASSWORD='P@ssw0rd', MASTER_USE_GTID=current_pos;
+Query OK, 0 rows affected (0.088 sec)
+
+server2 [(none)]> start slave;
+Query OK, 0 rows affected (0.063 sec)
+
+server2 [(none)]> show slave status\G
+*************************** 1. row ***************************
+                Slave_IO_State: Waiting for master to send event
+                   Master_Host: 192.168.56.61
+                   Master_User: repl_user
+                   Master_Port: 3306
+                 Connect_Retry: 60
+               Master_Log_File: mariadb-bin.000001
+           Read_Master_Log_Pos: 129955
+                Relay_Log_File: server2-relay-bin.000002
+                 Relay_Log_Pos: 130256
+         Relay_Master_Log_File: mariadb-bin.000001
+              Slave_IO_Running: Yes
+             Slave_SQL_Running: Yes
+               Replicate_Do_DB: 
+           Replicate_Ignore_DB: 
+            Replicate_Do_Table: 
+        Replicate_Ignore_Table: 
+       Replicate_Wild_Do_Table: 
+   Replicate_Wild_Ignore_Table: 
+                    Last_Errno: 0
+                    Last_Error: 
+                  Skip_Counter: 0
+           Exec_Master_Log_Pos: 129955
+               Relay_Log_Space: 130565
+               Until_Condition: None
+                Until_Log_File: 
+                 Until_Log_Pos: 0
+            Master_SSL_Allowed: No
+            Master_SSL_CA_File: 
+            Master_SSL_CA_Path: 
+               Master_SSL_Cert: 
+             Master_SSL_Cipher: 
+                Master_SSL_Key: 
+         Seconds_Behind_Master: 0
+ Master_SSL_Verify_Server_Cert: No
+                 Last_IO_Errno: 0
+                 Last_IO_Error: 
+                Last_SQL_Errno: 0
+                Last_SQL_Error: 
+   Replicate_Ignore_Server_Ids: 
+              Master_Server_Id: 1000
+                Master_SSL_Crl: 
+            Master_SSL_Crlpath: 
+                    Using_Gtid: Current_Pos
+                   Gtid_IO_Pos: 0-1000-10
+       Replicate_Do_Domain_Ids: 
+   Replicate_Ignore_Domain_Ids: 
+                 Parallel_Mode: conservative
+                     SQL_Delay: 0
+           SQL_Remaining_Delay: NULL
+       Slave_SQL_Running_State: Slave has read all relay log; waiting for the slave I/O thread to update it
+              Slave_DDL_Groups: 7
+Slave_Non_Transactional_Groups: 0
+    Slave_Transactional_Groups: 3
+1 row in set (0.000 sec)
 ```
+
+`MASTER_USE_GTID=current_pos` tells the MariaDB replica node to start with the current position which was set as empty string.
+
+From the `show slave status\G` output we can also see the replica is using `Using_Gtid: Current_Pos` and it is already synced up to `Gtid_IO_Pos: 0-1000-10`
+
+This confims that MariaDB is using GTID based replication which is required by MaxScale and is more efficient vs the traditional BINLOG position based replication.
 
 ##### Enable GTID based Replication
 
+If you chose to go with BINLOG based replicaiton to begin with, it is quite easy to switch to GTID based replication.
+
 Stop SLAVE, CHANGE MASTER to use GTID and START SLAVE, remember to check SLAVE STATUS to ensure GTID is being used and no errors
+
+_**Note:** This is only applicable if the current setup is not using GTID based replication_
 
 ```sql
 server2 [(none)]> STOP SLAVE;
@@ -437,7 +530,7 @@ Remember that currently we are not using MaxScale and both Primary and Replica a
 
 ### Setting up MaxScale 2.3.x
 
-##### Assumptions
+#### Assumptions
 
 - Latest MaxScale Binaries from <https://mariadb.com/downloads/mariadb-tx/maxscale> have been downloaded and the RPM transferred to MaxScale server
 

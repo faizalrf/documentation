@@ -18,6 +18,8 @@ Perform the following on all the nodes
 
 Once dependencies are installed, download and untar the MariaDB 10.4 enterprise server all the servers.
 
+The extracted TAR file will have the following listing.
+
 ```
 [root@cs-61 mariadb-enterprise-10.4.12-6-centos-7-x86_64-rpms]# ls -rlt
 total 346848
@@ -58,7 +60,20 @@ drwxrwxr-x 2 mariadbadm mariadbadm     4096 Mar  1 20:20 repodata
 -rw-rw-r-- 1 mariadbadm mariadbadm     1794 Mar  1 20:20 README
 ```
 
-The tar will contain all the required tar files that are needed to be installed. The method is the standard server install procedure. Along with three additional RPM files
+The tar will contain all the required tar files that are needed to be installed. The method is the standard server install procedure.
+
+### Installation
+
+Install the RPM files on all the nodes.
+
+- galera-enterprise-4-26.4.4-1.rhel7.5.el7.x86_64.rpm
+- MariaDB-compat-10.4.12_6-1.el7.x86_64.rpm
+- MariaDB-common-10.4.12_6-1.el7.x86_64.rpm
+- MariaDB-shared-10.4.12_6-1.el7.x86_64.rpm
+- MariaDB-client-10.4.12_6-1.el7.x86_64.rpm
+- MariaDB-server-10.4.12_6-1.el7.x86_64.rpm
+
+Once these 6 rpm files have been install on all the nodes, the following 3 additional rpm files needs to be installed as well on all the nodes.
 
 - **mariadb-columnstore-libs**
   - MariaDB-columnstore-libs-10.4.12_6-1.el7.x86_64.rpm
@@ -67,9 +82,7 @@ The tar will contain all the required tar files that are needed to be installed.
 - **mariadb-columnstore-engine**
   - MariaDB-columnstore-engine-10.4.12_6-1.el7.x86_64.rpm
 
-### Installation
-
-Install all the required RPM files on all the nodes.
+Installation Log:
 
 ```txt
 [root@cs-61]# mariadb-enterprise-10.4.12-6-centos-7-x86_64-rpms]# yum -y install galera-enterprise-4-26.4.4-1.rhel7.5.el7.x86_64.rpm
@@ -473,29 +486,79 @@ logout
 Connection to 192.168.56.62 closed.
 ```
 
-Add the two node's host name and IP addresses in the `/etc/hosts` file before proceeding
+Add the two node's host name and IP addresses in the **`/etc/hosts`** file of both nodes before proceeding
 
-Test SSH to the second node using IP address and hostname and make sure it works without a password.
+Test SSH to the second node using IP address and hostname, make sure it works without a password.
 
 Installation loads software to the system. This software requires post-install actions and configuration before the database server is ready for use.
 
 MariaDB ColumnStore post-installation scripts fail if they find MariaDB Enterprise Server running on the system. Stop the Server and disable the service after installing the packages:
 
-```
+```txt
 [root@cs-61 ~]# systemctl stop mariadb.service
 [root@cs-61 ~]# systemctl disable mariadb.service
 ```
 
+Execute the post install script on the primary node
 
-Execute `columnstore-post-install` followed by `postConfigure`
-
-```
+```txt
 [root@cs-61 ~]# columnstore-post-install
 The next step on the node that will become PM1:
 
 postConfigure
 
 
+[root@cs-61 ~]#
+```
+
+Now we are ready to configure S3 storage followed by `postConfigure` script execution wihch will actually install ColumnStore and connect to S3 storage.
+
+### Configure S3 Storage
+
+Make sure to have an S3/ObjectStore storage bucket ready with and firewall has been opened to access the end point. Following S3 related information is required before proceeding
+
+- S3 Bucket Name `bucket`
+- S3 End Point URL `endpoint`
+- AWS Access Key ID `aws_access_key_id`
+- AWS Secret Access Key `aws_secret_access_key`
+
+Edit the **`/etc/columnstore/storagemanager.cnf`** file and modify the following variable under the **`[ObjectStorage]`** section, this will tell ColumnStore to use S3 as the default storage manager.
+
+- `service = LocalStorage` should be changed to 
+  - `service = S3`
+
+Refer to the **`[S3]`** section in the `storagemanager.cnf` file and define the S3 related configrations
+
+- `region = some_region` shuld be changed to empty since it's a local S3 storage setup
+  - `region =` and regions are not available.
+- `bucket = some_bucket` should be changed to the actual bucket name.
+- `endpoint = storage.googleapis.com` should point to the S3 URL within DBS.
+- `aws_access_key_id =` should point to the access key provided by the S3 storage team.
+- `aws_secret_access_key =` should point to the "secret" access key provided by the S3 storage team.
+
+Once the above are configured and saved we can now execute `postConfigure` script.
+
+During the postConfigure setup, storage config will be done
+
+```txt
+Columnstore supports the following storage options...
+  1 - internal.  This uses the linux VFS to access files and does
+      not manage the filesystem.
+  2 - external *.  If you have other mountable filesystems you would
+      like ColumnStore to use & manage, select this option.
+  3 - GlusterFS *  Note: glusterd service must be running and enabled on
+      all PMs.
+  4 - S3-compatible cloud storage *.  Note: that should be configured
+      before running postConfigure (see storagemanager.cnf)
+  * - This option enables data replication and server failover in a
+      multi-node configuration.
+```
+
+Here **4** is a new option added to let ColumnStore use the S3 configuration defined earlier. 
+
+Execute the `postConfigure` script on the Primary node. This will take you through a set of inputs, including the one mentioned above regarding the storage setup.
+
+```txt
 [root@cs-61 ~]# postConfigure 
 
 
@@ -524,7 +587,7 @@ There are 2 options when configuring the System Server Type: single and multi
               in the future. With Multi-Server install, you can still configure just 1 server
               now and add on addition servers/modules in the future.
 
-Select the type of System Server install [1=single, 2=multi] (2) > 
+Select the type of System Server install [1=single, 2=multi] (2) > 2
 
 
 ===== Setup System Module Type Configuration =====
@@ -535,7 +598,7 @@ There are 2 options when configuring the System Module Type: separate and combin
 
   'combined' - User and Performance functionality on the same server
 
-Select the type of System Module Install [1=separate, 2=combined] (2) > 
+Select the type of System Module Install [1=separate, 2=combined] (2) > 2
 
 Combined Server Installation will be performed.
 The Server will be configured as a Performance Module.
@@ -545,7 +608,7 @@ NOTE: The MariaDB ColumnStore Schema Sync feature will replicate all of the
       schemas and InnoDB tables across the User Module nodes. This feature can be enabled
       or disabled, for example, if you wish to configure your own replication post installation.
 
-MariaDB ColumnStore Schema Sync feature is Enabled, do you want to leave enabled? [y,n] (y) > 
+MariaDB ColumnStore Schema Sync feature is Enabled, do you want to leave enabled? [y,n] (y) > y
 
 
 NOTE: MariaDB ColumnStore Replication Feature is enabled
@@ -571,7 +634,7 @@ Columnstore supports the following storage options...
       multi-node configuration.
 
 These options are available on this system: [1, 2, 4]
-Select the type of data storage (1) > 
+Select the type of data storage (1) > 4
 
 ===== Setup Memory Configuration =====
 
@@ -585,21 +648,21 @@ NOTE: Setting 'NumBlocksPct' to 50%
 
 ----- Performance Module Configuration -----
 
-Enter number of Performance Modules [1,1024] (2) > 
+Enter number of Performance Modules [1,1024] (2) > 2
 
 *** Parent OAM Module Performance Module #1 Configuration ***
 
-Enter Nic Interface #1 Host Name (cs-61) > 
-Enter Nic Interface #1 IP Address or hostname of cs-61 (192.168.56.61) > 
+Enter Nic Interface #1 Host Name (cs-61) > cs-61
+Enter Nic Interface #1 IP Address or hostname of cs-61 (192.168.56.61) > 192.168.56.61
 Enter Nic Interface #2 Host Name (unassigned) > 
-Enter the list (Nx,Ny,Nz) or range (Nx-Nz) of DBRoot IDs assigned to module 'pm1' (1) > 
+Enter the list (Nx,Ny,Nz) or range (Nx-Nz) of DBRoot IDs assigned to module 'pm1' (1) > 1
 
 *** Performance Module #2 Configuration ***
 
-Enter Nic Interface #1 Host Name (cs-62) > 
-Enter Nic Interface #1 IP Address or hostname of cs-62 (192.168.56.62) > 
+Enter Nic Interface #1 Host Name (cs-62) > cs-62
+Enter Nic Interface #1 IP Address or hostname of cs-62 (192.168.56.62) > 192.168.56.62
 Enter Nic Interface #2 Host Name (unassigned) > 
-Enter the list (Nx,Ny,Nz) or range (Nx-Nz) of DBRoot IDs assigned to module 'pm2' (2) > 
+Enter the list (Nx,Ny,Nz) or range (Nx-Nz) of DBRoot IDs assigned to module 'pm2' (2) > 2
 
 ===== Running the MariaDB ColumnStore MariaDB Server setup scripts =====
 
@@ -652,7 +715,7 @@ NOTE: The MariaDB ColumnStore Alias Commands are in /etc/profile.d/columnstoreAl
 
 Now check MariaDB status on both the nodes. It should be running as per normal
 
-```
+```txt
 [root@cs-62 ~]# systemctl status mariadb
 ● mariadb.service - MariaDB 10.4.12-6 database server
    Loaded: loaded (/usr/lib/systemd/system/mariadb.service; disabled; vendor preset: disabled)
@@ -684,7 +747,7 @@ Hint: Some lines were ellipsized, use -l to show in full.
 
 Login to mariadb from first node and verify
 
-```
+```txt
 [root@cs-61 ~]# mariadb -uroot
 Welcome to the MariaDB monitor.  Commands end with ; or \g.
 Your MariaDB connection id is 21
@@ -731,7 +794,7 @@ MariaDB [(none)]> show engines;
 
 Verify the same from second node
 
-```
+```txt
 [root@cs-62 ~]# mariadb -uroot
 Welcome to the MariaDB monitor.  Commands end with ; or \g.
 Your MariaDB connection id is 15
@@ -872,7 +935,7 @@ MariaDB [(none)]> select @@hostname;
 1 row in set (0.001 sec)
 ```
 
-Now finally on Node 1 which is also `PM1` test the ColumnStore admin commands
+Now finally on Node 1 which is also the `PM1` node, test the ColumnStore `mcsadmin` commands
 
 ```
 [root@cs-61 ~]# mcsadmin getSystemInfo
@@ -927,13 +990,12 @@ Active Alarm Counts: Critical = 0, Major = 0, Minor = 0, Warning = 0, Info = 0
 ColumnStore service can be shutdown normally using the `mcsadmin shutdownsystem y` command
 
 ```
-[root@cs-61 ~]# mcsadmin shutdownsystem;
+[root@cs-61 ~]# mcsadmin shutdownsystem y
 shutdownsystem   Wed Mar  4 06:42:47 2020
 
 This command stops the processing of applications on all Modules within the MariaDB ColumnStore System
 
    Checking for active transactions
-           Do you want to proceed: (y or n) [n]: y
 
    Stopping System...
    Successful stop of System 
@@ -942,4 +1004,5 @@ This command stops the processing of applications on all Modules within the Mari
    Successful shutdown of System 
 ```
 
-This will shutdown MariaDB on all the nodes.
+This will shutdown MariaDB and ColumnStore on all the nodes automatically.
+
