@@ -342,6 +342,26 @@ My `/etc/hosts` file looks like this after adding the to servers
 192.168.56.62 x4-62
 ```
 
+#### Setup `sudo`
+
+Asuming we have created a dedicated user account `mcsadm` to perform maintenance, start/stop/restart ColumnStore service we need to configure the `/etc/sudoers` file for `mcsadm` user. 
+
+Executing the followig will will give `mcsadm` limited `sudo` access to execute only `/usr/bin/mcsadmin` script without needing a password. That is all that we need to be able to perform regular maintenance tasks. 
+
+Do the following on both servers.
+
+```
+[root@x4-61]# echo "mcsadm     ALL=(ALL)       NOPASSWD: /usr/bin/mcsadmin" >> /etc/sudoers
+```
+
+After the installation of the service, the `mcsadm` can now do `sudo mcsadmin shutdownSystem y`, `sudo mcsadmin startSystem` etc. since full access has been granted to execute /usr/bin/mcsadmin.
+
+Now make sure to change owner of the log files folder to be `mcsadm`
+
+```
+[root@x4-61]# chown -R mcsadm:mcsadm /tmp/columnstore_tmp_files/
+```
+
 #### Setup `ulimit`
 
 Do the following on both servers.
