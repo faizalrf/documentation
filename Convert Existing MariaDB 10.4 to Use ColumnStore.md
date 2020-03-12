@@ -446,7 +446,9 @@ Now we are ready to run the configuration scripts.
 
 Installation loads software to the system. This software requires post-install actions and configuration before the database server is ready for use.
 
-MariaDB ColumnStore post-installation scripts fail if they find MariaDB Enterprise Server running on the system. Stop the Server before proceeding. This must be done on both the nodes.
+MariaDB ColumnStore post-installation scripts fail if they find MariaDB Enterprise Server running on the system. Stop the Server before proceeding. 
+
+This must be done on both the nodes.
 
 ```txt
 [root@x4-61 ~]# systemctl stop mariadb.service
