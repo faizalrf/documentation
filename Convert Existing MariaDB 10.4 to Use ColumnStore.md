@@ -18,7 +18,7 @@ Perform the following on all the nodes. Take note that the **`epel-release`** is
 ```
 [root@cs-61]# localedef -i en_US -f UTF-8 en_US.UTF-8
 
-[root@cs-61]# yum -Y install epel-release
+[root@cs-61]# yum -y install epel-release
 ...
 ...
 [root@cs-61]# yum -y install boost
