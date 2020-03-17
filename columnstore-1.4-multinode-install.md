@@ -11,7 +11,7 @@ Perform the following on all the nodes
 ```
 [root@cs-61]# localedef -i en_US -f UTF-8 en_US.UTF-8
 
-[root@cs-61]# yum -Y install epel-release
+[root@cs-61]# yum -y install epel-release
 
 [root@cs-61]# yum -y install boost expect perl perl-DBI openssl zlib file sudo libaio rsync snappy net-tools numactl-libs nmap jemalloc
 ```
