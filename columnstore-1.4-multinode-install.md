@@ -74,7 +74,7 @@ The tar will contain all the required tar files that are needed to be installed.
 
 ### Installation
 
-Install the RPM files on both of the nodes.
+Install the RPM files on both of the nodes as `root` user.
 
 - `rpm -ivh galera-enterprise-4-26.4.4-1.rhel7.5.el7.x86_64.rpm`
 - `rpm -ivh MariaDB-compat-10.4.12_6-1.el7.x86_64.rpm MariaDB-common-10.4.12_6-1.el7.x86_64.rpm`
