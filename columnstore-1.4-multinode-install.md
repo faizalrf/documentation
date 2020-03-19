@@ -176,7 +176,7 @@ Here **4** is a new option added to let ColumnStore use the S3 configuration def
 
 Execute the `postConfigure` script on the Primary node. This will take you through a set of inputs, including the one mentioned above regarding the storage setup.
 
-*Note: When prompted for **"Enter password, hit 'enter' to default to using an ssh key, or 'exit' >"**, key in the OS `root` password, the password is asumed to be the same for both servers.*
+***Note:** When prompted for **"Enter password, hit 'enter' to default to using an ssh key, or 'exit' >"**, key in the OS `root` password, the password is asumed to be the same for both servers.*
 
 ```txt
 [root@cs-61 ~]# postConfigure
