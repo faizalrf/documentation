@@ -2,23 +2,33 @@
 
 This guide will guide us on installing and configuring ColumnStore 1.4 using the MariaDB 10.4 Enterprise Server. 
 
+## Assumptions
+
+- OS `root` user is used to install and configure the MariaDB Platform X4 (MariaDB Server 10.4 & ColumnStore 1.4)
+
+- The password for the `root` user is kept identical for both nodes. This is a **temporary** requirement and needed only for the `postConfigure` script.
+  - After the installation, passwords for the `root` user on both nodes can be changed back to normal.
+- `/etc/sudoers` file is modified to grant START/STOP/RESTART of the ColunmnStore & MariaDB services to the non-root user
+
 ## Dependencies
 
 There are some dependencies that need to be fulfilled before proceeding with the isntallation.
 
-Perform the following on all the nodes 
+Perform the following on both of the nodes 
 
 ```
-[root@cs-61]# localedef -i en_US -f UTF-8 en_US.UTF-8
+[root@cs-61 ~]# localedef -i en_US -f UTF-8 en_US.UTF-8
 
-[root@cs-61]# yum -y install epel-release
+[root@cs-61 ~]# export LC_ALL=C
 
-[root@cs-61]# yum -y install boost expect perl perl-DBI openssl zlib file sudo libaio rsync snappy net-tools numactl-libs nmap jemalloc
+[root@cs-61 ~]# yum -y install epel-release
+
+[root@cs-61 ~]# yum -y install boost expect perl perl-DBI openssl zlib file sudo libaio rsync snappy net-tools numactl-libs nmap jemalloc
 ```
 
 Once dependencies are installed, download and untar the MariaDB 10.4 enterprise server all the servers.
 
-The extracted TAR file will have the following listing.
+The extracted TAR file will have the following listing on both nodes.
 
 ```
 [root@cs-61 mariadb-enterprise-10.4.12-6-centos-7-x86_64-rpms]# ls -rlt
@@ -64,451 +74,59 @@ The tar will contain all the required tar files that are needed to be installed.
 
 ### Installation
 
-Install the RPM files on all the nodes.
+Install the RPM files on both of the nodes.
 
-- galera-enterprise-4-26.4.4-1.rhel7.5.el7.x86_64.rpm
-- MariaDB-compat-10.4.12_6-1.el7.x86_64.rpm
-- MariaDB-common-10.4.12_6-1.el7.x86_64.rpm
-- MariaDB-shared-10.4.12_6-1.el7.x86_64.rpm
-- MariaDB-client-10.4.12_6-1.el7.x86_64.rpm
-- MariaDB-server-10.4.12_6-1.el7.x86_64.rpm
+- `rpm -ivh galera-enterprise-4-26.4.4-1.rhel7.5.el7.x86_64.rpm`
+- `rpm -ivh MariaDB-compat-10.4.12_6-1.el7.x86_64.rpm MariaDB-common-10.4.12_6-1.el7.x86_64.rpm`
+  - These two are to be installed together thrugh a single `rpm -ivh` command.
+- `rpm -ivh MariaDB-shared-10.4.12_6-1.el7.x86_64.rpm`
+- `rpm -ivh MariaDB-client-10.4.12_6-1.el7.x86_64.rpm`
+- `rpm -ivh MariaDB-server-10.4.12_6-1.el7.x86_64.rpm`
 
 Once these 6 rpm files have been install on all the nodes, the following 3 additional rpm files needs to be installed as well on all the nodes.
 
 - **mariadb-columnstore-libs**
-  - MariaDB-columnstore-libs-10.4.12_6-1.el7.x86_64.rpm
+  - `rpm -ivh MariaDB-columnstore-libs-10.4.12_6-1.el7.x86_64.rpm`
 - **mariadb-columnstore-platform**
-  - MariaDB-columnstore-platform-10.4.12_6-1.el7.x86_64.rpm
+  - `rpm -ivh MariaDB-columnstore-platform-10.4.12_6-1.el7.x86_64.rpm`
 - **mariadb-columnstore-engine**
-  - MariaDB-columnstore-engine-10.4.12_6-1.el7.x86_64.rpm
+  - `rpm -ivh MariaDB-columnstore-engine-10.4.12_6-1.el7.x86_64.rpm`
 
-Installation Log:
+### Create the `columnstore` User
+
+Create a user as `columnstore` and setup `/etc/sudoers` file so that the user can manage ColumnStore services.
 
 ```txt
-[root@cs-61]# mariadb-enterprise-10.4.12-6-centos-7-x86_64-rpms]# yum -y install galera-enterprise-4-26.4.4-1.rhel7.5.el7.x86_64.rpm
-Loaded plugins: fastestmirror
-Examining galera-enterprise-4-26.4.4-1.rhel7.5.el7.x86_64.rpm: galera-enterprise-4-26.4.4-1.rhel7.5.el7.x86_64
-Marking galera-enterprise-4-26.4.4-1.rhel7.5.el7.x86_64.rpm to be installed
-Resolving Dependencies
---> Running transaction check
----> Package galera-enterprise-4.x86_64 0:26.4.4-1.rhel7.5.el7 will be installed
---> Finished Dependency Resolution
-
-Dependencies Resolved
-
-===============================================================================================================================================================================================================================================
- Package                                              Arch                                    Version                                                  Repository                                                                         Size
-===============================================================================================================================================================================================================================================
-Installing:
- galera-enterprise-4                                  x86_64                                  26.4.4-1.rhel7.5.el7                                     /galera-enterprise-4-26.4.4-1.rhel7.5.el7.x86_64                                   42 M
-
-Transaction Summary
-===============================================================================================================================================================================================================================================
-Install  1 Package
-
-Total size: 42 M
-Installed size: 42 M
-Downloading packages:
-Running transaction check
-Running transaction test
-Transaction test succeeded
-Running transaction
-  Installing : galera-enterprise-4-26.4.4-1.rhel7.5.el7.x86_64                                                                                                                                                                             1/1 
-  Verifying  : galera-enterprise-4-26.4.4-1.rhel7.5.el7.x86_64                                                                                                                                                                             1/1 
-
-Installed:
-  galera-enterprise-4.x86_64 0:26.4.4-1.rhel7.5.el7                                                                                                                                                                                            
-
-Complete!
-
-[root@cs-61]# mariadb-enterprise-10.4.12-6-centos-7-x86_64-rpms]# yum -y install MariaDB-compat-10.4.12_6-1.el7.x86_64.rpm MariaDB-common-10.4.12_6-1.el7.x86_64.rpm
-Loaded plugins: fastestmirror
-Examining MariaDB-compat-10.4.12_6-1.el7.x86_64.rpm: MariaDB-compat-10.4.12_6-1.el7.x86_64
-Marking MariaDB-compat-10.4.12_6-1.el7.x86_64.rpm to be installed
-Examining MariaDB-common-10.4.12_6-1.el7.x86_64.rpm: MariaDB-common-10.4.12_6-1.el7.x86_64
-Marking MariaDB-common-10.4.12_6-1.el7.x86_64.rpm to be installed
-Resolving Dependencies
---> Running transaction check
----> Package MariaDB-common.x86_64 0:10.4.12_6-1.el7 will be installed
----> Package MariaDB-compat.x86_64 0:10.4.12_6-1.el7 will be obsoleting
----> Package mariadb-libs.x86_64 1:5.5.60-1.el7_5 will be obsoleted
---> Finished Dependency Resolution
-
-Dependencies Resolved
-
-===============================================================================================================================================================================================================================================
- Package                                              Arch                                         Version                                                  Repository                                                                    Size
-===============================================================================================================================================================================================================================================
-Installing:
- MariaDB-common                                       x86_64                                       10.4.12_6-1.el7                                          /MariaDB-common-10.4.12_6-1.el7.x86_64                                       305 k
- MariaDB-compat                                       x86_64                                       10.4.12_6-1.el7                                          /MariaDB-compat-10.4.12_6-1.el7.x86_64                                        11 M
-     replacing  mariadb-libs.x86_64 1:5.5.60-1.el7_5
-
-Transaction Summary
-===============================================================================================================================================================================================================================================
-Install  2 Packages
-
-Total size: 12 M
-Downloading packages:
-Running transaction check
-Running transaction test
-Transaction test succeeded
-Running transaction
-  Installing : MariaDB-compat-10.4.12_6-1.el7.x86_64                                                                                                                                                                                       1/3 
-  Installing : MariaDB-common-10.4.12_6-1.el7.x86_64                                                                                                                                                                                       2/3 
-  Erasing    : 1:mariadb-libs-5.5.60-1.el7_5.x86_64                                                                                                                                                                                        3/3 
-  Verifying  : MariaDB-common-10.4.12_6-1.el7.x86_64                                                                                                                                                                                       1/3 
-  Verifying  : MariaDB-compat-10.4.12_6-1.el7.x86_64                                                                                                                                                                                       2/3 
-  Verifying  : 1:mariadb-libs-5.5.60-1.el7_5.x86_64                                                                                                                                                                                        3/3 
-
-Installed:
-  MariaDB-common.x86_64 0:10.4.12_6-1.el7                                                                                MariaDB-compat.x86_64 0:10.4.12_6-1.el7                                                                               
-
-Replaced:
-  mariadb-libs.x86_64 1:5.5.60-1.el7_5                                                                                                                                                                                                         
-
-Complete!
-
-[root@cs-61]# mariadb-enterprise-10.4.12-6-centos-7-x86_64-rpms]# yum -y install MariaDB-shared-10.4.12_6-1.el7.x86_64.rpm
-Loaded plugins: fastestmirror
-Examining MariaDB-shared-10.4.12_6-1.el7.x86_64.rpm: MariaDB-shared-10.4.12_6-1.el7.x86_64
-Marking MariaDB-shared-10.4.12_6-1.el7.x86_64.rpm to be installed
-Resolving Dependencies
---> Running transaction check
----> Package MariaDB-shared.x86_64 0:10.4.12_6-1.el7 will be installed
---> Finished Dependency Resolution
-
-Dependencies Resolved
-
-===============================================================================================================================================================================================================================================
- Package                                              Arch                                         Version                                                  Repository                                                                    Size
-===============================================================================================================================================================================================================================================
-Installing:
- MariaDB-shared                                       x86_64                                       10.4.12_6-1.el7                                          /MariaDB-shared-10.4.12_6-1.el7.x86_64                                       343 k
-
-Transaction Summary
-===============================================================================================================================================================================================================================================
-Install  1 Package
-
-Total size: 343 k
-Installed size: 343 k
-Downloading packages:
-Running transaction check
-Running transaction test
-Transaction test succeeded
-Running transaction
-  Installing : MariaDB-shared-10.4.12_6-1.el7.x86_64                                                                                                                                                                                       1/1 
-  Verifying  : MariaDB-shared-10.4.12_6-1.el7.x86_64                                                                                                                                                                                       1/1 
-
-Installed:
-  MariaDB-shared.x86_64 0:10.4.12_6-1.el7                                                                                                                                                                                                      
-
-Complete!
-
-[root@cs-61]# mariadb-enterprise-10.4.12-6-centos-7-x86_64-rpms]# yum -y install MariaDB-client-10.4.12_6-1.el7.x86_64.rpm
-Loaded plugins: fastestmirror
-Examining MariaDB-client-10.4.12_6-1.el7.x86_64.rpm: MariaDB-client-10.4.12_6-1.el7.x86_64
-Marking MariaDB-client-10.4.12_6-1.el7.x86_64.rpm to be installed
-Resolving Dependencies
---> Running transaction check
----> Package MariaDB-client.x86_64 0:10.4.12_6-1.el7 will be installed
---> Finished Dependency Resolution
-
-Dependencies Resolved
-
-===============================================================================================================================================================================================================================================
- Package                                              Arch                                         Version                                                  Repository                                                                    Size
-===============================================================================================================================================================================================================================================
-Installing:
- MariaDB-client                                       x86_64                                       10.4.12_6-1.el7                                          /MariaDB-client-10.4.12_6-1.el7.x86_64                                        38 M
-
-Transaction Summary
-===============================================================================================================================================================================================================================================
-Install  1 Package
-
-Total size: 38 M
-Installed size: 38 M
-Downloading packages:
-Running transaction check
-Running transaction test
-Transaction test succeeded
-Running transaction
-  Installing : MariaDB-client-10.4.12_6-1.el7.x86_64                                                                                                                                                                                       1/1 
-  Verifying  : MariaDB-client-10.4.12_6-1.el7.x86_64                                                                                                                                                                                       1/1 
-
-Installed:
-  MariaDB-client.x86_64 0:10.4.12_6-1.el7                                                                                                                                                                                                      
-
-Complete!
-
-[root@cs-61]# mariadb-enterprise-10.4.12-6-centos-7-x86_64-rpms]# yum -y install MariaDB-server-10.4.12_6-1.el7.x86_64.rpm
-Loaded plugins: fastestmirror
-Examining MariaDB-server-10.4.12_6-1.el7.x86_64.rpm: MariaDB-server-10.4.12_6-1.el7.x86_64
-Marking MariaDB-server-10.4.12_6-1.el7.x86_64.rpm to be installed
-Resolving Dependencies
---> Running transaction check
----> Package MariaDB-server.x86_64 0:10.4.12_6-1.el7 will be installed
---> Processing Dependency: lsof for package: MariaDB-server-10.4.12_6-1.el7.x86_64
-Loading mirror speeds from cached hostfile
- * base: mirror.0x.sg
- * epel: my.fedora.ipserverone.com
- * extras: mirror.0x.sg
- * updates: mirror.0x.sg
---> Running transaction check
----> Package lsof.x86_64 0:4.87-6.el7 will be installed
---> Finished Dependency Resolution
-
-Dependencies Resolved
-
-===============================================================================================================================================================================================================================================
- Package                                              Arch                                         Version                                                  Repository                                                                    Size
-===============================================================================================================================================================================================================================================
-Installing:
- MariaDB-server                                       x86_64                                       10.4.12_6-1.el7                                          /MariaDB-server-10.4.12_6-1.el7.x86_64                                       109 M
-Installing for dependencies:
- lsof                                                 x86_64                                       4.87-6.el7                                               base                                                                         331 k
-
-Transaction Summary
-===============================================================================================================================================================================================================================================
-Install  1 Package (+1 Dependent package)
-
-Total size: 109 M
-Total download size: 331 k
-Installed size: 110 M
-Downloading packages:
-lsof-4.87-6.el7.x86_64.rpm                                                                                                                                                                                              | 331 kB  00:00:00     
-Running transaction check
-Running transaction test
-Transaction test succeeded
-Running transaction
-  Installing : lsof-4.87-6.el7.x86_64                                                                                                                                                                                                      1/2 
-  Installing : MariaDB-server-10.4.12_6-1.el7.x86_64                                                                                                                                                                                       2/2 
-2020-03-04  4:48:07 server_audit: MariaDB Audit Plugin version 2.0.2 STARTED.
-2020-03-04  4:48:07 server_audit: Query cache is enabled with the TABLE events. Some table reads can be veiled.
-2020-03-04  4:48:08 server_audit: STOPPED
-
-
-Two all-privilege accounts were created.
-One is root@localhost, it has no password, but you need to
-be system 'root' user to connect. Use, for example, sudo mysql
-The second is mysql@localhost, it has no password either, but
-you need to be the system 'mysql' user to connect.
-After connecting you can set the password, if you would need to be
-able to connect as any of these users with a password and without sudo
-
-See the MariaDB Knowledgebase at http://mariadb.com/kb or the
-MySQL manual for more instructions.
-
-As a MariaDB Corporation subscription customer please contact us
-via https://support.mariadb.com/ to report problems.
-You also can get consultative guidance on questions specific to your deployment,
-such as how to tune for performance, high availability, security audits, and code review.
-
-You also find detailed documentation about how to use MariaDB Enterprise Server at https://mariadb.com/docs/.
-The latest information about MariaDB Server is available at https://mariadb.com/kb/en/library/release-notes/.
-
-  Verifying  : MariaDB-server-10.4.12_6-1.el7.x86_64                                                                                                                                                                                       1/2 
-  Verifying  : lsof-4.87-6.el7.x86_64                                                                                                                                                                                                      2/2 
-
-Installed:
-  MariaDB-server.x86_64 0:10.4.12_6-1.el7                                                                                                                                                                                                      
-
-Dependency Installed:
-  lsof.x86_64 0:4.87-6.el7                                                                                                                                                                                                                     
-
-Complete!
-
-[root@cs-61]# mariadb-enterprise-10.4.12-6-centos-7-x86_64-rpms]# yum -y install MariaDB-columnstore-libs-10.4.12_6-1.el7.x86_64.rpm
-Loaded plugins: fastestmirror
-Examining MariaDB-columnstore-libs-10.4.12_6-1.el7.x86_64.rpm: MariaDB-columnstore-libs-10.4.12_6-1.el7.x86_64
-Marking MariaDB-columnstore-libs-10.4.12_6-1.el7.x86_64.rpm to be installed
-Resolving Dependencies
---> Running transaction check
----> Package MariaDB-columnstore-libs.x86_64 0:10.4.12_6-1.el7 will be installed
---> Finished Dependency Resolution
-
-Dependencies Resolved
-
-===============================================================================================================================================================================================================================================
- Package                                                   Arch                                    Version                                             Repository                                                                         Size
-===============================================================================================================================================================================================================================================
-Installing:
- MariaDB-columnstore-libs                                  x86_64                                  10.4.12_6-1.el7                                     /MariaDB-columnstore-libs-10.4.12_6-1.el7.x86_64                                   14 M
-
-Transaction Summary
-===============================================================================================================================================================================================================================================
-Install  1 Package
-
-Total size: 14 M
-Installed size: 14 M
-Downloading packages:
-Running transaction check
-Running transaction test
-Transaction test succeeded
-Running transaction
-  Installing : MariaDB-columnstore-libs-10.4.12_6-1.el7.x86_64                                                                                                                                                                             1/1 
-  Verifying  : MariaDB-columnstore-libs-10.4.12_6-1.el7.x86_64                                                                                                                                                                             1/1 
-
-Installed:
-  MariaDB-columnstore-libs.x86_64 0:10.4.12_6-1.el7                                                                                                                                                                                            
-
-Complete!
-
-[root@cs-61]# mariadb-enterprise-10.4.12-6-centos-7-x86_64-rpms]# yum -y install MariaDB-columnstore-platform-10.4.12_6-1.el7.x86_64.rpm
-Loaded plugins: fastestmirror
-Examining MariaDB-columnstore-platform-10.4.12_6-1.el7.x86_64.rpm: MariaDB-columnstore-platform-10.4.12_6-1.el7.x86_64
-Marking MariaDB-columnstore-platform-10.4.12_6-1.el7.x86_64.rpm to be installed
-Resolving Dependencies
---> Running transaction check
----> Package MariaDB-columnstore-platform.x86_64 0:10.4.12_6-1.el7 will be installed
---> Finished Dependency Resolution
-
-Dependencies Resolved
-
-===============================================================================================================================================================================================================================================
- Package                                                     Arch                                  Version                                           Repository                                                                           Size
-===============================================================================================================================================================================================================================================
-Installing:
- MariaDB-columnstore-platform                                x86_64                                10.4.12_6-1.el7                                   /MariaDB-columnstore-platform-10.4.12_6-1.el7.x86_64                                 11 M
-
-Transaction Summary
-===============================================================================================================================================================================================================================================
-Install  1 Package
-
-Total size: 11 M
-Installed size: 11 M
-Downloading packages:
-Running transaction check
-Running transaction test
-Transaction test succeeded
-Running transaction
-  Installing : MariaDB-columnstore-platform-10.4.12_6-1.el7.x86_64                                                                                                                                                                         1/1 
-The next step on the node that will become PM1:
-
-postConfigure
-
-
-  Verifying  : MariaDB-columnstore-platform-10.4.12_6-1.el7.x86_64                                                                                                                                                                         1/1 
-
-Installed:
-  MariaDB-columnstore-platform.x86_64 0:10.4.12_6-1.el7                                                                                                                                                                                        
-
-Complete!
-[root@cs-61]# mariadb-enterprise-10.4.12-6-centos-7-x86_64-rpms]# yum -y MariaDB-columnstore-engine-10.4.12_6-1.el7.x86_64.rpm
-Loaded plugins: fastestmirror
-No such command: MariaDB-columnstore-engine-10.4.12_6-1.el7.x86_64.rpm. Please use /usr/bin/yum --help
-[root@cs-61]# mariadb-enterprise-10.4.12-6-centos-7-x86_64-rpms]# yum -y install MariaDB-columnstore-engine-10.4.12_6-1.el7.x86_64.rpm
-Loaded plugins: fastestmirror
-Examining MariaDB-columnstore-engine-10.4.12_6-1.el7.x86_64.rpm: MariaDB-columnstore-engine-10.4.12_6-1.el7.x86_64
-Marking MariaDB-columnstore-engine-10.4.12_6-1.el7.x86_64.rpm to be installed
-Resolving Dependencies
---> Running transaction check
----> Package MariaDB-columnstore-engine.x86_64 0:10.4.12_6-1.el7 will be installed
---> Finished Dependency Resolution
-
-Dependencies Resolved
-
-===============================================================================================================================================================================================================================================
- Package                                                    Arch                                   Version                                            Repository                                                                          Size
-===============================================================================================================================================================================================================================================
-Installing:
- MariaDB-columnstore-engine                                 x86_64                                 10.4.12_6-1.el7                                    /MariaDB-columnstore-engine-10.4.12_6-1.el7.x86_64                                 1.4 M
-
-Transaction Summary
-===============================================================================================================================================================================================================================================
-Install  1 Package
-
-Total size: 1.4 M
-Installed size: 1.4 M
-Downloading packages:
-Running transaction check
-Running transaction test
-Transaction test succeeded
-Running transaction
-  Installing : MariaDB-columnstore-engine-10.4.12_6-1.el7.x86_64                                                                                                                                                                           1/1 
-  Verifying  : MariaDB-columnstore-engine-10.4.12_6-1.el7.x86_64                                                                                                                                                                           1/1 
-
-Installed:
-  MariaDB-columnstore-engine.x86_64 0:10.4.12_6-1.el7                                                                                                                                                                                          
-
-Complete!
+[root@localhost ~] groupadd columnstore
+[root@localhost ~] useradd -g columnstore columnstore
+
+[root@localhost ~] passwd columnstore
+Changing password for user columnstore.
+New password: **********
+Retype new password: **********
+passwd: all authentication tokens updated successfully.
 ```
 
-### Setup SSH
+There is no need to setup the SSH for the `columnstore` user.
 
-Generate SSH Keys on the Node 1 and copy it to the other nodes
+### postConfigure
 
-```
-[root@cs-61 ~]# sudo ssh-keygen
-Generating public/private rsa key pair.
-Enter file in which to save the key (/root/.ssh/id_rsa): 
-Created directory '/root/.ssh'.
-Enter passphrase (empty for no passphrase): 
-Enter same passphrase again: 
-Your identification has been saved in /root/.ssh/id_rsa.
-Your public key has been saved in /root/.ssh/id_rsa.pub.
-The key fingerprint is:
-SHA256:LNoELZnh/3PIUBc12cSKKXb67vvOCiCIas1bu7Puz9A root@cs-61
-The key's randomart image is:
-+---[RSA 2048]----+
-|    .     ..o=.  |
-|   . =     ...o  |
-|    * . . .o .   |
-| . . + oo.+ .    |
-|. . . *.S+       |
-|. o  =.*..       |
-|.. o.o.E*..      |
-|.   o.+  +..     |
-|   .o*=o o==+    |
-+----[SHA256]-----+
-
-[root@cs-61 ~]# ssh-copy-id -i ~/.ssh/id_rsa.pub 192.168.56.62
-/usr/bin/ssh-copy-id: INFO: Source of key(s) to be installed: "/root/.ssh/id_rsa.pub"
-The authenticity of host '192.168.56.62 (192.168.56.62)' can't be established.
-ECDSA key fingerprint is SHA256:EeFtyGQ5pFX/BY/DSRLOBj7d4PNUVyoPcfcGqxS/XHc.
-ECDSA key fingerprint is MD5:c5:58:a6:8f:4b:4e:4b:fc:ff:22:de:a3:f2:4a:2a:01.
-Are you sure you want to continue connecting (yes/no)? yes
-/usr/bin/ssh-copy-id: INFO: attempting to log in with the new key(s), to filter out any that are already installed
-/usr/bin/ssh-copy-id: INFO: 1 key(s) remain to be installed -- if you are prompted now it is to install the new keys
-root@192.168.56.62's password: 
-
-Number of key(s) added: 1
-
-Now try logging into the machine, with:   "ssh '192.168.56.62'"
-and check to make sure that only the key(s) you wanted were added.
-
-[root@cs-61 ~]# ssh 192.168.56.62
-Last login: Wed Mar  4 05:24:31 2020 from 192.168.56.1
-[root@cs-62 ~]# 
-
-[root@cs-62 ~]# exit
-logout
-Connection to 192.168.56.62 closed.
-```
-
-Add the two node's host name and IP addresses in the **`/etc/hosts`** file of both nodes before proceeding
-
-Test SSH to the second node using IP address and hostname, make sure it works without a password.
-
-Installation loads software to the system. This software requires post-install actions and configuration before the database server is ready for use.
-
-MariaDB ColumnStore post-installation scripts fail if they find MariaDB Enterprise Server running on the system. Stop the Server and disable the service after installing the packages:
+Stop MariaDB server on both nodes and proceed
 
 ```txt
 [root@cs-61 ~]# systemctl stop mariadb.service
-[root@cs-61 ~]# systemctl disable mariadb.service
 ```
 
-Execute the post install script on the primary node
+Execute the post install script on both the nodes
 
 ```txt
+[root@cs-61 ~]# export LC_ALL=C
 [root@cs-61 ~]# columnstore-post-install
 The next step on the node that will become PM1:
 
 postConfigure
 
 
-[root@cs-61 ~]#
 ```
 
 Now we are ready to configure S3 storage followed by `postConfigure` script execution wihch will actually install ColumnStore and connect to S3 storage.
@@ -558,8 +176,10 @@ Here **4** is a new option added to let ColumnStore use the S3 configuration def
 
 Execute the `postConfigure` script on the Primary node. This will take you through a set of inputs, including the one mentioned above regarding the storage setup.
 
+*Note: When prompted for **"Enter password, hit 'enter' to default to using an ssh key, or 'exit' >"**, key in the OS `root` password, the password is asumed to be the same for both servers.*
+
 ```txt
-[root@cs-61 ~]# postConfigure 
+[root@cs-61 ~]# postConfigure
 
 
 This is the MariaDB ColumnStore System Configuration and Installation tool.
@@ -673,7 +293,8 @@ Next step is to enter the password to access the other Servers.
 This is either user password or you can default to using an ssh key
 If using a user password, the password needs to be the same on all Servers.
 
-Enter password, hit 'enter' to default to using an ssh key, or 'exit' > 
+Enter password, hit 'enter' to default to using an ssh key, or 'exit' > **********
+Confirm password > **********
 
 ----- Performing Install on 'pm2 / cs-62' -----
 
@@ -713,36 +334,56 @@ Enter 'mcsadmin' to access the MariaDB ColumnStore Admin console
 NOTE: The MariaDB ColumnStore Alias Commands are in /etc/profile.d/columnstoreAlias.sh
 ```
 
-Now check MariaDB status on both the nodes. It should be running as per normal
+Now check MariaDB ColumnStore Status using `mcsadmin getsystemInfo` on Primary Node. It should be running as per normal
 
 ```txt
-[root@cs-62 ~]# systemctl status mariadb
-● mariadb.service - MariaDB 10.4.12-6 database server
-   Loaded: loaded (/usr/lib/systemd/system/mariadb.service; disabled; vendor preset: disabled)
-  Drop-In: /etc/systemd/system/mariadb.service.d
-           └─migrated-from-my.cnf-settings.conf
-   Active: active (running) since Wed 2020-03-04 06:25:30 EST; 4min 25s ago
-     Docs: man:mysqld(8)
-           https://mariadb.com/kb/en/library/systemd/
-  Process: 5152 ExecStartPost=/bin/sh -c systemctl unset-environment _WSREP_START_POSITION (code=exited, status=0/SUCCESS)
-  Process: 5038 ExecStartPre=/bin/sh -c [ ! -e /usr/bin/galera_recovery ] && VAR= ||   VAR=`/usr/bin/galera_recovery`; [ $? -eq 0 ]   && systemctl set-environment _WSREP_START_POSITION=$VAR || exit 1 (code=exited, status=0/SUCCESS)
-  Process: 5036 ExecStartPre=/bin/sh -c systemctl unset-environment _WSREP_START_POSITION (code=exited, status=0/SUCCESS)
- Main PID: 5116 (mysqld)
-   Status: "Taking your SQL requests now..."
-   CGroup: /system.slice/mariadb.service
-           └─5116 /usr/sbin/mysqld
+[root@cs-61 ~]# mcsadmin getSystemInfo
+getsysteminfo   Thu Mar 19 12:04:59 2020
 
-Mar 04 06:25:30 cs-62 mysqld[5116]: 2020-03-04  6:25:30 0 [Note] Added new Master_info '' to hash table
-Mar 04 06:25:30 cs-62 mysqld[5116]: 2020-03-04  6:25:30 0 [Note] /usr/sbin/mysqld: ready for connections.
-Mar 04 06:25:30 cs-62 mysqld[5116]: Version: '10.4.12-6-MariaDB-enterprise-log'  socket: '/var/lib/mysql/mysql.sock'  port: 3306  MariaDB Enterprise Server
-Mar 04 06:25:30 cs-62 systemd[1]: Started MariaDB 10.4.12-6 database server.
-Mar 04 06:25:35 cs-62 mysqld[5116]: 2020-03-04  6:25:35 10 [Note] Master connection name: ''  Master_info_file: 'master.info'  Relay_info_file: 'relay-log.info'
-Mar 04 06:25:35 cs-62 mysqld[5116]: 2020-03-04  6:25:35 10 [Warning] Neither --relay-log nor --relay-log-index were used; so replication may break when this MySQL server acts as a slave and has his hostname changed!! P...void this problem.
-Mar 04 06:25:35 cs-62 mysqld[5116]: 2020-03-04  6:25:35 10 [Note] 'CHANGE MASTER TO executed'. Previous state master_host='', master_port='3306', master_log_file='', master_log_pos='4'. New state master_host='192.168.5...er_log_pos='1918'.
-Mar 04 06:25:35 cs-62 mysqld[5116]: 2020-03-04  6:25:35 12 [Note] Slave I/O thread: Start asynchronous replication to master 'idbrep@192.168.56.61:3306' in log 'cs-61-bin.000001' at position 1918
-Mar 04 06:25:35 cs-62 mysqld[5116]: 2020-03-04  6:25:35 13 [Note] Slave SQL thread initialized, starting replication in log 'cs-61-bin.000001' at position 1918, relay log './cs-62-relay-bin.000001' position: 4
-Mar 04 06:25:35 cs-62 mysqld[5116]: 2020-03-04  6:25:35 12 [Note] Slave I/O thread: connected to master 'idbrep@192.168.56.61:3306',replication started in log 'cs-61-bin.000001' at position 1918
-Hint: Some lines were ellipsized, use -l to show in full.
+System columnstore-1
+
+System and Module statuses
+
+Component     Status                       Last Status Change
+------------  --------------------------   ------------------------
+System        ACTIVE                       Thu Mar 19 12:00:36 2020
+
+Module pm1    ACTIVE                       Thu Mar 19 12:00:27 2020
+Module pm2    ACTIVE                       Thu Mar 19 12:00:18 2020
+
+Active Parent OAM Performance Module is 'pm1'
+Primary Front-End MariaDB ColumnStore Module is 'pm1'
+MariaDB ColumnStore Replication Feature is enabled
+
+MariaDB ColumnStore Process statuses
+
+Process             Module    Status            Last Status Change        Process ID
+------------------  ------    ---------------   ------------------------  ----------
+ProcessMonitor      pm1       ACTIVE            Thu Mar 19 11:58:56 2020       14869
+ProcessManager      pm1       ACTIVE            Thu Mar 19 11:59:02 2020       14937
+DBRMControllerNode  pm1       ACTIVE            Thu Mar 19 11:59:57 2020       15797
+ServerMonitor       pm1       ACTIVE            Thu Mar 19 12:00:00 2020       15824
+DBRMWorkerNode      pm1       ACTIVE            Thu Mar 19 12:00:01 2020       15876
+PrimProc            pm1       ACTIVE            Thu Mar 19 12:00:04 2020       15943
+ExeMgr              pm1       ACTIVE            Thu Mar 19 12:00:14 2020       16441
+WriteEngineServer   pm1       ACTIVE            Thu Mar 19 12:00:19 2020       16547
+DDLProc             pm1       ACTIVE            Thu Mar 19 12:00:26 2020       16778
+DMLProc             pm1       ACTIVE            Thu Mar 19 12:00:36 2020       17029
+mysqld              pm1       ACTIVE            Thu Mar 19 12:00:43 2020       17578
+
+ProcessMonitor      pm2       ACTIVE            Thu Mar 19 11:59:44 2020        4793
+ProcessManager      pm2       HOT_STANDBY       Thu Mar 19 11:59:50 2020        4846
+DBRMControllerNode  pm2       COLD_STANDBY      Thu Mar 19 12:00:10 2020
+ServerMonitor       pm2       ACTIVE            Thu Mar 19 12:00:02 2020        4982
+DBRMWorkerNode      pm2       ACTIVE            Thu Mar 19 12:00:06 2020        5012
+PrimProc            pm2       ACTIVE            Thu Mar 19 12:00:09 2020        5035
+ExeMgr              pm2       ACTIVE            Thu Mar 19 12:00:15 2020        5098
+WriteEngineServer   pm2       ACTIVE            Thu Mar 19 12:00:18 2020        5124
+DDLProc             pm2       COLD_STANDBY      Thu Mar 19 12:00:18 2020
+DMLProc             pm2       COLD_STANDBY      Thu Mar 19 12:00:18 2020
+mysqld              pm2       ACTIVE            Thu Mar 19 12:00:51 2020        5396
+
+Active Alarm Counts: Critical = 0, Major = 0, Minor = 0, Warning = 0, Info = 0
 ```
 
 Login to mariadb from first node and verify
@@ -839,159 +480,64 @@ MariaDB [(none)]> show engines;
 11 rows in set (0.001 sec)
 ```
 
-Lets test replication between Node1 and Node2, Node1 should be the Master
+### Setup `/etc/sudoers`
 
-```
-MariaDB [(none)]> show databases;
-+---------------------+
-| Database            |
-+---------------------+
-| calpontsys          |
-| columnstore_info    |
-| infinidb_querystats |
-| information_schema  |
-| mysql               |
-| performance_schema  |
-+---------------------+
-6 rows in set (0.009 sec)
+Now that the ColumnStore and MariaDB services are running on both nodes, we can setup the non-root user `columnstore` so that this user is able to start/stop MariaDB and ColumnStore services.
 
-MariaDB [(none)]> create database testdb;
-Query OK, 1 row affected (0.001 sec)
+Execute the following on both nodes as the `root` user to add the limited `sudo` priviliges for `columnstore` user.
 
-MariaDB [(none)]> select @@hostname;
-+------------+
-| @@hostname |
-+------------+
-| cs-61      |
-+------------+
-1 row in set (0.000 sec)
+```txt
+[root@cs-61 ~]# echo "columnstore ALL=(root) NOPASSWD: /usr/bin/mcsadmin, /usr/bin/systemctl stop columnstore, /usr/bin/systemctl start columnstore, /usr/bin/systemctl stop mariadb, /usr/bin/systemctl start mariadb, /usr/bin/systemctl restart mariadb, /usr/bin/systemctl restart columnstore" >> /etc/sudoers
 ```
 
-See the databases on Node 2 to see if the replication is done
+Switch as `columnstore` user and execute `sudo -l` to verify the priviliges have been ranted.
 
-```
-MariaDB [(none)]> show databases;
-+---------------------+
-| Database            |
-+---------------------+
-| calpontsys          |
-| columnstore_info    |
-| infinidb_querystats |
-| information_schema  |
-| mysql               |
-| performance_schema  |
-| testdb              |
-+---------------------+
-7 rows in set (0.008 sec)
+```txt
+[root@cs-61 ~]# su - columnstore
+Last login: Thu Mar 19 12:31:45 EDT 2020 on pts/0
+[columnstore@cs-61 ~]$ 
+[columnstore@cs-61 ~]$ 
+[columnstore@cs-61 ~]$ sudo -l
+Matching Defaults entries for columnstore on cs-61:
+    !visiblepw, always_set_home, match_group_by_gid, always_query_group_plugin, env_reset, env_keep="COLORS DISPLAY HOSTNAME HISTSIZE KDEDIR LS_COLORS", env_keep+="MAIL PS1 PS2 QTDIR
+    USERNAME LANG LC_ADDRESS LC_CTYPE", env_keep+="LC_COLLATE LC_IDENTIFICATION LC_MEASUREMENT LC_MESSAGES", env_keep+="LC_MONETARY LC_NAME LC_NUMERIC LC_PAPER LC_TELEPHONE",
+    env_keep+="LC_TIME LC_ALL LANGUAGE LINGUAS _XKB_CHARSET XAUTHORITY", secure_path=/sbin\:/bin\:/usr/sbin\:/usr/bin
 
-MariaDB [(none)]> select @@hostname;
-+------------+
-| @@hostname |
-+------------+
-| cs-62      |
-+------------+
-1 row in set (0.000 sec)
+User columnstore may run the following commands on cs-61:
+    (root) NOPASSWD: /usr/bin/mcsadmin, /usr/bin/systemctl stop columnstore, /usr/bin/systemctl start columnstore, /usr/bin/systemctl stop mariadb, /usr/bin/systemctl start mariadb,
+        /usr/bin/systemctl restart mariadb, /usr/bin/systemctl restart columnstore
 ```
 
-Create a first columnstore table on Node 1 and see if  it's visible from Node 2
+The above `sudo` privilege can be read as, the user `columnstore` can execute from any host as the `root` user without needing a password the following commands.
 
-```
-MariaDB [(none)]> use testdb;
-Database changed
-MariaDB [testdb]> create table cs_tab1(id int, c1 varchar(10)) engine=ColumnStore;
-Query OK, 0 rows affected (2.096 sec)
+This is very limited privilege and the `columnstore` user cannot perform anything other than the commands mentioned above.
 
-MariaDB [(none)]> select @@hostname;
-+------------+
-| @@hostname |
-+------------+
-| cs-61      |
-+------------+
-1 row in set (0.000 sec)
-```
+### ColumnStore filesystem Ownership
 
-Verify on the Node 2
+Befor proceeding, we must change the ColumnStore filesystem to be owned by the `columnstrore` user.
 
-```
-MariaDB [(none)]> use testdb;
-Reading table information for completion of table and column names
-You can turn off this feature to get a quicker startup with -A
+Execute the following on both nodes as the `root` user to set file ownership and read permissions for the `columnstore` user.
 
-Database changed
-MariaDB [testdb]> show tables;
-+------------------+
-| Tables_in_testdb |
-+------------------+
-| cs_tab1          |
-+------------------+
-1 row in set (0.000 sec)
+```txt
+[root@cs-61 ~]# chown -R columnstore:columnstore /etc/columnstore/ /var/lib/columnstore/ /tmp/columnstore_tmp_files/ /var/log/mariadb
 
-MariaDB [(none)]> select @@hostname;
-+------------+
-| @@hostname |
-+------------+
-| cs-62      |
-+------------+
-1 row in set (0.001 sec)
+[root@cs-61 ~]# chmod -R g+s /etc/columnstore/ /var/lib/columnstore/ /tmp/columnstore_tmp_files/ /var/log/mariadb
 ```
 
-Now finally on Node 1 which is also the `PM1` node, test the ColumnStore `mcsadmin` commands
+ColumnStore service can be shutdown normally using the `sudo mcsadmin shutdownsystem y` command
 
-```
-[root@cs-61 ~]# mcsadmin getSystemInfo
-getsysteminfo   Wed Mar  4 06:38:04 2020
+### ColumnStore Maintenance
 
-System columnstore-1
+Switch to the `columnstore` user and perform a shutdown. From this point onwards, all the maintenance tasks can be carried out using the `columnstore` user.
 
-System and Module statuses
+***Note:** All the commands that have been allowed in the `/etc/sudoers` must be executed with `sudo`*
 
-Component     Status                       Last Status Change
-------------  --------------------------   ------------------------
-System        ACTIVE                       Wed Mar  4 06:25:17 2020
-
-Module pm1    ACTIVE                       Wed Mar  4 06:25:07 2020
-Module pm2    ACTIVE                       Wed Mar  4 06:24:57 2020
-
-Active Parent OAM Performance Module is 'pm1'
-Primary Front-End MariaDB ColumnStore Module is 'pm1'
-MariaDB ColumnStore Replication Feature is enabled
-
-MariaDB ColumnStore Process statuses
-
-Process             Module    Status            Last Status Change        Process ID
-------------------  ------    ---------------   ------------------------  ----------
-ProcessMonitor      pm1       ACTIVE            Wed Mar  4 06:23:39 2020       16570
-ProcessManager      pm1       ACTIVE            Wed Mar  4 06:23:46 2020       16650
-DBRMControllerNode  pm1       ACTIVE            Wed Mar  4 06:24:37 2020       17514
-ServerMonitor       pm1       ACTIVE            Wed Mar  4 06:24:40 2020       17542
-DBRMWorkerNode      pm1       ACTIVE            Wed Mar  4 06:24:40 2020       17571
-PrimProc            pm1       ACTIVE            Wed Mar  4 06:24:44 2020       17668
-ExeMgr              pm1       ACTIVE            Wed Mar  4 06:24:53 2020       18094
-WriteEngineServer   pm1       ACTIVE            Wed Mar  4 06:24:58 2020       18221
-DDLProc             pm1       ACTIVE            Wed Mar  4 06:25:06 2020       18525
-DMLProc             pm1       ACTIVE            Wed Mar  4 06:25:16 2020       18766
-mysqld              pm1       ACTIVE            Wed Mar  4 06:25:22 2020       19328
-
-ProcessMonitor      pm2       ACTIVE            Wed Mar  4 06:24:26 2020        4517
-ProcessManager      pm2       HOT_STANDBY       Wed Mar  4 06:24:32 2020        4569
-DBRMControllerNode  pm2       COLD_STANDBY      Wed Mar  4 06:24:49 2020
-ServerMonitor       pm2       ACTIVE            Wed Mar  4 06:24:44 2020        4705
-DBRMWorkerNode      pm2       ACTIVE            Wed Mar  4 06:24:45 2020        4719
-PrimProc            pm2       ACTIVE            Wed Mar  4 06:24:48 2020        4742
-ExeMgr              pm2       ACTIVE            Wed Mar  4 06:24:55 2020        4822
-WriteEngineServer   pm2       ACTIVE            Wed Mar  4 06:24:59 2020        4848
-DDLProc             pm2       COLD_STANDBY      Wed Mar  4 06:24:57 2020
-DMLProc             pm2       COLD_STANDBY      Wed Mar  4 06:24:57 2020
-mysqld              pm2       ACTIVE            Wed Mar  4 06:25:30 2020        5116
-
-Active Alarm Counts: Critical = 0, Major = 0, Minor = 0, Warning = 0, Info = 0
-```
-
-ColumnStore service can be shutdown normally using the `mcsadmin shutdownsystem y` command
-
-```
-[root@cs-61 ~]# mcsadmin shutdownsystem y
-shutdownsystem   Wed Mar  4 06:42:47 2020
+```txt
+[root@cs-61 ~]# su - columnstore
+Last login: Thu Mar 19 12:18:03 EDT 2020 on pts/0
+[columnstore@cs-61 ~]$ 
+[columnstore@cs-61 ~]$ sudo mcsadmin shutdownSystem y
+shutdownsystem   Thu Mar 19 12:19:27 2020
 
 This command stops the processing of applications on all Modules within the MariaDB ColumnStore System
 
@@ -1006,3 +552,87 @@ This command stops the processing of applications on all Modules within the Mari
 
 This will shutdown MariaDB and ColumnStore on all the nodes automatically.
 
+To start the service, we need to user `systemctl` on both nodes. 
+
+***Note:** mcsadmin will not be able to start services because we don't have a ssh key setup done. Alternate way is to use systemctl on both nodes as follows*
+
+Node1:
+```txt
+[columnstore@cs-61 ~]$ sudo systemctl start columnstore && sudo systemctl start mariadb
+```
+
+Node2:
+```txt
+[columnstore@cs-61 ~]$ sudo systemctl start columnstore && sudo systemctl start mariadb
+```
+
+From Primary Node, verify as the `columnstore` user that the services have been started on both nodes or now.
+
+```txt
+[columnstore@cs-61 ~]$ sudo mcsadmin getSystemInfo
+getsysteminfo   Thu Mar 19 12:24:40 2020
+
+System columnstore-1
+
+System and Module statuses
+
+Component     Status                       Last Status Change
+------------  --------------------------   ------------------------
+System        ACTIVE                       Thu Mar 19 12:24:39 2020
+
+Module pm1    ACTIVE                       Thu Mar 19 12:24:36 2020
+Module pm2    ACTIVE                       Thu Mar 19 12:24:32 2020
+
+Active Parent OAM Performance Module is 'pm1'
+Primary Front-End MariaDB ColumnStore Module is 'pm1'
+MariaDB ColumnStore Replication Feature is enabled
+
+MariaDB ColumnStore Process statuses
+
+Process             Module    Status            Last Status Change        Process ID
+------------------  ------    ---------------   ------------------------  ----------
+ProcessMonitor      pm1       ACTIVE            Thu Mar 19 12:23:38 2020        4190
+ProcessManager      pm1       ACTIVE            Thu Mar 19 12:23:44 2020        4426
+DBRMControllerNode  pm1       ACTIVE            Thu Mar 19 12:24:13 2020        5007
+ServerMonitor       pm1       ACTIVE            Thu Mar 19 12:24:15 2020        5038
+DBRMWorkerNode      pm1       ACTIVE            Thu Mar 19 12:24:16 2020        5094
+PrimProc            pm1       ACTIVE            Thu Mar 19 12:24:20 2020        5225
+ExeMgr              pm1       ACTIVE            Thu Mar 19 12:24:25 2020        5407
+WriteEngineServer   pm1       ACTIVE            Thu Mar 19 12:24:29 2020        5523
+DDLProc             pm1       ACTIVE            Thu Mar 19 12:24:33 2020        5649
+DMLProc             pm1       ACTIVE            Thu Mar 19 12:24:37 2020        5758
+mysqld              pm1       ACTIVE            Thu Mar 19 12:24:23 2020        4290
+
+ProcessMonitor      pm2       ACTIVE            Thu Mar 19 12:24:04 2020        8554
+ProcessManager      pm2       HOT_STANDBY       Thu Mar 19 12:24:09 2020        8736
+DBRMControllerNode  pm2       COLD_STANDBY      Thu Mar 19 12:24:14 2020
+ServerMonitor       pm2       ACTIVE            Thu Mar 19 12:24:17 2020        8780
+DBRMWorkerNode      pm2       ACTIVE            Thu Mar 19 12:24:17 2020        8820
+PrimProc            pm2       ACTIVE            Thu Mar 19 12:24:22 2020        8835
+ExeMgr              pm2       ACTIVE            Thu Mar 19 12:24:26 2020        8877
+WriteEngineServer   pm2       ACTIVE            Thu Mar 19 12:24:30 2020        8911
+DDLProc             pm2       COLD_STANDBY      Thu Mar 19 12:24:32 2020
+DMLProc             pm2       COLD_STANDBY      Thu Mar 19 12:24:32 2020
+mysqld              pm2       ACTIVE            Thu Mar 19 12:24:14 2020        8648
+
+Active Alarm Counts: Critical = 0, Major = 0, Minor = 0, Warning = 0, Info = 0
+```
+
+Note: `sudo mcsadmin startSystem root-password` can still be used but it will require root user password and the password of the root user must be the same. Instead The recommended way is as follows
+
+- As `columnstore` user
+  - **`sudo mcsadmin shutdownSystem y`**
+    - once services are completely down on both nodes, proceed
+  - PM1 (Primary Node)
+    - **`sudo systemctl start columnstore && sudo systemctl start mariadb`**
+      - These can be executed separately or together as one as shown here
+  - PM2 (Replica Node)
+    - **`sudo systemctl start columnstore && sudo systemctl start mariadb`**
+      - These can be executed separately or together as one as shown here
+  - PM1 (Primary Node)
+    - **`sudo mcsadmin getSystemInfo`**
+      - To verify the environment status
+
+**Note:** All the server logs are under **`/var/log/mariadb`** and **`/var/log/mariadb/columnstore`** folders
+
+Thank You.
