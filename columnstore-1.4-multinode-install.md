@@ -535,7 +535,7 @@ Copy the `/root/storagemanager` folder to `/home/mcsadm/`
 [root@cs-61 ~]# cp -r /root/storagemanager /home/mcsadm/
 ```
 
-Secondly, edit the `/etc/columnstore/storagemanager.cnf` file and replace all the instances of `${HOME}` to /home/mcsadm/
+Secondly, edit the `/etc/columnstore/storagemanager.cnf` file and replace all the instances of **`${HOME}`** with **`/home/mcsadm/`**
 
 ***Note:** This is important else `mcsadm` will not have access to the S3 storage meta-data filesystem.*
 
