@@ -529,6 +529,8 @@ ColumnStore service can be shutdown normally using the `sudo mcsadmin shutdownsy
 
 ### StorageManager Filesystem
 
+The following is to be done on both nodes.
+
 Copy the `/root/storagemanager` folder to `/home/mcsadm/`
 
 ```
