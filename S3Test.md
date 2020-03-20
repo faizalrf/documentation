@@ -72,9 +72,9 @@ MariaDB [testdb]> select * from salary;
 12 rows in set (0.000 sec)
 ```
 
-Assume we want to archive the Jan salary record(s) to S3_salary as a partition, we know the S3 partition for January 2020 is `P01`
+Assuming we want to archive the January 2020's salary record(s) to `s3_salary` as a new partition, we know the S3 partition name for January 2020 is `P01`
 
-Here is what we have to do
+Here is what we have to do 
 
 - Create a table with the same structure as the partitioned table `s3_salary` but without partitioning using InnoDB/Aria storage engine. 
 - Copy January's salary record(s) to a new Aria/InnoDB table
@@ -84,7 +84,7 @@ Here is what we have to do
 Let's see how
 
 ```SQL
-MariaDB [testdb]> CREATE TABLE `salary_2020_01` (
+MariaDB [testdb]> CREATE TABLE `s3_salary_2020_01` (
   `id` int(10) unsigned NOT NULL,
   `emp_id` int(11) DEFAULT NULL,
   `salary` double(18,2) DEFAULT NULL,
@@ -94,15 +94,15 @@ MariaDB [testdb]> CREATE TABLE `salary_2020_01` (
 
 Query OK, 0 rows affected (2.850 sec)
 
-MariaDB [testdb]> insert into salary_2020_01 select * from salary where dt < '2020-02-01';
+MariaDB [testdb]> insert into s3_salary_2020_01 select * from salary where dt < '2020-02-01';
 Query OK, 1 row affected (0.020 sec)
 Records: 1  Duplicates: 0  Warnings: 0
 
-MariaDB [testdb]> alter table salary_2020_01 engine=S3;
+MariaDB [testdb]> alter table s3_salary_2020_01 engine=S3;
 Query OK, 1 row affected (4.557 sec)               
 Records: 1  Duplicates: 0  Warnings: 0
 
-MariaDB [testdb]> alter table s3_salary exchange partition P01 with table salary_2020_01;
+MariaDB [testdb]> alter table s3_salary exchange partition P01 with table s3_salary_2020_01;
 Query OK, 0 rows affected (14.637 sec)
 ```
 
@@ -121,10 +121,10 @@ MariaDB [testdb]> SELECT * FROM s3_salary;
 1 row in set (1.176 sec)
 ```
 
-Next, we can now move February data as `salary_2020_02` table to S3 partition tabe `s3_salary`, follow the same steps as previously done for January's data.
+Next, we can now move February data as `s3_salary_2020_02` table to S3 partition tabe `s3_salary`, follow the same steps as previously done for January's data.
 
 ```SQL
-MariaDB [testdb]> CREATE TABLE `salary_2020_02` (
+MariaDB [testdb]> CREATE TABLE `s3_salary_2020_02` (
   `id` int(10) unsigned NOT NULL,
   `emp_id` int(11) DEFAULT NULL,
   `salary` double(18,2) DEFAULT NULL,
@@ -132,15 +132,15 @@ MariaDB [testdb]> CREATE TABLE `salary_2020_02` (
   PRIMARY KEY (`id`,`dt`)
 ) ENGINE=InnoDB;
 
-MariaDB [testdb]> insert into salary_2020_02 select * from salary where dt < '2020-03-01';
+MariaDB [testdb]> insert into s3_salary_2020_02 select * from salary where dt < '2020-03-01';
 Query OK, 1 row affected (0.016 sec)
 Records: 1  Duplicates: 0  Warnings: 0
 
-MariaDB [testdb]> ALTER TABLE salary_2020_02 engine=S3;
+MariaDB [testdb]> ALTER TABLE s3_salary_2020_02 engine=S3;
 Query OK, 1 row affected (4.374 sec)               
 Records: 1  Duplicates: 0  Warnings: 0
 
-MariaDB [testdb]> alter table s3_salary exchange partition P02 with table salary_2020_02;
+MariaDB [testdb]> alter table s3_salary exchange partition P02 with table s3_salary_2020_02;
 Query OK, 0 rows affected (15.075 sec)
 
 MariaDB [testdb]> DELETE FROM salary where dt < '2020-03-01';
