@@ -92,22 +92,24 @@ Once these 6 rpm files have been install on all the nodes, the following 3 addit
 - **mariadb-columnstore-engine**
   - `rpm -ivh MariaDB-columnstore-engine-10.4.12_6-1.el7.x86_64.rpm`
 
-### Create the `columnstore` User
+### Create the `mcsadm` User
 
-Create a user as `columnstore` and setup `/etc/sudoers` file so that the user can manage ColumnStore services.
+Create a user as `mcsadm` and setup `/etc/sudoers` file so that the user can manage ColumnStore services.
 
 ```txt
-[root@localhost ~] groupadd columnstore
-[root@localhost ~] useradd -g columnstore columnstore
+[root@localhost ~] groupadd mcsadm
+[root@localhost ~] useradd -g mcsadm mcsadm
 
-[root@localhost ~] passwd columnstore
-Changing password for user columnstore.
+[root@localhost ~] passwd mcsadm
+Changing password for user mcsadm.
 New password: **********
 Retype new password: **********
 passwd: all authentication tokens updated successfully.
 ```
 
-There is no need to setup the SSH for the `columnstore` user.
+There is no need to setup the SSH for the `mcsadm` user.
+
+
 
 ### postConfigure
 
@@ -131,7 +133,7 @@ postConfigure
 
 Now we are ready to configure S3 storage followed by `postConfigure` script execution wihch will actually install ColumnStore and connect to S3 storage.
 
-### Configure S3 Storage
+#### Configure S3 Storage
 
 Make sure to have an S3/ObjectStore storage bucket ready with and firewall has been opened to access the end point. Following S3 related information is required before proceeding
 
@@ -482,61 +484,72 @@ MariaDB [(none)]> show engines;
 
 ### Setup `/etc/sudoers`
 
-Now that the ColumnStore and MariaDB services are running on both nodes, we can setup the non-root user `columnstore` so that this user is able to start/stop MariaDB and ColumnStore services.
+Now that the ColumnStore and MariaDB services are running on both nodes, we can setup the non-root user `mcsadm` so that this user is able to start/stop MariaDB and ColumnStore services.
 
-Execute the following on both nodes as the `root` user to add the limited `sudo` priviliges for `columnstore` user.
+Execute the following on both nodes as the `root` user to add the limited `sudo` priviliges for `mcsadm` user.
 
 ```txt
-[root@cs-61 ~]# echo "columnstore ALL=(root) NOPASSWD: /usr/bin/mcsadmin, /usr/bin/systemctl stop columnstore, /usr/bin/systemctl start columnstore, /usr/bin/systemctl stop mariadb, /usr/bin/systemctl start mariadb, /usr/bin/systemctl restart mariadb, /usr/bin/systemctl restart columnstore" >> /etc/sudoers
+[root@cs-61 ~]# echo "mcsadm ALL=(root) NOPASSWD: /usr/bin/mcsadmin, /usr/bin/systemctl stop columnstore, /usr/bin/systemctl start columnstore, /usr/bin/systemctl stop mariadb, /usr/bin/systemctl start mariadb" >> /etc/sudoers
 ```
 
-Switch as `columnstore` user and execute `sudo -l` to verify the priviliges have been ranted.
+Switch as `mcsadm` user and execute `sudo -l` to verify the priviliges have been ranted.
 
 ```txt
-[root@cs-61 ~]# su - columnstore
+[root@cs-61 ~]# su - mcsadm
 Last login: Thu Mar 19 12:31:45 EDT 2020 on pts/0
-[columnstore@cs-61 ~]$ 
-[columnstore@cs-61 ~]$ 
-[columnstore@cs-61 ~]$ sudo -l
-Matching Defaults entries for columnstore on cs-61:
+[mcsadm@cs-61 ~]$ 
+[mcsadm@cs-61 ~]$ 
+[mcsadm@cs-61 ~]$ sudo -l
+Matching Defaults entries for mcsadm on cs-61:
     !visiblepw, always_set_home, match_group_by_gid, always_query_group_plugin, env_reset, env_keep="COLORS DISPLAY HOSTNAME HISTSIZE KDEDIR LS_COLORS", env_keep+="MAIL PS1 PS2 QTDIR
     USERNAME LANG LC_ADDRESS LC_CTYPE", env_keep+="LC_COLLATE LC_IDENTIFICATION LC_MEASUREMENT LC_MESSAGES", env_keep+="LC_MONETARY LC_NAME LC_NUMERIC LC_PAPER LC_TELEPHONE",
     env_keep+="LC_TIME LC_ALL LANGUAGE LINGUAS _XKB_CHARSET XAUTHORITY", secure_path=/sbin\:/bin\:/usr/sbin\:/usr/bin
 
 User columnstore may run the following commands on cs-61:
-    (root) NOPASSWD: /usr/bin/mcsadmin, /usr/bin/systemctl stop columnstore, /usr/bin/systemctl start columnstore, /usr/bin/systemctl stop mariadb, /usr/bin/systemctl start mariadb,
-        /usr/bin/systemctl restart mariadb, /usr/bin/systemctl restart columnstore
+    (root) NOPASSWD: /usr/bin/mcsadmin, /usr/bin/systemctl stop columnstore, /usr/bin/systemctl start columnstore, /usr/bin/systemctl stop mariadb, /usr/bin/systemctl start mariadb
 ```
 
-The above `sudo` privilege can be read as, the user `columnstore` can execute from any host as the `root` user without needing a password the following commands.
+The above `sudo` privilege can be read as, the user `mcsadm` can execute from any host as the `root` user without needing a password the following commands.
 
-This is very limited privilege and the `columnstore` user cannot perform anything other than the commands mentioned above.
+This is very limited privilege and the `mcsadm` user cannot perform anything other than the commands mentioned above.
 
 ### ColumnStore filesystem Ownership
 
-Befor proceeding, we must change the ColumnStore filesystem to be owned by the `columnstrore` user.
+Befor proceeding, we must change the ColumnStore filesystem to be owned by the `mcsadm` user.
 
-Execute the following on both nodes as the `root` user to set file ownership and read permissions for the `columnstore` user.
+Execute the following on both nodes as the `root` user to set file ownership and read permissions for the `mcsadm` user.
 
 ```txt
-[root@cs-61 ~]# chown -R columnstore:columnstore /etc/columnstore/ /var/lib/columnstore/ /tmp/columnstore_tmp_files/ /var/log/mariadb
+[root@cs-61 ~]# chown -R mcsadm:mcsadm /etc/columnstore/ /var/lib/columnstore/ /tmp/columnstore_tmp_files/ /var/log/mariadb
 
 [root@cs-61 ~]# chmod -R g+s /etc/columnstore/ /var/lib/columnstore/ /tmp/columnstore_tmp_files/ /var/log/mariadb
 ```
 
 ColumnStore service can be shutdown normally using the `sudo mcsadmin shutdownsystem y` command
 
+### StorageManager Filesystem
+
+Copy the `/root/storagemanager` folder to `/home/mcsadm/`
+
+```
+[root@cs-61 ~]# cp -r /root/storagemanager /home/mcsadm/
+```
+
+Secondly, edit the `/etc/columnstore/storagemanager.cnf` file and replace all the instances of `${HOME}` to /home/mcsadm/
+
+***Note:** This is important else `mcsadm` will not have access to the S3 storage meta-data filesystem.*
+
 ### ColumnStore Maintenance
 
-Switch to the `columnstore` user and perform a shutdown. From this point onwards, all the maintenance tasks can be carried out using the `columnstore` user.
+Switch to the `mcsadm` user and perform a shutdown. From this point onwards, all the maintenance tasks can be carried out using the `mcsadm` user.
 
 ***Note:** All the commands that have been allowed in the `/etc/sudoers` must be executed with `sudo`*
 
 ```txt
-[root@cs-61 ~]# su - columnstore
+[root@cs-61 ~]# su - mcsadm
 Last login: Thu Mar 19 12:18:03 EDT 2020 on pts/0
-[columnstore@cs-61 ~]$ 
-[columnstore@cs-61 ~]$ sudo mcsadmin shutdownSystem y
+[mcsadm@cs-61 ~]$ 
+[mcsadm@cs-61 ~]$ sudo mcsadmin shutdownSystem y
 shutdownsystem   Thu Mar 19 12:19:27 2020
 
 This command stops the processing of applications on all Modules within the MariaDB ColumnStore System
@@ -558,18 +571,18 @@ To start the service, we need to user `systemctl` on both nodes.
 
 Node1:
 ```txt
-[columnstore@cs-61 ~]$ sudo systemctl start columnstore && sudo systemctl start mariadb
+[mcsadm@cs-61 ~]$ sudo systemctl start columnstore && sudo systemctl start mariadb
 ```
 
 Node2:
 ```txt
-[columnstore@cs-61 ~]$ sudo systemctl start columnstore && sudo systemctl start mariadb
+[mcsadm@cs-61 ~]$ sudo systemctl start columnstore && sudo systemctl start mariadb
 ```
 
-From Primary Node, verify as the `columnstore` user that the services have been started on both nodes or now.
+From Primary Node, verify as the `mcsadm` user that the services have been started on both nodes or now.
 
 ```txt
-[columnstore@cs-61 ~]$ sudo mcsadmin getSystemInfo
+[mcsadm@cs-61 ~]$ sudo mcsadmin getSystemInfo
 getsysteminfo   Thu Mar 19 12:24:40 2020
 
 System columnstore-1
@@ -620,7 +633,7 @@ Active Alarm Counts: Critical = 0, Major = 0, Minor = 0, Warning = 0, Info = 0
 
 Note: `sudo mcsadmin startSystem root-password` can still be used but it will require root user password and the password of the root user must be the same. Instead The recommended way is as follows
 
-- As `columnstore` user
+- As `mcsadm` user
   - **`sudo mcsadmin shutdownSystem y`**
     - once services are completely down on both nodes, proceed
   - PM1 (Primary Node)
