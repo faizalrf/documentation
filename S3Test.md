@@ -4,7 +4,7 @@
 
 A Table is created in S3 with pre-defined partitions to store data for the entire year
 
-Asuming that the table `salary` has a date column `dt`, we need to create a partitioned table using InnoDB with 12 partitions to store data for each month. For DBS test case, create and define the partition according to the test scenario. If data is to be stored for 7 years, We would need to create partitions for 7 years in advance. This requirement will be fixed in the next release, but for now, we have to create those partitions on the S3 table in advance.
+Asuming that the table `salary` has a `timestamp` column `dt`, we need to create a partitioned table using InnoDB with 12 partitions pre-defined to store data for each month. For DBS test case, create and define the partition according to the test scenario. If data is to be stored for 7 years, We would need to create partitions for 7 years in advance. This requirement will be fixed in the next release, but for now, we have to create those partitions on the S3 table in advance.
 
 ```SQL
 MariaDB [testdb]> CREATE TABLE salary
@@ -51,7 +51,7 @@ Now we have the archival s3_salary table already moved to S3 with existing  pari
 
 Insert some data into the InnoDB table `salary` which is priamary table locally.
 
-```
+```SQL
 MariaDB [testdb]> select * from salary;
 +----+--------+--------+---------------------+
 | id | emp_id | salary | dt                  |
@@ -79,7 +79,7 @@ Here is what we have to do
 - Create a table with the same structure as the partitioned table `s3_salary` but without partitioning using InnoDB/Aria storage engine. 
 - Copy January's salary record(s) to a new Aria/InnoDB table
 - Alter that table to use S3 storage
-- Alter the s3_salary table and replace the existing `P01` partition with this new table
+- Alter the `s3_salary` table and replace the existing `P01` partition with this new table
 
 Let's see how
 
