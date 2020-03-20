@@ -121,7 +121,7 @@ MariaDB [testdb]> SELECT * FROM s3_salary;
 1 row in set (1.176 sec)
 ```
 
-Moving next February data as salary_2020_02 partition, follow the same steps
+Next, we can now move February data as `salary_2020_02` table to S3 partition tabe `s3_salary`, follow the same steps as previously done for January's data.
 
 ```SQL
 MariaDB [testdb]> CREATE TABLE `salary_2020_02` (
