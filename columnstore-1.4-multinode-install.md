@@ -634,7 +634,7 @@ mysqld              pm2       ACTIVE            Thu Mar 19 12:24:14 2020        
 Active Alarm Counts: Critical = 0, Major = 0, Minor = 0, Warning = 0, Info = 0
 ```
 
-***Note:** `sudo mcsadmin startSystem root-password` can still be used but it will require root user password and the password of the root user must be the same.*
+***Note:** `sudo mcsadmin startSystem <root-password>` can still be used but it will require root user password and the passwords of all the root users must be the same across all the servers in the setup.*
 
 Maintenance flow, shutdown to be done using `sudo mcsadmin shutdownSystsm y` and startup using `systemctl` of both `columnstore` and `mariadb` services on both nodes starting with the Primary node (PM1).
 
