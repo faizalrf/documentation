@@ -531,10 +531,11 @@ ColumnStore service can be shutdown normally using the `sudo mcsadmin shutdownsy
 
 The following is to be done on both nodes.
 
-Copy the `/root/storagemanager` folder to `/home/mcsadm/`
+Copy the `/root/storagemanager` folder to `/home/mcsadm/` and then change the ownership of those folders to `mcsadm`
 
 ```
 [root@cs-61 ~]# cp -r /root/storagemanager /home/mcsadm/
+[root@cs-61 ~]# chown -R mcsadm:mcsadm /home/mcsadm/
 ```
 
 Secondly, edit the `/etc/columnstore/storagemanager.cnf` file and replace all the instances of **`${HOME}`** with **`/home/mcsadm/`**
