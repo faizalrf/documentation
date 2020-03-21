@@ -200,9 +200,6 @@ echo "****************"
 echo
 ${installDBScriptPath} --defaults-file=${ServerCNF}
 
-#chown -R root .
-#chown -R mysql data
-
 #Identify and kill if the process is already runninf on the port
 ps -ef | grep mysqld | grep -i "\-\-port=${PortNumber}" | grep -v grep | awk '{print $2}' | xargs kill 2> /dev/null
 
