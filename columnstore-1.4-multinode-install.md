@@ -137,14 +137,15 @@ Now we are ready to configure S3 storage followed by `postConfigure` script exec
 
 Make sure to have an S3/ObjectStore storage bucket ready with and firewall has been opened to access the end point. Following S3 related information is required before proceeding
 
-- S3 Bucket Name `bucket`
-- S3 End Point URL `endpoint`
-- AWS Access Key ID `aws_access_key_id`
-- AWS Secret Access Key `aws_secret_access_key`
+- Storage Manager active service, *Variable:* `service`
+- S3 Bucket Name, *Variable:* `bucket`
+- S3 End Point URL, *Variable:* `endpoint`
+- AWS Access Key ID, *Variable:* `aws_access_key_id`
+- AWS Secret Access Key, *Variable:* `aws_secret_access_key`
 
 Edit the **`/etc/columnstore/storagemanager.cnf`** file and modify the following variable under the **`[ObjectStorage]`** section, this will tell ColumnStore to use S3 as the default storage manager.
 
-- `service = LocalStorage` should be changed to 
+- `service = LocalStorage` should be changed to `S3` 
   - `service = S3`
 
 Refer to the **`[S3]`** section in the `storagemanager.cnf` file and define the S3 related configrations
