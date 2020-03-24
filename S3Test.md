@@ -67,7 +67,7 @@ MariaDB [testdb]> INSERT INTO salary (id, emp_id, salary, dt) VALUES (1, 1, 100,
 Query OK, 12 rows affected (0.019 sec)
 Records: 12  Duplicates: 0  Warnings: 0
 
-MariaDB [test]> select * from salary;
+MariaDB [test]> SELECT * FROM salary;
 +----+--------+--------+---------------------+
 | id | emp_id | salary | dt                  |
 +----+--------+--------+---------------------+
@@ -147,7 +147,7 @@ MariaDB [testdb]> CREATE TABLE `s3_salary_2020_01` (
 
 Query OK, 0 rows affected (2.850 sec)
 
-MariaDB [testdb]> INSERT INTO s3_salary_2020_01 select * from salary where dt < '2020-02-01';
+MariaDB [testdb]> INSERT INTO s3_salary_2020_01 SELECT * FROM salary WHERE dt < '2020-02-01';
 Query OK, 1 row affected (0.020 sec)
 Records: 1  Duplicates: 0  Warnings: 0
 
@@ -155,7 +155,7 @@ MariaDB [testdb]> ALTER TABLE s3_salary_2020_01 engine=S3;
 Query OK, 1 row affected (4.557 sec)               
 Records: 1  Duplicates: 0  Warnings: 0
 
-MariaDB [testdb]> ALTER TABLE s3_salary exchange partition P01 with table s3_salary_2020_01;
+MariaDB [testdb]> ALTER TABLE s3_salary EXCHANGE PARTITION P01 WITH TABLE s3_salary_2020_01;
 Query OK, 0 rows affected (14.637 sec)
 
 MariaDB [test]> DROP TABLE s3_salary_2020_01;
@@ -189,7 +189,7 @@ MariaDB [testdb]> CREATE TABLE `s3_salary_2020_02` (
   PRIMARY KEY (`id`,`dt`)
 ) ENGINE=InnoDB;
 
-MariaDB [testdb]> INSERT INTO s3_salary_2020_02 select * from salary where dt < '2020-03-01';
+MariaDB [testdb]> INSERT INTO s3_salary_2020_02 SELECT * FROM salary WHERE dt < '2020-03-01';
 Query OK, 1 row affected (0.016 sec)
 Records: 1  Duplicates: 0  Warnings: 0
 
@@ -197,7 +197,7 @@ MariaDB [testdb]> ALTER TABLE s3_salary_2020_02 engine=S3;
 Query OK, 1 row affected (4.374 sec)               
 Records: 1  Duplicates: 0  Warnings: 0
 
-MariaDB [testdb]> ALTER TABLE s3_salary exchange partition P02 with table s3_salary_2020_02;
+MariaDB [testdb]> ALTER TABLE s3_salary EXCHANGE PARTITION P02 WITH TABLE s3_salary_2020_02;
 Query OK, 0 rows affected (15.075 sec)
 
 MariaDB [test]> DROP TABLE s3_salary_2020_02;
