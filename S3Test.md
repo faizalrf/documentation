@@ -49,7 +49,7 @@ Records: 0  Duplicates: 0  Warnings: 0
 
 Now we have the archival s3_salary table already moved to S3 with existing  parittions covering 1 year.
 
-Insert some data into the InnoDB table `salary` which is priamary table locally.
+Insert some test data into the InnoDB table `salary` which is priamary table locally, this data simulates 1 year's salary of employees, in our case, only one employee (emp_id = 1).
 
 ```SQL
 MariaDB [testdb]> INSERT INTO salary (id, emp_id, salary, dt) 
