@@ -124,7 +124,9 @@ Create Table: CREATE TABLE `s3_salary` (
  PARTITION `P11` VALUES LESS THAN (1606798800) ENGINE = S3,
  PARTITION `P12` VALUES LESS THAN (1609477200) ENGINE = S3)
 1 row in set (0.000 sec)
+```
 
+```SQL
 -- Create a new Table to store January's Salary
 MariaDB [testdb]> CREATE TABLE `s3_salary_2020_01` (
   `id` int(10) unsigned NOT NULL,
@@ -133,18 +135,6 @@ MariaDB [testdb]> CREATE TABLE `s3_salary_2020_01` (
   `dt` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
   PRIMARY KEY (`id`,`dt`)
 ) ENGINE=InnoDB;
-Query OK, 0 rows affected (0.415 sec)
-```
-
-```SQL
-MariaDB [testdb]> CREATE TABLE `s3_salary_2020_01` (
-  `id` int(10) unsigned NOT NULL,
-  `emp_id` int(11) DEFAULT NULL,
-  `salary` double(18,2) DEFAULT NULL,
-  `dt` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  PRIMARY KEY (`id`,`dt`)
-) ENGINE=InnoDB;
-
 Query OK, 0 rows affected (2.850 sec)
 
 MariaDB [testdb]> INSERT INTO s3_salary_2020_01 SELECT * FROM salary WHERE dt < '2020-02-01';
@@ -160,7 +150,6 @@ Query OK, 0 rows affected (14.637 sec)
 
 MariaDB [test]> DROP TABLE s3_salary_2020_01;
 Query OK, 0 rows affected (0.408 sec)
-
 ```
 
 Now the January 2020's data can be deleted from the InnoDB table.
@@ -173,7 +162,7 @@ MariaDB [testdb]> SELECT * FROM s3_salary;
 +----+--------+--------+---------------------+
 | id | emp_id | salary | dt                  |
 +----+--------+--------+---------------------+
-|  1 |      1 | 365.00 | 2020-01-15 00:00:00 |
+|  1 |      1 | 100.00 | 2020-01-15 00:00:00 |
 +----+--------+--------+---------------------+
 1 row in set (1.176 sec)
 ```
@@ -212,48 +201,48 @@ We can now see that the `salary` table has 10 rows, `s3_salary` has 2 rows and a
 MariaDB [testdb]> DELETE FROM salary where dt < '2020-03-01';
 Query OK, 1 row affected (0.015 sec)
 
-MariaDB [testdb]> SELECT * FROM s3_salary;
+MariaDB [test]> SELECT * FROM s3_salary;
 +----+--------+--------+---------------------+
 | id | emp_id | salary | dt                  |
 +----+--------+--------+---------------------+
-|  1 |      1 | 365.00 | 2020-01-15 00:00:00 |
-|  2 |      1 | 365.00 | 2020-02-15 00:00:00 |
+|  1 |      1 | 100.00 | 2020-01-15 00:00:00 |
+|  2 |      1 | 101.10 | 2020-02-15 00:00:00 |
 +----+--------+--------+---------------------+
-2 rows in set (2.889 sec)
+2 rows in set (2.083 sec)
 
-MariaDB [testdb]> SELECT * FROM salary;
+MariaDB [test]> SELECT * FROM salary;
 +----+--------+--------+---------------------+
 | id | emp_id | salary | dt                  |
 +----+--------+--------+---------------------+
-|  3 |      1 | 368.00 | 2020-03-15 00:00:00 |
-|  4 |      1 | 368.00 | 2020-04-15 00:00:00 |
-|  5 |      1 | 368.00 | 2020-05-15 00:00:00 |
-|  6 |      1 | 368.00 | 2020-06-15 00:00:00 |
-|  7 |      1 | 370.00 | 2020-07-15 00:00:00 |
-|  8 |      1 | 370.00 | 2020-08-15 00:00:00 |
-|  9 |      1 | 401.00 | 2020-09-15 00:00:00 |
-| 10 |      1 | 401.00 | 2020-10-15 00:00:00 |
-| 11 |      1 | 401.00 | 2020-11-15 00:00:00 |
-| 12 |      1 | 401.00 | 2020-12-15 00:00:00 |
+|  3 |      1 | 100.00 | 2020-03-15 00:00:00 |
+|  4 |      1 | 200.00 | 2020-04-15 00:00:00 |
+|  5 |      1 | 210.50 | 2020-05-15 00:00:00 |
+|  6 |      1 | 210.00 | 2020-06-15 00:00:00 |
+|  7 |      1 | 230.00 | 2020-07-15 00:00:00 |
+|  8 |      1 | 300.00 | 2020-08-15 00:00:00 |
+|  9 |      1 | 375.99 | 2020-09-15 00:00:00 |
+| 10 |      1 | 540.00 | 2020-10-15 00:00:00 |
+| 11 |      1 | 600.00 | 2020-11-15 00:00:00 |
+| 12 |      1 | 630.00 | 2020-12-15 00:00:00 |
 +----+--------+--------+---------------------+
 10 rows in set (0.000 sec)
 
-MariaDB [testdb]> SELECT * FROM salary UNION ALL SELECT * FROM s3_salary ORDER BY dt;
+MariaDB [test]> SELECT * FROM salary UNION ALL SELECT * FROM s3_salary ORDER BY dt;
 +----+--------+--------+---------------------+
 | id | emp_id | salary | dt                  |
 +----+--------+--------+---------------------+
-|  1 |      1 | 365.00 | 2020-01-15 00:00:00 |
-|  2 |      1 | 365.00 | 2020-02-15 00:00:00 |
-|  3 |      1 | 368.00 | 2020-03-15 00:00:00 |
-|  4 |      1 | 368.00 | 2020-04-15 00:00:00 |
-|  5 |      1 | 368.00 | 2020-05-15 00:00:00 |
-|  6 |      1 | 368.00 | 2020-06-15 00:00:00 |
-|  7 |      1 | 370.00 | 2020-07-15 00:00:00 |
-|  8 |      1 | 370.00 | 2020-08-15 00:00:00 |
-|  9 |      1 | 401.00 | 2020-09-15 00:00:00 |
-| 10 |      1 | 401.00 | 2020-10-15 00:00:00 |
-| 11 |      1 | 401.00 | 2020-11-15 00:00:00 |
-| 12 |      1 | 401.00 | 2020-12-15 00:00:00 |
+|  1 |      1 | 100.00 | 2020-01-15 00:00:00 |
+|  2 |      1 | 101.10 | 2020-02-15 00:00:00 |
+|  3 |      1 | 100.00 | 2020-03-15 00:00:00 |
+|  4 |      1 | 200.00 | 2020-04-15 00:00:00 |
+|  5 |      1 | 210.50 | 2020-05-15 00:00:00 |
+|  6 |      1 | 210.00 | 2020-06-15 00:00:00 |
+|  7 |      1 | 230.00 | 2020-07-15 00:00:00 |
+|  8 |      1 | 300.00 | 2020-08-15 00:00:00 |
+|  9 |      1 | 375.99 | 2020-09-15 00:00:00 |
+| 10 |      1 | 540.00 | 2020-10-15 00:00:00 |
+| 11 |      1 | 600.00 | 2020-11-15 00:00:00 |
+| 12 |      1 | 630.00 | 2020-12-15 00:00:00 |
 +----+--------+--------+---------------------+
 12 rows in set (0.001 sec)
 ```
