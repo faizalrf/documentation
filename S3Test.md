@@ -147,18 +147,18 @@ MariaDB [testdb]> CREATE TABLE `s3_salary_2020_01` (
 
 Query OK, 0 rows affected (2.850 sec)
 
-MariaDB [testdb]> insert into s3_salary_2020_01 select * from salary  PARTITION(P01);
+MariaDB [testdb]> INSERT INTO s3_salary_2020_01 select * from salary where dt < '2020-02-01';
 Query OK, 1 row affected (0.020 sec)
 Records: 1  Duplicates: 0  Warnings: 0
 
-MariaDB [testdb]> alter table s3_salary_2020_01 engine=S3;
+MariaDB [testdb]> ALTER TABLE s3_salary_2020_01 engine=S3;
 Query OK, 1 row affected (4.557 sec)               
 Records: 1  Duplicates: 0  Warnings: 0
 
-MariaDB [testdb]> alter table s3_salary exchange partition P01 with table s3_salary_2020_01;
+MariaDB [testdb]> ALTER TABLE s3_salary exchange partition P01 with table s3_salary_2020_01;
 Query OK, 0 rows affected (14.637 sec)
 
-MariaDB [test]> drop table s3_salary_2020_01;
+MariaDB [test]> DROP TABLE s3_salary_2020_01;
 Query OK, 0 rows affected (0.408 sec)
 
 ```
@@ -189,7 +189,7 @@ MariaDB [testdb]> CREATE TABLE `s3_salary_2020_02` (
   PRIMARY KEY (`id`,`dt`)
 ) ENGINE=InnoDB;
 
-MariaDB [testdb]> insert into s3_salary_2020_02 select * from salary PARTITION(P02);
+MariaDB [testdb]> INSERT INTO s3_salary_2020_02 select * from salary where dt < '2020-03-01';
 Query OK, 1 row affected (0.016 sec)
 Records: 1  Duplicates: 0  Warnings: 0
 
@@ -197,10 +197,10 @@ MariaDB [testdb]> ALTER TABLE s3_salary_2020_02 engine=S3;
 Query OK, 1 row affected (4.374 sec)               
 Records: 1  Duplicates: 0  Warnings: 0
 
-MariaDB [testdb]> alter table s3_salary exchange partition P02 with table s3_salary_2020_02;
+MariaDB [testdb]> ALTER TABLE s3_salary exchange partition P02 with table s3_salary_2020_02;
 Query OK, 0 rows affected (15.075 sec)
 
-MariaDB [test]> drop table s3_salary_2020_02;
+MariaDB [test]> DROP TABLE s3_salary_2020_02;
 Query OK, 0 rows affected (0.408 sec)
 ```
 
@@ -212,7 +212,7 @@ We can now see that the `salary` table has 10 rows, `s3_salary` has 2 rows and a
 MariaDB [testdb]> DELETE FROM salary where dt < '2020-03-01';
 Query OK, 1 row affected (0.015 sec)
 
-MariaDB [testdb]> select * from s3_salary;
+MariaDB [testdb]> SELECT * FROM s3_salary;
 +----+--------+--------+---------------------+
 | id | emp_id | salary | dt                  |
 +----+--------+--------+---------------------+
@@ -221,7 +221,7 @@ MariaDB [testdb]> select * from s3_salary;
 +----+--------+--------+---------------------+
 2 rows in set (2.889 sec)
 
-MariaDB [testdb]> select * from salary;
+MariaDB [testdb]> SELECT * FROM salary;
 +----+--------+--------+---------------------+
 | id | emp_id | salary | dt                  |
 +----+--------+--------+---------------------+
@@ -238,7 +238,7 @@ MariaDB [testdb]> select * from salary;
 +----+--------+--------+---------------------+
 10 rows in set (0.000 sec)
 
-MariaDB [testdb]> select * from salary union all select * from s3_salary order by dt;
+MariaDB [testdb]> SELECT * FROM salary UNION ALL SELECT * FROM s3_salary ORDER BY dt;
 +----+--------+--------+---------------------+
 | id | emp_id | salary | dt                  |
 +----+--------+--------+---------------------+
