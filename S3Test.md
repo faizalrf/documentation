@@ -65,7 +65,7 @@ MariaDB [testdb]> INSERT INTO salary (id, emp_id, salary, dt)
                             (10, 1, 540, '2020-10-15 00:00:00'), 
                             (11, 1, 600, '2020-11-15 00:00:00'), 
                             (12, 1, 630, '2020-12-15 00:00:00');
-                            s
+
 Query OK, 12 rows affected (0.019 sec)
 Records: 12  Duplicates: 0  Warnings: 0
 
