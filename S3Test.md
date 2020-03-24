@@ -124,9 +124,7 @@ Create Table: CREATE TABLE `s3_salary` (
  PARTITION `P11` VALUES LESS THAN (1606798800) ENGINE = S3,
  PARTITION `P12` VALUES LESS THAN (1609477200) ENGINE = S3)
 1 row in set (0.000 sec)
-```
 
-```SQL
 -- Create a new Table to store January's Salary
 MariaDB [testdb]> CREATE TABLE `s3_salary_2020_01` (
   `id` int(10) unsigned NOT NULL,
@@ -136,7 +134,11 @@ MariaDB [testdb]> CREATE TABLE `s3_salary_2020_01` (
   PRIMARY KEY (`id`,`dt`)
 ) ENGINE=InnoDB;
 Query OK, 0 rows affected (2.850 sec)
+```
 
+Copy data that is meant to be archived into this local InnoDB table that is newly created. This is going to be temporary table that we will drop once it's job is done.
+
+```SQL
 MariaDB [testdb]> INSERT INTO s3_salary_2020_01 SELECT * FROM salary WHERE dt < '2020-02-01';
 Query OK, 1 row affected (0.020 sec)
 Records: 1  Duplicates: 0  Warnings: 0
