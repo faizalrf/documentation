@@ -52,22 +52,37 @@ Now we have the archival s3_salary table already moved to S3 with existing  pari
 Insert some data into the InnoDB table `salary` which is priamary table locally.
 
 ```SQL
-MariaDB [testdb]> select * from salary;
+MariaDB [testdb]> INSERT INTO salary (id, emp_id, salary, dt) VALUES (1, 1, 100, '2020-01-15 00:00:00'), 
+                                                                      (2, 1, 101.10, '2020-02-15 00:00:00'), 
+                                                                      (3, 1, 100, '2020-03-15 00:00:00'), 
+                                                                      (4, 1, 200, '2020-04-15 00:00:00'), 
+                                                                      (5, 1, 210.5, '2020-05-15 00:00:00'), 
+                                                                      (6, 1, 210, '2020-06-15 00:00:00'), 
+                                                                      (7, 1, 230, '2020-07-15 00:00:00'), 
+                                                                      (8, 1, 300, '2020-08-15 00:00:00'), 
+                                                                      (9, 1, 375.99, '2020-09-15 00:00:00'), 
+                                                                      (10, 1, 540, '2020-10-15 00:00:00'), 
+                                                                      (11, 1, 600, '2020-11-15 00:00:00'), 
+                                                                      (12, 1, 630, '2020-12-15 00:00:00');
+Query OK, 12 rows affected (0.019 sec)
+Records: 12  Duplicates: 0  Warnings: 0
+
+MariaDB [test]> select * from salary;
 +----+--------+--------+---------------------+
 | id | emp_id | salary | dt                  |
 +----+--------+--------+---------------------+
-|  1 |      1 | 365.00 | 2020-01-15 00:00:00 |
-|  2 |      1 | 365.00 | 2020-02-15 00:00:00 |
-|  3 |      1 | 368.00 | 2020-03-15 00:00:00 |
-|  4 |      1 | 368.00 | 2020-04-15 00:00:00 |
-|  5 |      1 | 368.00 | 2020-05-15 00:00:00 |
-|  6 |      1 | 368.00 | 2020-06-15 00:00:00 |
-|  7 |      1 | 370.00 | 2020-07-15 00:00:00 |
-|  8 |      1 | 370.00 | 2020-08-15 00:00:00 |
-|  9 |      1 | 401.00 | 2020-09-15 00:00:00 |
-| 10 |      1 | 401.00 | 2020-10-15 00:00:00 |
-| 11 |      1 | 401.00 | 2020-11-15 00:00:00 |
-| 12 |      1 | 401.00 | 2020-12-15 00:00:00 |
+|  1 |      1 | 100.00 | 2020-01-15 00:00:00 |
+|  2 |      1 | 101.10 | 2020-02-15 00:00:00 |
+|  3 |      1 | 100.00 | 2020-03-15 00:00:00 |
+|  4 |      1 | 200.00 | 2020-04-15 00:00:00 |
+|  5 |      1 | 210.50 | 2020-05-15 00:00:00 |
+|  6 |      1 | 210.00 | 2020-06-15 00:00:00 |
+|  7 |      1 | 230.00 | 2020-07-15 00:00:00 |
+|  8 |      1 | 300.00 | 2020-08-15 00:00:00 |
+|  9 |      1 | 375.99 | 2020-09-15 00:00:00 |
+| 10 |      1 | 540.00 | 2020-10-15 00:00:00 |
+| 11 |      1 | 600.00 | 2020-11-15 00:00:00 |
+| 12 |      1 | 630.00 | 2020-12-15 00:00:00 |
 +----+--------+--------+---------------------+
 12 rows in set (0.000 sec)
 ```
@@ -80,8 +95,46 @@ Here is what we have to do
 - Copy January's salary record(s) to a new Aria/InnoDB table
 - Alter that table to use S3 storage
 - Alter the `s3_salary` table and replace the existing `P01` partition with this new table
+- Drop the temporary s3 table
 
-Let's see how
+Let's see how, extract the structure of the s3_salary table and use it to create a local InnoDB table with a different name, easier to define a good naming convention to follow year/month as follows.
+
+```SQL
+MariaDB [test]> SHOW CREATE TABLE s3_salary\G
+*************************** 1. row ***************************
+       Table: s3_salary
+Create Table: CREATE TABLE `s3_salary` (
+  `id` int(10) unsigned NOT NULL,
+  `emp_id` int(11) DEFAULT NULL,
+  `salary` double(18,2) DEFAULT NULL,
+  `dt` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`,`dt`)
+) ENGINE=S3 DEFAULT CHARSET=latin1
+ PARTITION BY RANGE (unix_timestamp(`dt`))
+(PARTITION `P01` VALUES LESS THAN (1580533200) ENGINE = S3,
+ PARTITION `P02` VALUES LESS THAN (1583038800) ENGINE = S3,
+ PARTITION `P03` VALUES LESS THAN (1585713600) ENGINE = S3,
+ PARTITION `P04` VALUES LESS THAN (1588305600) ENGINE = S3,
+ PARTITION `P05` VALUES LESS THAN (1590984000) ENGINE = S3,
+ PARTITION `P06` VALUES LESS THAN (1593576000) ENGINE = S3,
+ PARTITION `P07` VALUES LESS THAN (1596254400) ENGINE = S3,
+ PARTITION `P08` VALUES LESS THAN (1598932800) ENGINE = S3,
+ PARTITION `P09` VALUES LESS THAN (1601524800) ENGINE = S3,
+ PARTITION `P10` VALUES LESS THAN (1604203200) ENGINE = S3,
+ PARTITION `P11` VALUES LESS THAN (1606798800) ENGINE = S3,
+ PARTITION `P12` VALUES LESS THAN (1609477200) ENGINE = S3)
+1 row in set (0.000 sec)
+
+-- Create a new Table to store January's Salary
+MariaDB [testdb]> CREATE TABLE `s3_salary_2020_01` (
+  `id` int(10) unsigned NOT NULL,
+  `emp_id` int(11) DEFAULT NULL,
+  `salary` double(18,2) DEFAULT NULL,
+  `dt` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`,`dt`)
+) ENGINE=InnoDB;
+Query OK, 0 rows affected (0.415 sec)
+```
 
 ```SQL
 MariaDB [testdb]> CREATE TABLE `s3_salary_2020_01` (
@@ -94,7 +147,7 @@ MariaDB [testdb]> CREATE TABLE `s3_salary_2020_01` (
 
 Query OK, 0 rows affected (2.850 sec)
 
-MariaDB [testdb]> insert into s3_salary_2020_01 select * from salary where dt < '2020-02-01';
+MariaDB [testdb]> insert into s3_salary_2020_01 select * from salary  PARTITION(P01);
 Query OK, 1 row affected (0.020 sec)
 Records: 1  Duplicates: 0  Warnings: 0
 
@@ -104,6 +157,10 @@ Records: 1  Duplicates: 0  Warnings: 0
 
 MariaDB [testdb]> alter table s3_salary exchange partition P01 with table s3_salary_2020_01;
 Query OK, 0 rows affected (14.637 sec)
+
+MariaDB [test]> drop table s3_salary_2020_01;
+Query OK, 0 rows affected (0.408 sec)
+
 ```
 
 Now the January 2020's data can be deleted from the InnoDB table.
@@ -132,7 +189,7 @@ MariaDB [testdb]> CREATE TABLE `s3_salary_2020_02` (
   PRIMARY KEY (`id`,`dt`)
 ) ENGINE=InnoDB;
 
-MariaDB [testdb]> insert into s3_salary_2020_02 select * from salary where dt < '2020-03-01';
+MariaDB [testdb]> insert into s3_salary_2020_02 select * from salary PARTITION(P02);
 Query OK, 1 row affected (0.016 sec)
 Records: 1  Duplicates: 0  Warnings: 0
 
@@ -143,8 +200,8 @@ Records: 1  Duplicates: 0  Warnings: 0
 MariaDB [testdb]> alter table s3_salary exchange partition P02 with table s3_salary_2020_02;
 Query OK, 0 rows affected (15.075 sec)
 
-MariaDB [testdb]> DELETE FROM salary where dt < '2020-03-01';
-Query OK, 1 row affected (0.015 sec)
+MariaDB [test]> drop table s3_salary_2020_02;
+Query OK, 0 rows affected (0.408 sec)
 ```
 
 Now the primary `salary` table has no data for Jan 2020 and Feb 2020, that has been moved to S3 to the partitioned table `s3_salary`.
@@ -152,6 +209,9 @@ Now the primary `salary` table has no data for Jan 2020 and Feb 2020, that has b
 We can now see that the `salary` table has 10 rows, `s3_salary` has 2 rows and a simple **UNION ALL** sql between the two table returns the full set. 
 
 ```SQL
+MariaDB [testdb]> DELETE FROM salary where dt < '2020-03-01';
+Query OK, 1 row affected (0.015 sec)
+
 MariaDB [testdb]> select * from s3_salary;
 +----+--------+--------+---------------------+
 | id | emp_id | salary | dt                  |
