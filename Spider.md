@@ -45,7 +45,9 @@ es-201 [mydb]> show engines;
 
 On the ColumnStore server, create a dedicated user to be used for Spider engine connectivity and grant all privileges to the database which will be accessed through Spider engine.
 
-Second step is to create a new table using ColumnStore engine on this node and insert some dummy data. 
+Second step is to create a new table using ColumnStore engine on this node and insert some dummy data.
+
+_**Note:** There is no Spider storage engine requirement on this server._
 
 ```txt
 MariaDB [testdb]> create user spider@'192.168.56.%' identified by 'P@ssw0rd';
@@ -81,7 +83,7 @@ MariaDB [testdb]> INSERT INTO spider_cs SELECT ordinal_position, column_name fro
 ...
 ```
 
-On the primary node, create a Spider table. This table will be a virtual table without any data and the `COMMENT` section will be defined to connect to the ColumnStore node using the new `spider@192.168.56.%` user account.
+On the primary node, create a Spider table. This table will be a virtual table without any data and the `COMMENT` section will be defined to connect to the ColumnStore node using the new `spider@192.168.56.%` user account, take note that the IP address should be pointing to the MariaDB servers that will connect to ColumnStore using Spider engine.
 
 Before we do that, we need to define the remote server using `CREATE SERVER` command and then use that server in the `COMMENT` section as shown bellow.
 
