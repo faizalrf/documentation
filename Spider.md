@@ -45,41 +45,40 @@ es-201 [mydb]> show engines;
 
 On the ColumnStore server, create a dedicated user to be used for Spider engine connectivity and grant all privileges to the database which will be accessed through Spider engine.
 
+Second step is to create a new table using ColumnStore engine on this node and insert some dummy data. 
+
 ```txt
 MariaDB [testdb]> create user spider@'192.168.56.%' identified by 'P@ssw0rd';
 Query OK, 0 rows affected (0.004 sec)
 
 MariaDB [testdb]> show engines;
 +--------------------+---------+-------------------------------------------------------------------------------------------------+--------------+------+------------+
-| Engine             | Support | Comment
-              | Transactions | XA   | Savepoints |
+| Engine             | Support | Comment                                                                                         | Transactions | XA   | Savepoints |
 +--------------------+---------+-------------------------------------------------------------------------------------------------+--------------+------+------------+
-| Columnstore        | YES     | ColumnStore storage engine
-              | YES          | NO   | NO         |
-| MRG_MyISAM         | YES     | Collection of identical MyISAM tables
-              | NO           | NO   | NO         |
-| CSV                | YES     | Stores tables as CSV files
-              | NO           | NO   | NO         |
-| MEMORY             | YES     | Hash based, stored in memory, useful for temporary tables
-              | NO           | NO   | NO         |
-| MyISAM             | YES     | Non-transactional engine with good performance and small data footprint
-              | NO           | NO   | NO         |
+| Columnstore        | YES     | ColumnStore storage engine                                                                      | YES          | NO   | NO         |
+| MRG_MyISAM         | YES     | Collection of identical MyISAM tables                                                           | NO           | NO   | NO         |
+| CSV                | YES     | Stores tables as CSV files                                                                      | NO           | NO   | NO         |
+| MEMORY             | YES     | Hash based, stored in memory, useful for temporary tables                                       | NO           | NO   | NO         |
+| MyISAM             | YES     | Non-transactional engine with good performance and small data footprint                         | NO           | NO   | NO         |
 | Aria               | YES     | Crash-safe tables with MyISAM heritage. Used for internal temporary tables and privilege tables | NO           | NO   | NO         |
-| InnoDB             | DEFAULT | Supports transactions, row-level locking, foreign keys and encryption for tables  
-              | YES          | YES  | YES        |
-| PERFORMANCE_SCHEMA | YES     | Performance Schema
-              | NO           | NO   | NO         |
-| S3                 | NO      | Read only table stored in S3. Created by running ALTER TABLE table_name ENGINE=s3 
-              | NULL         | NULL | NULL       |
-| SEQUENCE           | YES     | Generated tables filled with sequential values
-              | YES          | NO   | YES        |
-| wsrep              | YES     | Wsrep replication plugin
-              | NO           | NO   | NO         |
+| InnoDB             | DEFAULT | Supports transactions, row-level locking, foreign keys and encryption for tables                | YES          | YES  | YES        |
+| PERFORMANCE_SCHEMA | YES     | Performance Schema                                                                              | NO           | NO   | NO         |
+| S3                 | NO      | Read only table stored in S3. Created by running ALTER TABLE table_name ENGINE=s3               | NULL         | NULL | NULL       |
+| SEQUENCE           | YES     | Generated tables filled with sequential values                                                  | YES          | NO   | YES        |
+| wsrep              | YES     | Wsrep replication plugin                                                                        | NO           | NO   | NO         |
 +--------------------+---------+-------------------------------------------------------------------------------------------------+--------------+------+------------+
 11 rows in set (0.000 sec)
 
 MariaDB [testdb]> grant all on testdb.* to spider@'192.168.56.%';
 Query OK, 0 rows affected (0.003 sec)
+
+MariaDB [testdb]> CREATE TABLE spider_cs (id int, c1 varchar(100)) ENGINE=ColumnStore;
+Query OK, 0 rows affected (0.005 sec)
+
+MariaDB [testdb]> INSERT INTO spider_cs SELECT ordinal_position, column_name from information_schema.columns;
+...
+...
+...
 ```
 
 On the primary node, create a Spider table. This table will be a virtual table without any data and the `COMMENT` section will be defined to connect to the ColumnStore node using the new `spider@192.168.56.%` user account.
@@ -149,3 +148,5 @@ es-201 [mydb]> select * from spider_tab a inner join innodb_tx b on a.id = b.id 
 +------+----------------------------+----+------------------+
 10 rows in set (0.351 sec)
 ```
+
+Thank You!
