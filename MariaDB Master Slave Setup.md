@@ -376,7 +376,7 @@ Query OK, 0 rows affected (0.001 sec)
 MariaDB [(none)]> CREATE USER app_user@'%' IDENTIFIED BY 'secretpassword';
 Query OK, 0 rows affected (0.001 sec)
 
-MariaDB [(none)]> GRANT SELECT, INSERT, UPDATE, DELETE ON *.* TO app_user@'%' IDENTIFIED BY 'secretpassword';
+MariaDB [(none)]> GRANT SELECT, INSERT, UPDATE, DELETE ON *.* TO app_user@'%';
 Query OK, 0 rows affected (0.001 sec)
 
 MariaDB [(none)]> FLUSH PRIVILEGES;
