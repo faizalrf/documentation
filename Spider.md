@@ -4,7 +4,7 @@
 
 - The Enterprise server version is 10.4.12 or higher
 - Primary/Replica setup
-- Additional 3rd node available running the Enterprise ColumnStore 1.4 or higher
+- Additional 3rd node which is running the Enterprise ColumnStore 1.4 or higher
 
 ## Installing Spider Engine
 
