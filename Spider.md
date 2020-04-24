@@ -71,7 +71,7 @@ MariaDB [testdb]> show engines;
 +--------------------+---------+-------------------------------------------------------------------------------------------------+--------------+------+------------+
 11 rows in set (0.000 sec)
 
-MariaDB [testdb]> grant all on testdb.* to spider@'192.168.56.%';
+MariaDB [testdb]> grant all on testdb.* to spider@'%';
 Query OK, 0 rows affected (0.003 sec)
 
 MariaDB [testdb]> CREATE TABLE spider_cs (id int, c1 varchar(100)) ENGINE=ColumnStore;
@@ -83,14 +83,14 @@ MariaDB [testdb]> INSERT INTO spider_cs SELECT ordinal_position, column_name fro
 ...
 ```
 
-On the primary node, create a Spider table. This table will be a virtual table without any data and the `COMMENT` section will be defined to connect to the ColumnStore node using the new `spider@192.168.56.%` user account, take note that the IP address should be pointing to the MariaDB servers that will connect to ColumnStore using Spider engine.
+On the primary node, create a Spider table. This table will be a virtual table without any data and the `COMMENT` section will be defined to connect to the ColumnStore node using the new `spider@%` user account, take note that the IP address should be pointing to the MariaDB servers that will connect to ColumnStore using Spider engine, in this case we are using `%` to keep it simple.
 
-Before we do that, we need to define the remote server using `CREATE SERVER` command and then use that server in the `COMMENT` section as shown bellow.
+Before we do that, we need to define the remote server using `CREATE SERVER` command and then use that server in the `COMMENT` section as shown bellow. This is asuming the privarte IP is `10.0.0.52`
 
 ```
-es-201 [mydb]> CREATE SERVER cs_node FOREIGN DATA WRAPPER mysql
+es-201 [mydb]> CREATE SERVER node FOREIGN DATA WRAPPER mysql
 OPTIONS (
-   HOST '192.168.56.203',
+   HOST '10.0.0.52',
    DATABASE 'testdb',
    USER 'spider',
    PASSWORD 'P@ssw0rd',
@@ -100,7 +100,7 @@ Query OK, 0 rows affected (0.003 sec)
 
 es-201 [mydb]> CREATE TABLE spider_tab
 (id int, c1 varchar(100)) ENGINE=Spider
-COMMENT='wrapper "mysql", srv "cs_node", table "spider_cs"';
+COMMENT='wrapper "mysql", srv "node", table "spider_cs"';
 
 Query OK, 0 rows affected (0.004 sec)
 
@@ -110,7 +110,7 @@ es-201 [mydb]> show create table spider_tab\G
 Create Table: CREATE TABLE `spider_tab` (
   `id` int(11) DEFAULT NULL,
   `c1` varchar(100) DEFAULT NULL
-) ENGINE=SPIDER DEFAULT CHARSET=latin1 COMMENT='wrapper "mysql", srv "cs_node", table "spider_cs"'
+) ENGINE=SPIDER DEFAULT CHARSET=latin1 COMMENT='wrapper "mysql", srv "node", table "spider_cs"'
 1 row in set (0.003 sec)
 ```
 
@@ -151,4 +151,92 @@ es-201 [mydb]> select * from spider_tab a inner join innodb_tx b on a.id = b.id 
 10 rows in set (0.351 sec)
 ```
 
+### Configuring Multiple tables
+
+Let's say we want to configure two tables under one spider node
+
+- Spider table `acct_detail` joining the following two
+  - InnoDB table `acct_detail_curr` that contains current live data
+  - ColumnStore table `acct_detail_hist` that containts histical data
+
+The application wants to access these two tables seamlessly without worring about where the data is coming from.
+
+Asume we have the following two table already created on our current database setup
+
+```sql
+es-201 [mydb]> SHOW CREATE TABLE acct_detail_curr\G
+*************************** 1. row ***************************
+       Table: acct_detail_curr
+Create Table: CREATE TABLE `acct_detail_curr` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `c1` varchar(100) DEFAULT NULL,
+  `dt` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  UNIQUE KEY `id` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=36856 DEFAULT CHARSET=latin1
+1 row in set (0.001 sec)
+
+es-201 [mydb]> SHOW CREATE TABLE acct_detail_hist\G
+*************************** 1. row ***************************
+       Table: acct_detail_hist
+Create Table: CREATE TABLE `acct_detail_hist` (
+  `id` bigint(20) DEFAULT NULL,
+  `c1` varchar(100) DEFAULT NULL,
+  `dt` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=Columnstore DEFAULT CHARSET=latin1
+1 row in set (0.000 sec)
+```
+
+We can now create a spider node, using the already created `node` wrapper.
+
+```sql
+es-201 [mydb]> CREATE TABLE acct_detail (id SERIAL, c1 VARCHAR(100), dt TIMESTAMP)
+                ENGINE=Spider COMMENT='wrapper "mysql", srv "node"'
+                PARTITION BY KEY (`id`)
+                (
+                  PARTITION pt_current COMMENT = 'table "acct_detail_curr"',
+                  PARTITION pt_historic COMMENT = 'table "acct_detail_hist"'
+                );
+
+Query OK, 0 rows affected (0.073 sec)
+```
+
+Let's execute a `SELECT` statement on our spider node
+
+```sql
+es-201 [mydb]> SELECT * FROM acct_detail LIMIT 10;
+ERROR 12720 (HY000): Host:127.0.0.1 and Port:3306 aim self server. Please change spider_same_server_link parameter if this link is required.
+```
+
+Since SPIDER node is connecting to itself, we need to add the requested parameter `spider_same_server_link` in the `/etc/my.cnf.d/server.cnf` file's `[mariadb]` section.
+
+```sql
+es-201 [mydb]> SELECT dt, COUNT(*) FROM acct_detail GROUP BY dt;
++---------------------+----------+
+| dt                  | count(*) |
++---------------------+----------+
+| 2020-04-24 20:39:02 |     2077 |
+| 2020-04-24 20:44:54 |     2074 |
+| 2020-05-24 19:10:22 |  2123776 |
+| 2020-06-24 19:10:29 |  2123776 |
+| 2020-07-24 19:10:33 |  2123776 |
+| 2020-08-24 19:10:37 |  2123776 |
+| 2020-09-24 19:10:40 |  2123776 |
+| 2020-10-24 19:10:45 |  2123776 |
+| 2020-11-24 19:10:54 |  2123776 |
++---------------------+----------+
+9 rows in set (0.388 sec)
+
+es-201 [mydb]> select max(id), min(id) from acct_detail;
++---------+---------+
+| max(id) | min(id) |
++---------+---------+
+|   34834 |       1 |
++---------+---------+
+1 row in set (0.741 sec)
+```
+
+Now accessing the data from the spider node, retrives the data from both InnoDB `acct_detail_curr` and ColumnStore `acct_detail_hist` tables, this is done in parallel and delivers great performance. The data from 2020-05-24 and onwards is actually coming from teh ColumnStore node while the data from April 2020 is from InnoDB, it all works seamlessly with good performance.
+
 Thank You!
+
+
