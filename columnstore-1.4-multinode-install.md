@@ -76,11 +76,11 @@ The tar will contain all the required tar files that are needed to be installed.
 
 Install the RPM files on both of the nodes as `root` user.
 
-- `rpm -ivh galera-enterprise-4-26.4.4-1.rhel7.5.el7.x86_64.rpm`
 - `rpm -ivh MariaDB-compat-10.4.12_6-1.el7.x86_64.rpm MariaDB-common-10.4.12_6-1.el7.x86_64.rpm`
   - These two are to be installed together thrugh a single `rpm -ivh` command.
 - `rpm -ivh MariaDB-shared-10.4.12_6-1.el7.x86_64.rpm`
 - `rpm -ivh MariaDB-client-10.4.12_6-1.el7.x86_64.rpm`
+- `rpm -ivh galera-enterprise-4-26.4.4-1.rhel7.5.el7.x86_64.rpm`
 - `rpm -ivh MariaDB-server-10.4.12_6-1.el7.x86_64.rpm`
 
 Once these 6 rpm files have been install on all the nodes, the following 3 additional rpm files needs to be installed as well on all the nodes.
@@ -156,6 +156,7 @@ Refer to the **`[S3]`** section in the `storagemanager.cnf` file and define the 
 - `endpoint = storage.googleapis.com` should point to the S3 URL within DBS.
 - `aws_access_key_id =` should point to the access key provided by the S3 storage team.
 - `aws_secret_access_key =` should point to the "secret" access key provided by the S3 storage team.
+- Edit the paths in the storagemanager.cnf file as per https://mariadb.com/kb/en/sample-storagemanagercnf/
 
 Once the above are configured and saved we can now execute `postConfigure` script.
 
