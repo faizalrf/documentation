@@ -1,10 +1,8 @@
-# Sysbench Performance Test for MariaDB
+# Using Sysbench to Performance Test MariaDB
 
 ## Introduction
 
 The MariaDB server's configuration that should be changed from defaults as follows in the `/etc/my.cnf.d/server.cnf`:
-
-In particular, `max_connections` should be more than the number of threads you run for sysbench test.
 
 ```txt
 max_connections  = 1000
@@ -23,10 +21,13 @@ innodb_log_file_size    = 1024M
 innodb_flush_log_at_trx_commit = 1
 innodb_doublewrite = 0
 innodb_autoinc_lock_mode = 2
-innodb_io_capacity = 400
 ```
 
-`innodb_io_capacity` depends on the IOPS your server is capable of, for slow SATA/SAN drives it is normally set to 400, for SSD drives it should be 2000 or higher
+- `innodb_io_capacity` depends on the IOPS your server is capable of, for slow SATA/SAN drives it is normally set to 400, for SSD drives it should be 2000 or higher
+
+- `max_connections` should be more than the number of threads you run for sysbench test.
+
+- `innodb_buffer_pool_size` should be 70% of the total memory of the server.
 
 ## Download sysbench
 
@@ -53,7 +54,7 @@ root@61e409ed04e6:/# sysbench --version
 sysbench 1.0.17
 ```
 
-Connect to your MariaDB server and create a database called `sbtest`
+Connect to your MariaDB server using the MariaDB CLI and create a database called `sbtest`
 
 ```txt
 Welcome to the MariaDB monitor.  Commands end with ; or \g.
@@ -71,6 +72,8 @@ MariaDB [(none)]>
 ```
 
 #### Generate the Initial Data Volume
+
+In this step, we will generate some tables and populate data into those tables under the `sbtest` database. These are all configurable properties. 
 
 The `sysbench` will use the following parameters:
 
@@ -102,7 +105,7 @@ The `sysbench` will use the following parameters:
 - prepare
   - This indicates that we are preparing the envionment before the actual test. This will create those tables and pump the initial data to for the actual performance test
 
-Here is the output you can expect:
+Executing sysbench with above mentioned parameters, we can expect to see the following results. By the end of this, we will have our tables creted and data populated based on our `oltp-table-size=100000` parameter, in this case, 100k rows in each table.
 
 ```txt
 root@61e409ed04e6:/# sysbench --db-driver=mysql --threads=8 --events=250000 --oltp-tables-count=12 --oltp-table-size=100000 --oltp-test-mode=complex --oltp-dist-type=uniform /usr/share/sysbench/tests/include/oltp_legacy/oltp.lua --mysql-host=192.168.56.1 --mysql-port=3306 --mysql-user=sb_user --mysql-password=password --time=60 --report-interval=10 prepare
@@ -148,9 +151,9 @@ Creating secondary indexes on 'sbtest12'...
 
 #### Execute the benchmark
 
-Once the database is ready, we can now run the actual test.
+Once the database is ready with tables and dummy data, we can now run the test.
 
-The following is exaxctly the same as the previous, just the last parameter, instead of `prepare` we will use `run`
+The following is exactly the same as the previous, just the last parameter, instead of `prepare` we will use `run`
 
 ```txt
 root@61e409ed04e6:/# sysbench --db-driver=mysql --threads=8 --events=250000 --oltp-tables-count=12 --oltp-table-size=100000 --oltp-test-mode=complex --oltp-dist-type=uniform /usr/share/sysbench/tests/include/oltp_legacy/oltp.lua --mysql-host=192.168.56.1 --mysql-port=3306 --mysql-user=sb_user --mysql-password=password --time=60 --report-interval=10 run
@@ -199,7 +202,9 @@ Threads fairness:
     execution time (avg/stddev):   59.9789/0.00
 ```
 
-the PREPARE is to be done only once, but the RUN can be performed multiple times, this will reuse the originally prepared data and generate a complex SELECT, INSERT, UPDATE, DELETE load while maintaining transactions. A transaction will have multiple statements executuins within but the total number of queries per second will be much higher.
+The PREPARE is to be done only once, but the RUN can be performed multiple times, this will reuse the originally prepared data and generate a complex SELECT, INSERT, UPDATE, DELETE load while maintaining transactions. A transaction will have multiple statements executuins within but the total number of queries per second will be much higher.
+
+Generally, after PREPARE, we can tune the server parameters like buffer_pool_size, tmp_table_size, encryption etc and rerun sysbench using `RUN` argument multiple times to see the impact of those parameters. 
 
 For instance, the output above says `transactions:                        49716  (828.45 per sec.)` but the `queries:                             994320 (16569.03 per sec.)` is much higher since each transaction has many smaller events being generated.
 
