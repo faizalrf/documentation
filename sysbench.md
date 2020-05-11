@@ -36,21 +36,21 @@ Download install the latest sysbench on the server where you want to generate lo
 #### Ubuntu
 
 ```txt
-curl -s https://packagecloud.io/install/repositories/akopytov/sysbench/script.deb.sh | sudo bash
-sudo apt -y install sysbench
+shell> curl -s https://packagecloud.io/install/repositories/akopytov/sysbench/script.deb.sh | sudo bash
+shell> sudo apt -y install sysbench
 ```
 
 #### RHEL
 
 ```txt
-curl -s https://packagecloud.io/install/repositories/akopytov/sysbench/script.rpm.sh | sudo bash
-sudo yum -y install sysbench
+shell> curl -s https://packagecloud.io/install/repositories/akopytov/sysbench/script.rpm.sh | sudo bash
+shell> sudo yum -y install sysbench
 ```
 
 Once sysbench is installed, verify the version. It should be 1.0.17 or higher.
 
 ```txt
-root@61e409ed04e6:/# sysbench --version
+shell> sysbench --version
 sysbench 1.0.17
 ```
 
@@ -67,8 +67,6 @@ Type 'help;' or '\h' for help. Type '\c' to clear the current input statement.
 
 MariaDB [(none)]> create database sbtest;
 Query OK, 1 row affected (0.000 sec)
-
-MariaDB [(none)]> 
 ```
 
 #### Generate the Initial Data Volume
@@ -108,7 +106,7 @@ The `sysbench` will use the following parameters:
 Executing sysbench with above mentioned parameters, we can expect to see the following results. By the end of this, we will have our tables creted and data populated based on our `oltp-table-size=100000` parameter, in this case, 100k rows in each table.
 
 ```txt
-root@61e409ed04e6:/# sysbench --db-driver=mysql --threads=8 --events=250000 --oltp-tables-count=12 --oltp-table-size=100000 --oltp-test-mode=complex --oltp-dist-type=uniform /usr/share/sysbench/tests/include/oltp_legacy/oltp.lua --mysql-host=192.168.56.1 --mysql-port=3306 --mysql-user=sb_user --mysql-password=password --time=60 --report-interval=10 prepare
+shell> sysbench --db-driver=mysql --threads=8 --events=250000 --oltp-tables-count=12 --oltp-table-size=100000 --oltp-test-mode=complex --oltp-dist-type=uniform /usr/share/sysbench/tests/include/oltp_legacy/oltp.lua --mysql-host=192.168.56.1 --mysql-port=3306 --mysql-user=sb_user --mysql-password=password --time=60 --report-interval=10 prepare
 sysbench 1.0.17 (using bundled LuaJIT 2.1.0-beta2)
 
 Creating table 'sbtest1'...
@@ -156,7 +154,7 @@ Once the database is ready with tables and dummy data, we can now run the test.
 The following is exactly the same as the previous, just the last parameter, instead of `prepare` we will use `run`
 
 ```txt
-root@61e409ed04e6:/# sysbench --db-driver=mysql --threads=8 --events=250000 --oltp-tables-count=12 --oltp-table-size=100000 --oltp-test-mode=complex --oltp-dist-type=uniform /usr/share/sysbench/tests/include/oltp_legacy/oltp.lua --mysql-host=192.168.56.1 --mysql-port=3306 --mysql-user=sb_user --mysql-password=password --time=60 --report-interval=10 run
+shell> sysbench --db-driver=mysql --threads=8 --events=250000 --oltp-tables-count=12 --oltp-table-size=100000 --oltp-test-mode=complex --oltp-dist-type=uniform /usr/share/sysbench/tests/include/oltp_legacy/oltp.lua --mysql-host=192.168.56.1 --mysql-port=3306 --mysql-user=sb_user --mysql-password=password --time=60 --report-interval=10 run
 sysbench 1.0.17 (using bundled LuaJIT 2.1.0-beta2)
 
 Running the test with following options:
@@ -215,7 +213,7 @@ Repeat the above and increase the threads to 8, 16, 32, 64, 128 and so on just t
 Finally, once done, you can run the same command with `CLEANUP` parameter to destroy the test data generated for this test. Once cleanup is done, you will have to `PREPARE` once again before re-running the test.
 
 ```txt
-root@61e409ed04e6:/# sysbench --db-driver=mysql --threads=8 --events=250000 --oltp-tables-count=12 --oltp-table-size=100000 --oltp-test-mode=complex --oltp-dist-type=uniform /usr/share/sysbench/tests/include/oltp_legacy/oltp.lua --mysql-host=localhost --mysql-port=3306 --mysql-user=dba --mysql-password=password --time=60 --report-interval=10 cleanup 
+shell> sysbench --db-driver=mysql --threads=8 --events=250000 --oltp-tables-count=12 --oltp-table-size=100000 --oltp-test-mode=complex --oltp-dist-type=uniform /usr/share/sysbench/tests/include/oltp_legacy/oltp.lua --mysql-host=localhost --mysql-port=3306 --mysql-user=dba --mysql-password=password --time=60 --report-interval=10 cleanup 
 sysbench 1.0.17 (using bundled LuaJIT 2.1.0-beta2)
 
 Dropping table 'sbtest1'...
