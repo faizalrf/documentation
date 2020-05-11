@@ -2,7 +2,7 @@
 
 All the MariaDB Servers should have the following confugration in the `server.cnf` file 
 
-```CNF
+```cnf
 [mariadb]
 server_id=1000
 log_bin = mariadb-bin
@@ -23,12 +23,12 @@ sync_master_info = 1
 sync_relay_log = 1
 sync_relay_log_info = 1
 
-# MyRocks Related Config
-rocksdb_block_cache_size = 8GB
-rocksdb_default_cf_options = "compaction_pri=kMinOverlappingRatio; level_compaction_dynamic_level_bytes=true;"
-rocksdb_max_background_jobs = 1
-rocksdb_flush_log_at_trx_commit = 0
-rocksdb_max_open_files = -1
+## MyRocks Related Config
+#rocksdb_block_cache_size = 8GB
+#rocksdb_default_cf_options = "compaction_pri=kMinOverlappingRatio; level_compaction_dynamic_level_bytes=true;"
+#rocksdb_max_background_jobs = 1
+#rocksdb_flush_log_at_trx_commit = 0
+#rocksdb_max_open_files = -1
 
 [mysql]
 prompt=\H [\d]>\
@@ -165,7 +165,7 @@ port=9066
 
 The `Read-Write-Listener` points to `9066` as the port number, this is the port that the application should connect to.
 
-Once the configuration is ready, restart trhe MaxScale `systemctl restart maxscale` and execute the command to verify the server's are visible by executing the command: `maxctrl list servers`
+Once the configuration is ready, restart trhe MaxScale `systemctl restart maxscale` and execute the command to verify the server's are visible by executing the command: `maxctrl list servers` and `maxctrl list services` to see the running services.
 
 - Execute the command `maxctrl show maxscale | grep -i passive` to see if the server is running in Active/Passive mode.
 
