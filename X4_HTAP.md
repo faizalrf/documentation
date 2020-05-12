@@ -61,7 +61,7 @@ Once the accounts are created on the Primary database node, verify that these ar
 
 ### MaXsCALE 2.4 Setup
 
-Edit the /`etc/maxscale.cnf` file and delete all the contents to do a clean start. Add the following to the empty config file.
+Open the `/etc/maxscale.cnf` file and delete all the contents to do a clean start. Add the following to the empty config file.
 
 ```txt
 [maxscale]
@@ -133,7 +133,7 @@ These services uses two MariaDB accounts, `maxmon` and `maxuser` which we have a
 
 Once the configuration is ready, restart trhe MaxScale `systemctl restart maxscale` and execute the command to verify the server's are visible by executing the command: `maxctrl list servers` and `maxctrl list services` to see the running services.
 
-Let's verify the servers and services currently known to MaxScale.
+Let's verify the servers and services that are currently known to MaxScale.
 
 ```txt
 shell> maxctrl list servers;
