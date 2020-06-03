@@ -27,6 +27,7 @@ es-201 [mydb]> show engines;
 +--------------------+---------+-------------------------------------------------------------------------------------------------+--------------+------+------------+
 | Engine             | Support | Comment                                                                                         | Transactions | XA   | Savepoints |
 +--------------------+---------+-------------------------------------------------------------------------------------------------+--------------+------+------------+
+| Columnstore        | YES     | ColumnStore storage engine                                                                      | YES          | NO   | NO         |
 | SPIDER             | YES     | Spider storage engine                                                                           | YES          | YES  | NO         |
 | MRG_MyISAM         | YES     | Collection of identical MyISAM tables                                                           | NO           | NO   | NO         |
 | CSV                | YES     | Stores tables as CSV files                                                                      | NO           | NO   | NO         |
@@ -42,42 +43,38 @@ es-201 [mydb]> show engines;
 11 rows in set (0.000 sec)
 ```
 
-Create a dedicated user to be used for Spider engine connectivity and grant all privileges to the database which will be accessed through Spider engine.
-
-_**Note:** There is no Spider storage engine requirement on this server._
+Create a dedicated user to be used by the Spider engine and grant all privileges to the database which we want accessed through the Spider engine.
 
 ```txt
 MariaDB [testdb]> create user spider@'localhost' identified by 'P@ssw0rd';
 Query OK, 0 rows affected (0.004 sec)
 
-MariaDB [testdb]> show engines;
-+--------------------+---------+-------------------------------------------------------------------------------------------------+--------------+------+------------+
-| Engine             | Support | Comment                                                                                         | Transactions | XA   | Savepoints |
-+--------------------+---------+-------------------------------------------------------------------------------------------------+--------------+------+------------+
-| Columnstore        | YES     | ColumnStore storage engine                                                                      | YES          | NO   | NO         |
-| MRG_MyISAM         | YES     | Collection of identical MyISAM tables                                                           | NO           | NO   | NO         |
-| CSV                | YES     | Stores tables as CSV files                                                                      | NO           | NO   | NO         |
-| MEMORY             | YES     | Hash based, stored in memory, useful for temporary tables                                       | NO           | NO   | NO         |
-| MyISAM             | YES     | Non-transactional engine with good performance and small data footprint                         | NO           | NO   | NO         |
-| Aria               | YES     | Crash-safe tables with MyISAM heritage. Used for internal temporary tables and privilege tables | NO           | NO   | NO         |
-| InnoDB             | DEFAULT | Supports transactions, row-level locking, foreign keys and encryption for tables                | YES          | YES  | YES        |
-| PERFORMANCE_SCHEMA | YES     | Performance Schema                                                                              | NO           | NO   | NO         |
-| S3                 | NO      | Read only table stored in S3. Created by running ALTER TABLE table_name ENGINE=s3               | NULL         | NULL | NULL       |
-| SEQUENCE           | YES     | Generated tables filled with sequential values                                                  | YES          | NO   | YES        |
-| wsrep              | YES     | Wsrep replication plugin                                                                        | NO           | NO   | NO         |
-+--------------------+---------+-------------------------------------------------------------------------------------------------+--------------+------+------------+
-11 rows in set (0.000 sec)
-
 MariaDB [testdb]> grant all on testdb.* to spider@'localhost';
 Query OK, 0 rows affected (0.003 sec)
 ```
 
-We now need to define a server using `CREATE SERVER`, usually this server points to a remote machine, but for our case, we will define our current `node` as the "server" as shown bellow. This is asuming the privarte IP is `10.0.0.52`
+We now need to define a server using `CREATE SERVER`, usually this server points to a remote machine as a traditional setup, but for our case case (HTAP on the same server), we will define our current `node` as the "spidernode" as shown bellow.
+
+Asuming we have a multi-node MariaDB Enterprise platform setup, we need to add the same `spidernode` in both server's host files so that the spider node can be access from either Primary or Replica node without any problems.
+
+`/etc/hosts` file on Primary Node
+
+```
+spidernode 10.0.0.1
+```
+
+`/etc/hosts` file on Replica Node
+
+```
+spidernode 10.0.0.2
+```
+
+The above setup will force the following SERVER definitation to look at the current server whichever it may be to access both InnoDB and ColumnStore tables
 
 ```
 es-201 [mydb]> CREATE SERVER node FOREIGN DATA WRAPPER mysql
 OPTIONS (
-   HOST '10.0.0.52',
+   HOST 'spidernode',
    DATABASE 'testdb',
    USER 'spider',
    PASSWORD 'P@ssw0rd',
@@ -86,9 +83,9 @@ OPTIONS (
 Query OK, 0 rows affected (0.003 sec)   
 ```
 
-### Configuring Spider node with multiple tables
+### Creating a Spider table
 
-Let's say we want to configure two tables under one spider node
+Now that we have the spider engine and the `server` created by the neame `node`, we can connect to the two underlying tables tables, one using InnoDB to represet current live data for six months to a year and the other table using ColumnStore to represent archived data for multiple years.
 
 - Spider table `acct_detail` joining the following two
   - InnoDB table `acct_detail_curr` that contains current live data
@@ -142,7 +139,7 @@ es-201 [mydb]> SELECT * FROM acct_detail LIMIT 10;
 ERROR 12720 (HY000): Host:127.0.0.1 and Port:3306 aim self server. Please change spider_same_server_link parameter if this link is required.
 ```
 
-Since SPIDER node is connecting to itself, both partitions on the same MariaDB host, we need to add the requested parameter `spider_same_server_link` in the `/etc/my.cnf.d/server.cnf` file's `[mariadb]` section.
+Since SPIDER node is connecting to itself, both partitions (InnoDB & ColumnStore) on the same MariaDB host, we need to add the requested parameter `spider_same_server_link` in the `/etc/my.cnf.d/server.cnf` file's `[mariadb]` section.
 
 Once added, restart MariaDB server using `mcsadmin restartsystem`
 
