@@ -1,12 +1,13 @@
-# Spider Engine Setup
+# New look at HTAP Using SPIDER engine
 
 ## Assumptions
 
 - The Enterprise server version is 10.4.12 or higher
+- ColumnStore engine already installed
 
 ## Installing Spider Engine
 
-Logon to MariaDB client and execute the spider scripts `/usr/share/mysql/install_spider.sql` which are natively privided with the server. This script will install Spider engine on the server.
+Connect to the MariaDB client using the root user or a user with necessary priviliges to be able to install a new plugin/engine. Once connected, execute the spider scripts `/usr/share/mysql/install_spider.sql` which are natively privided with the server. This script will install Spider engine on the server.
 
 ```txt
 es-201 [mydb]> SOURCE /usr/share/mysql/install_spider.sql
@@ -141,7 +142,9 @@ es-201 [mydb]> SELECT * FROM acct_detail LIMIT 10;
 ERROR 12720 (HY000): Host:127.0.0.1 and Port:3306 aim self server. Please change spider_same_server_link parameter if this link is required.
 ```
 
-Since SPIDER node is connecting to itself, we need to add the requested parameter `spider_same_server_link` in the `/etc/my.cnf.d/server.cnf` file's `[mariadb]` section.
+Since SPIDER node is connecting to itself, both partitions on the same MariaDB host, we need to add the requested parameter `spider_same_server_link` in the `/etc/my.cnf.d/server.cnf` file's `[mariadb]` section.
+
+Once added, restart MariaDB server using `mcsadmin restartsystem`
 
 ```sql
 es-201 [mydb]> SELECT dt, COUNT(*) FROM acct_detail GROUP BY dt;
@@ -169,7 +172,9 @@ es-201 [mydb]> select max(id), min(id) from acct_detail;
 1 row in set (0.741 sec)
 ```
 
-Now accessing the data from the spider node, retrives the data from both InnoDB `acct_detail_curr` and ColumnStore `acct_detail_hist` tables, this is done in parallel and delivers great performance. The data from 2020-05-24 and onwards is actually coming from teh ColumnStore node while the data from April 2020 is from InnoDB, it all works seamlessly with good performance.
+This shows that we are accessing data from the spider node, which retrives the data from both InnoDB `acct_detail_curr` and ColumnStore `acct_detail_hist` tables seamlessly, this is done in parallel and delivers great performance. A great usecase for this to archive old data on to a ColumnStore using S3/Object Store storage while still maintaining that data available using the high performance Columnstore engine.
+
+The data in this example setup from 2020-05-24 and onwards is actually coming from the ColumnStore node while the data from April 2020 is from InnoDB, it all works seamlessly with delivers great performance.
 
 All the `SELECT`, `UPDATE` and `DELETE` queries work on the Spider table, however, for `INSERT`, we must use the underlying table tables, `acct_detail_curr` or `acct_detail_hist` instead. 
 
