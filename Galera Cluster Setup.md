@@ -457,7 +457,8 @@ MariaDB [(none)]> show global status like 'wsrep_cluster_size';
 +-----------------------+-------+
 | wsrep_cluster_size    | 1     |
 +-----------------------+-------+
-1 rows in set (0.000 sec)```
+1 rows in set (0.000 sec)
+```
 
 This indicates that Galera is running and it has 1 node in the cluster, which is itself. Lets start the otehr two nodes using the standard `systemctl start mariadb` command. We cannot run `galera_new_cluster` on other nodes as the bootstrap has already start from a VM.
 
