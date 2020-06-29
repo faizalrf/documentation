@@ -1,4 +1,4 @@
-# SELinux & MariaDB
+# MariaDB & The SELinux Menace
 
 ## Assumptions
 
