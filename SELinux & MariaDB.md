@@ -9,7 +9,7 @@
 
 Easiest way to validate this is to execute `getenforce` 
 
-```bash
+```txt
 $ sudo getenforce
 Enforcing
 ```
@@ -24,7 +24,7 @@ On many systems, the `semanage` utility is installed by the `policycoreutils-pyt
 
 If these utilities are not available on your RHEL/CentOS systems, You can install them with the following command:
 
-```bash
+```txt
 $ sudo yum install policycoreutils policycoreutils-python
 ```
 
@@ -32,7 +32,7 @@ A file or directory's current context can be checked by executing `ls` with the 
 
 Let's create a filesystem for MariaDB and a folder for it's data directory. We will set the MariaDB config later to point to this path.
 
-```bash
+```txt
 $ sudo mkdir -p /mariadb/data
 $ sudo chown -R mysql:mysql /mariadb/
 $ sudo ls -ld /mariadb/ /mariadb/data/
@@ -42,7 +42,7 @@ drwxr-xr-x. 2 mysql mysql  6 Jun 29 07:44 /mariadb/data/
 
 Now that the folders are created and ownership has been changed to `mysql:mysql` we will try to check the folder's context
 
-```bash
+```txt
 $ ls -ld --context /mariadb /mariadb/data/
 drwxr-xr-x. mysql mysql unconfined_u:object_r:default_t:s0 /mariadb
 drwxr-xr-x. mysql mysql unconfined_u:object_r:default_t:s0 /mariadb/data/
@@ -52,7 +52,7 @@ This means that the two folders have been granted access by SELinux to the user 
 
 Let's verify the current filecontexts of `var/lib/mysql` folder which is the current default `datadir` for MariaDB. MariaDB has already set the policy at the time of installation, that is why It's working properly.
 
-```bash
+```txt
 $ sudo ls -ld --context /var/lib/mysql
 drwxr-xr-x. mysql mysql system_u:object_r:mysqld_db_t:s0 /var/lib/mysql
 ```
@@ -61,7 +61,7 @@ The last part of the context string `mysqld_db_t` is the one we want to pay atte
 
 Let's try that out. First copy all the files and folders from the current `/var/lib/mysql` to the new `/mariadb/data` folder and then change ownership to `mysql:mysql`
 
-```bash
+```txt
 $ sudo systemctl stop mariadb
 $ sudo cp -R /var/lib/mysql/* /mariadb/data/
 
@@ -83,7 +83,7 @@ drwx------. 2 mysql mysql       20 Jun 29 08:02 test
 
 Set the following in the `/etc/my.cnf.d/server.cnf` file and start MariaDB `systemctl start mariadb`
 
-```bash
+```txt
 [mariadb]
 datadir=/mariadb/data
 ```
@@ -99,7 +99,7 @@ Let's see why, but we already know becasue the new datadir does not have the cor
 
 We can execute `journalctl -xe` to see what's going on
 
-```bash
+```txt
 $ sudo journalctl -xe
 
 -- Unit mariadb.service has begun starting up.
@@ -150,7 +150,7 @@ First step to set the proper filesystem context `mysqld_db_t` to the path `/mari
 - `sudo semanage fcontext -a -t mysqld_db_t "/mariadb/data(/.*)?"`
 - `sudo restorecon -Rv /mariadb/data`
 
-```bash
+```txt
 $ sudo semanage fcontext -a -t mysqld_db_t "/mariadb/data(/.*)?"
 $ sudo restorecon -Rv /mariadb/data
 restorecon reset /mariadb/data context unconfined_u:object_r:default_t:s0->unconfined_u:object_r:mysqld_db_t:s0
@@ -165,23 +165,6 @@ restorecon reset /mariadb/data/mysql context unconfined_u:object_r:default_t:s0-
 ...
 ...
 ...
-restorecon reset /mariadb/data/sbtest/sbtest1.frm context unconfined_u:object_r:default_t:s0->unconfined_u:object_r:mysqld_db_t:s0
-restorecon reset /mariadb/data/sbtest/sbtest1.ibd context unconfined_u:object_r:default_t:s0->unconfined_u:object_r:mysqld_db_t:s0
-restorecon reset /mariadb/data/sbtest/sbtest2.frm context unconfined_u:object_r:default_t:s0->unconfined_u:object_r:mysqld_db_t:s0
-restorecon reset /mariadb/data/sbtest/sbtest2.ibd context unconfined_u:object_r:default_t:s0->unconfined_u:object_r:mysqld_db_t:s0
-restorecon reset /mariadb/data/sbtest/sbtest3.frm context unconfined_u:object_r:default_t:s0->unconfined_u:object_r:mysqld_db_t:s0
-restorecon reset /mariadb/data/sbtest/sbtest3.ibd context unconfined_u:object_r:default_t:s0->unconfined_u:object_r:mysqld_db_t:s0
-restorecon reset /mariadb/data/sbtest/sbtest4.frm context unconfined_u:object_r:default_t:s0->unconfined_u:object_r:mysqld_db_t:s0
-restorecon reset /mariadb/data/sbtest/sbtest4.ibd context unconfined_u:object_r:default_t:s0->unconfined_u:object_r:mysqld_db_t:s0
-restorecon reset /mariadb/data/sbtest/sbtest5.frm context unconfined_u:object_r:default_t:s0->unconfined_u:object_r:mysqld_db_t:s0
-restorecon reset /mariadb/data/sbtest/sbtest5.ibd context unconfined_u:object_r:default_t:s0->unconfined_u:object_r:mysqld_db_t:s0
-restorecon reset /mariadb/data/sbtest/sbtest6.frm context unconfined_u:object_r:default_t:s0->unconfined_u:object_r:mysqld_db_t:s0
-restorecon reset /mariadb/data/sbtest/sbtest6.ibd context unconfined_u:object_r:default_t:s0->unconfined_u:object_r:mysqld_db_t:s0
-restorecon reset /mariadb/data/sbtest/sbtest7.frm context unconfined_u:object_r:default_t:s0->unconfined_u:object_r:mysqld_db_t:s0
-restorecon reset /mariadb/data/sbtest/sbtest7.ibd context unconfined_u:object_r:default_t:s0->unconfined_u:object_r:mysqld_db_t:s0
-restorecon reset /mariadb/data/sbtest/sbtest8.frm context unconfined_u:object_r:default_t:s0->unconfined_u:object_r:mysqld_db_t:s0
-restorecon reset /mariadb/data/sbtest/sbtest8.ibd context unconfined_u:object_r:default_t:s0->unconfined_u:object_r:mysqld_db_t:s0
-restorecon reset /mariadb/data/sbtest/sbtest9.frm context unconfined_u:object_r:default_t:s0->unconfined_u:object_r:mysqld_db_t:s0
 restorecon reset /mariadb/data/sbtest/sbtest9.ibd context unconfined_u:object_r:default_t:s0->unconfined_u:object_r:mysqld_db_t:s0
 restorecon reset /mariadb/data/sbtest/sbtest10.frm context unconfined_u:object_r:default_t:s0->unconfined_u:object_r:mysqld_db_t:s0
 restorecon reset /mariadb/data/sbtest/sbtest10.ibd context unconfined_u:object_r:default_t:s0->unconfined_u:object_r:mysqld_db_t:s0
@@ -193,7 +176,7 @@ This will list all the files and folders applying the new contexts to each and e
 
 We will now verify the `ls --context`
 
-```bash
+```txt
 $ sudo ls --context /mariadb /mariadb/*
 /mariadb:
 drwxr-xr-x. mysql mysql unconfined_u:object_r:mysqld_db_t:s0 data
@@ -216,7 +199,7 @@ This is what we want to see, the filesystem tagged with the correct context stri
 
 Ket's try to restart MariaDB service and see if it works this time.
 
-```bash
+```txt
 $ sudo systemctl start mariadb
 $ sudo systemctl status mariadb
 ● mariadb.service - MariaDB 10.2.32-7 database server
@@ -250,7 +233,7 @@ And ndeed, it works flawlessly.
 
 Next step, we will setup a log folder within /mariadb and see if that works or not.
 
-```bash
+```txt
 $ sudo mkdir /mariadb/log
 $ sudo chown -R mysql:mysql /mariadb/log/
 $ sudo ls --context /mariadb /mariadb/log/
@@ -263,13 +246,13 @@ We can see the `data` folder has the correct context but the newly created folde
 
 My `server.cnf` looks like this
 
-```bash
+```txt
 [mariadb]
 datadir=/mariadb/data
 log_error/mariadb/log/server.log
 ```
 
-```bash
+```txt
 $ sudo systemctl restart mariadb
 Job for mariadb.service failed because the control process exited with error code. See "systemctl status mariadb.service" and "journalctl -xe" for details.
 ```
@@ -278,7 +261,7 @@ As expected it did not work.
 
 Let's see what are all the contexts that have been set by MariaDB's default installation using `sudo semanage fcontext --list | grep mysqld`
 
-```bash
+```txt
 $ sudo semanage fcontext --list | grep mysqld
 /etc/mysql(/.*)?                                   all files          system_u:object_r:mysqld_etc_t:s0
 /etc/my\.cnf\.d(/.*)?                              all files          system_u:object_r:mysqld_etc_t:s0
@@ -311,7 +294,7 @@ Looking at the begining of the list we can see `/var/log/mysql.*  regular  file 
 
 Let's do this
 
-```bash
+```txt
 $ sudo semanage fcontext -a -t mysqld_log_t "/mariadb/log(/.*)?"
 $ sudo restorecon -Rv /mariadb/log
 restorecon reset /mariadb/log context unconfined_u:object_r:default_t:s0->unconfined_u:object_r:mysqld_log_t:s0
@@ -319,7 +302,7 @@ restorecon reset /mariadb/log context unconfined_u:object_r:default_t:s0->unconf
 
 Now that the context of /mariadb/log has been set, we should be able to restart MariaDB service without errors.
 
-```bash
+```txt
 $ sudo systemctl restart mariadb
 $ sudo systemctl status mariadb
 ● mariadb.service - MariaDB 10.2.32-7 database server
@@ -345,7 +328,7 @@ Jun 29 08:38:40 es-201 systemd[1]: Started MariaDB 10.2.32-7 database server.
 
 Let's connect to MariaDB CLI and verify the paths.
 
-```bash
+```txt
 MariaDB [(none)]> show global variables like 'datadir'; show global variables like 'log_error';
 +---------------+----------------+
 | Variable_name | Value          |
@@ -364,7 +347,7 @@ MariaDB [(none)]> show global variables like 'datadir'; show global variables li
 
 If we create a new database and a new table, those will get created in the `datadir` and the appropriate context will be assigned automatically based on the parent. Let's see.
 
-```bash
+```txt
 MariaDB [(none)]> create database tmp;
 Query OK, 1 row affected (0.00 sec)
 
@@ -401,7 +384,7 @@ The new directory for the database `tmp` and the new table `t` all have inherite
 
 What if we want to create new folder for binary logs (`/mariadb/binlog`) and redo logs (`/mariadb/redo_log`) etc. We can assign both of the folders the `mysqld_log_t` context and it will work fine.
 
-```bash
+```txt
 $ sudo semanage fcontext -a -t mysqld_log_t "/mariadb/binlog(/.*)?"
 $ sudo restorecon -Rv /mariadb/binlog
 ...
