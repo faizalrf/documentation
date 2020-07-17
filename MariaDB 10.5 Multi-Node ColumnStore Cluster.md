@@ -273,15 +273,20 @@ Jul 17 12:38:12 cs-81 python3[3492]: [17/Jul/2020 12:38:12] root  Failover monit
 
 Now that MariaDB CMAPI service, MariaDB service and MariaDB ColumnStore have been started, we can proceed to setup the cluster
 
-ColumnStore does not use SSH to control the cluster anymore instead if uses the CMAPI which has already been installed. 
+ColumnStore does not use SSH to control the cluster anymore instead it uses the CMAPI which we have already installed. 
 
-The API is called on the following URLs for available endpoints:
+The API URLs have the following available endpoint options, all these are pointing to the primary node, refer to the IP address:
 
 - `https://192.168.56.81:8640/cmapi/0.4.0/cluster/status`
+  - Check the Status of the ColumnStore cluster
 - `https://192.168.56.81:8640/cmapi/0.4.0/cluster/start`
+  - Start the ColumnStore cluster
 - `https://192.168.56.81:8640/cmapi/0.4.0/cluster/shutdown`
+  - Shutdown the ColumnStore cluster
 - `https://192.168.56.81:8640/cmapi/0.4.0/cluster/add-node`
+  - Add a new node the existing ColumnStore cluster
 - `https://192.168.56.81:8640/cmapi/0.4.0/cluster/remove-node`
+  - Remote a node from the ColumnStore cluster
 
 The Request Headers Needed the following additional items:
 - 'x-api-key': 'MyAPIKey123'
