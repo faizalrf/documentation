@@ -1,4 +1,4 @@
-# Install & Configuring 10.5 Enterprise
+# Install & Configure MariaDB 10.5 Enterprise
 
 ## Assumptions
 
