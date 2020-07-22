@@ -156,10 +156,10 @@ Complete!
 After the following installation, don't start the service unless the **S3 storage config** has been done properly! 
 
 - rpm -ivh MariaDB-common-10.5.4_2-1.el7.x86_64.rpm MariaDB-compat-10.5.4_2-1.el7.x86_64.rpm
-- rpm -ivh MariaDB-client-10.5.4_2-1.el7.x86_64.rpm MariaDB-shared-10.5.4_2-1.el7.x86_64.rpm MariaDB-backup-10.5.4_2-1.el7.x86_64.rpm
-- rpm -ivh galera-enterprise-4-26.4.5-1.el7.8.x86_64.rpm
-- rpm -ivh MariaDB-server-10.5.4_2-1.el7.x86_64.rpm
-- rpm -ivh MariaDB-columnstore-engine-10.5.4_2-1.el7.x86_64.rpm
+- yum -y install MariaDB-client-10.5.4_2-1.el7.x86_64.rpm MariaDB-shared-10.5.4_2-1.el7.x86_64.rpm MariaDB-backup-10.5.4_2-1.el7.x86_64.rpm
+- yum -y install galera-enterprise-4-26.4.5-1.el7.8.x86_64.rpm
+- yum -y install MariaDB-server-10.5.4_2-1.el7.x86_64.rpm
+- yum -y install MariaDB-columnstore-engine-10.5.4_2-1.el7.x86_64.rpm
 
 Setup S3 storage configuration as per the previous versions using the `/etc/columnstore/storagemanager.cnf`
 
@@ -174,7 +174,7 @@ Change the following variables before the starting up MariaDB / ColumnStore serv
 - `cache_size = 30g`
   - Verify the path `path = /var/lib/columnstore/storagemanager/cache` has sufficient storage else point it to a different location.
 
-Proceed to restart MariaDB service as per normal `systemctl start mariadb && systemctl start mariadb-columnstore`
+Proceed to restart MariaDB service as per normal **`systemctl start mariadb && systemctl start mariadb-columnstore`**
 
 ### Setup the CMAPI server
 
@@ -269,9 +269,69 @@ Jul 17 12:38:11 cs-81 python3[3492]: [17/Jul/2020:12:38:11] ENGINE Bus STARTED
 Jul 17 12:38:12 cs-81 python3[3492]: [17/Jul/2020 12:38:12] root  Failover monitoring is inactive; requires at least 3 nodes and a shared storage system
 ```
 
+### Creating System Catalog
+
+Once MariaDB and ColumnStore and CMAPI services have been started on all the nodes we can now create the system catalog, this is a one time activity to be done from the **primary** server.
+
+```
+shell> dbbuilder 7
+Jul 22 00:33:12 cs105-1 IDBFile[15090]: 12.094072 |0|0|0| D 35 CAL0002: IDBFactory::installPlugin: installed filesystem plugin libcloudio.so
+Creating System Catalog...
+
+Creating SYSTABLE
+---------------------------------------
+  Creating TableName column OID: 1001
+  Creating TableName column dictionary
+  Creating Schema column OID: 1002
+  Creating Schema column dictionary
+  Creating ObjectId column OID: 1003
+  Creating CreateDate column OID: 1004
+  Creating LastUpdate column OID: 1005
+  Creating INIT column OID: 1006
+  Creating NEXT column OID: 1007
+  Creating NUMOFROWS column OID: 1008
+  Creating AVGROWLEN column OID: 1009
+  Creating NUMOFBLOCKS column OID: 1010
+  Creating AUTOINCREMENT column OID: 1011
+
+Creating SYSCOLUMN
+---------------------------------------
+  Creating Schema column OID: 1021
+  Creating Schema column dictionary...
+  Creating TableName column OID: 1022
+  Creating TableName column dictionary...
+  Creating ColumnName column OID: 1023
+  Creating ColumnName column dictionary...
+  Creating ObjectID column OID: 1024
+  Creating DictOID column OID: 1025
+  Creating ListOID column OID: 1026
+  Creating TreeOID column OID: 1027
+  Creating DataType column OID: 1028
+  Creating ColumnLength column OID: 1029
+  Creating ColumnPos column OID: 1030
+  Creating LastUpdate column OID: 1031
+  Creating DefaultValue column OID: 1032
+  Creating DefaultValue column dictionary...
+  Creating Nullable column OID: 1033
+  Creating Scale column OID: 1034
+  Creating Precision column OID: 1035
+  Creating AutoInc column OID: 1036
+  Creating DISTCOUNT column OID: 1037
+  Creating NULLCOUNT column OID: 1038
+  Creating MINVALUE column OID: 1039
+  Creating MINVALUE column dictionary...
+  Creating MAXVALUE column OID: 1040
+  Creating MAXVALUE column dictionary...
+  Creating CompressionType column OID: 1041
+  Creating NEXTVALUE column OID: 1042
+System Catalog creation took: 0.729475 seconds to complete.
+
+System Catalog created
+```
+
 ### Setting up the Cluster
 
-Now that MariaDB CMAPI service, MariaDB service and MariaDB ColumnStore have been started, we can proceed to setup the cluster
+Now that the system catalog has been created, we can proceed to setup the cluster.
 
 ColumnStore does not use SSH to control the cluster anymore instead it uses the CMAPI which we have already installed. 
 
@@ -513,7 +573,7 @@ The cluster seems to be looking good with proper DBroots assigned automatically 
 
 Edit the `/etc/my.cnf.d/columnstore.cnf` file and define the server_id, enable the binary logs on all three nodes
 
-- cs-81's `/etc/my.cnf.d/columnstore.cnf`
+- `cs-81` `/etc/my.cnf.d/columnstore.cnf`
 
     ```
     # Required for Schema Sync
@@ -521,7 +581,7 @@ Edit the `/etc/my.cnf.d/columnstore.cnf` file and define the server_id, enable t
     log_bin
     ```
 
-- cs-82's `/etc/my.cnf.d/columnstore.cnf`
+- `cs-82` `/etc/my.cnf.d/columnstore.cnf`
 
     ```
     # Required for Schema Sync
@@ -529,7 +589,7 @@ Edit the `/etc/my.cnf.d/columnstore.cnf` file and define the server_id, enable t
     log_bin
     ```
 
-- cs-83's `/etc/my.cnf.d/columnstore.cnf`
+- `cs-83` `/etc/my.cnf.d/columnstore.cnf`
 
     ```
     # Required for Schema Sync
@@ -954,5 +1014,112 @@ Without properly configured Cross Engine user account we would get the following
 MariaDB [testdb]> select a.id, b.c1 from tab_i a inner join tab_cs b on b.id=a.id order by b.c1 desc limit 10;
 ERROR 1815 (HY000): Internal error: fatal error running mysql_real_connect() in libmysql_client lib (1045) (Access denied for user 'cej_user'@'cs-81' (using password: YES))
 ```
+
+### Non root Adjustments
+
+This is an **optional** section if running ColumnStore services as a non-root user `mysql` is reqiured.
+
+##### Stop Service
+systemctl stop mariadb && systemctl stop mariadb-columnstore && systemctl stop mariadb-columnstore-cmapi
+
+##### Setting UTF8 Character Set
+
+Edit the `/etc/my.cnf.d/columnstore.cnf` and add the following.
+
+```
+character_set_server = utf8
+collation_server = utf8_general_ci
+```
+
+##### Creating Non Root Policy
+
+Edit the `/etc/polkit-1/rules.d/51-columnstore.rules` file with the root user and add the following block
+
+```
+polkit.addRule(function(action, subject) {
+    if (action.id == "org.freedesktop.systemd1.manage-units") {
+        if (subject.isInGroup("mysql")) {
+            return polkit.Result.YES;
+        } else {
+            return polkit.Result.AUTH_ADMIN;
+        }
+    }
+});
+```
+
+##### Adjust ColumnStore Unit Files 1/3
+
+Edit the following service files and add the contents under the `[Service]` section
+
+- `/usr/lib/systemd/system/mcs-primproc.service`
+- `/usr/lib/systemd/system/mcs-writeengineserver.service`
+- `/usr/lib/systemd/system/mcs-exemgr.service`
+- `/usr/lib/systemd/system/mcs-storagemanager.service`
+
+```
+[Service]
+LimitNOFILE=1048576
+LimitNPROC=1048576
+User=mysql
+Group=mysql
+```
+
+##### Adjust ColumnStore Unit Files 2/3
+
+Edit the followig service files and add the User/Group under `[Service]` section.
+
+- `/usr/lib/systemd/system/mariadb-columnstore.service`
+- `/usr/lib/systemd/system/mcs-loadbrm.service`
+- `/usr/lib/systemd/system/mcs-workernode.service`
+- `/usr/lib/systemd/system/mcs-controllernode.service`
+- `/usr/lib/systemd/system/mcs-ddlproc.service`
+- `/usr/lib/systemd/system/mcs-dmlproc.service`
+
+```
+[Service]
+User=mysql
+Group=mysql
+```
+
+##### Adjust ColumnStore Unit Files 3/3
+
+Edit the `/etc/systemd/system/mariadb-columnstore-cmapi.service` file and change the **`User=root`** to **`User=mysql`**
+
+##### daemon reload
+
+Once all the above 3 stages are completed, execute `systemctl daemon-reload` to activate the changed configurations.
+
+##### Changing Ownership of Folders for Non-Root Installs
+
+Finally, change the ColumnStore related file ownership and permissions as per follows
+
+```
+shell> chown -R mysql:mysql /var/lib/columnstore
+shell> chown -R mysql:mysql /tmp/columnstore_tmp_files
+shell> chown -R mysql:mysql /opt/cmapi
+shell> chown -R mysql:mysql /etc/columnstore
+shell> chown -R mysql:mysql /var/log/mariadb
+
+shell> chmod -R 0777 /dev/shm
+shell> chmod -R 0777 /tmp/columnstore_tmp_files
+
+```
+
+##### Setup /etc/sudoers
+
+Setup the sudo permission for the `mysql` user so that it has priviliges to `start`, `stop`, `restart` and `status` of the following three services
+
+- mariadb.service
+- mariadb-columnstore
+- mariadb-columnstore-cmapi
+
+```
+shell> echo "mysql     ALL=(root)     NOPASSWD: /usr/bin/systemctl start mariadb, /usr/bin/systemctl start mariadb-columnstore, /usr/bin/systemctl start mariadb-columnstore-cmapi, /usr/bin/systemctl stop mariadb, /usr/bin/systemctl stop mariadb-columnstore, /usr/bin/systemctl stop mariadb-columnstore-cmapi, /usr/bin/systemctl restart mariadb, /usr/bin/systemctl restart mariadb-columnstore, /usr/bin/systemctl restart mariadb-columnstore-cmapi, /usr/bin/systemctl status mariadb, /usr/bin/systemctl status mariadb-columnstore, /usr/bin/systemctl status mariadb-columnstore-cmapi" >> /etc/sudoers
+```
+
+##### Enabling Services
+
+sudo systemctl stop mariadb && sudo systemctl stop mariadb-columnstore && sudo systemctl stop mariadb-columnstore-cmapi
+sudo systemctl start mariadb && sudo systemctl start mariadb-columnstore && sudo systemctl start mariadb-columnstore-cmapi
 
 #### Thank You
