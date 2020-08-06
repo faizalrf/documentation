@@ -623,9 +623,9 @@ If using MariaDB from **10.2.2 to 10.2.10** extra grants are required.
 GRANT SELECT ON mysql.* TO 'maxuser'@'%';
 ```
 
-If using **MariaDB 10.5 with MaxScale 2.5**, additional grants 2 additional grants are needed for `maxuser` and `REPLICATION SLAVE` is needed for `maxmon` user.
+If using MariaDB **10.5 with MaxScale 2.5**, additional grants 2 additional grants are needed for `maxuser` and `REPLICATION SLAVE` is needed for `maxmon` user.
 
-```
+```sql
 MariaDB [(none)]> GRANT SELECT ON mysql.proxies_priv TO 'maxuser'@'%';
 Query OK, 0 rows affected (0.001 sec)
 
