@@ -9,26 +9,16 @@ log_bin = mariadb-bin
 log_bin_index = mariadb-bin.index
 binlog_format = ROW
 gtid_strict_mode = 1
-bind_address = 0.0.0.0
 log_slave_updates=1
+bind_address = 0.0.0.0
 log_error
 port=5099
-
-rpl_semi_sync_master_enabled=ON
-rpl_semi_sync_slave_enabled=ON
 
 # MariaDB Replication Durability
 sync_binlog = 1
 sync_master_info = 1
 sync_relay_log = 1
 sync_relay_log_info = 1
-
-## MyRocks Related Config
-#rocksdb_block_cache_size = 8GB
-#rocksdb_default_cf_options = "compaction_pri=kMinOverlappingRatio; level_compaction_dynamic_level_bytes=true;"
-#rocksdb_max_background_jobs = 1
-#rocksdb_flush_log_at_trx_commit = 0
-#rocksdb_max_open_files = -1
 
 [mysql]
 prompt=\H [\d]>\
@@ -74,7 +64,7 @@ Query OK, 0 rows affected (0.001 sec)
 MariaDB [(none)]> CREATE USER maxmon@'%' IDENTIFIED BY 'secretpassword';
 Query OK, 0 rows affected (0.001 sec)
 
-MariaDB [(none)]> GRANT SUPER, RELOAD, REPLICATION CLIENT ON *.* TO maxmon@'%';
+MariaDB [(none)]> GRANT SUPER, RELOAD, REPLICATION CLIENT, REPLICATION SLAVE ON *.* TO maxmon@'%';
 Query OK, 0 rows affected (0.001 sec)
 
 MariaDB [(none)]> FLUSH PRIVILEGES;
@@ -83,9 +73,11 @@ Query OK, 0 rows affected (0.001 sec)
 
 Once the accounts are created on the Primary database node, verify that these are replciated on the secondary nodes as well. Proceed to configure the MaxScale server.
 
-## MaXsCALE 2.4 Setup
+**_NOTE:_** For MaxScale 2.5 there are additional grants required for the `maxuser` to make it simple, you can just `GRANT SELECT ON mysql.* to maxuser@'%';`
 
-Edit the /`etc/maxscale.cnf` file and delete all the contents to do a clean start. Add the following to the `/etc/maxscale.cnf` file
+## MaxScale 2.4 Setup
+
+Edit the `/etc/maxscale.cnf` file and delete all the contents to do a clean start. Add the following to the `/etc/maxscale.cnf` file
 
 ```txt
 [maxscale]
