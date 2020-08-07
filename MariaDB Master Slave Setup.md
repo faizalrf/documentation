@@ -803,3 +803,11 @@ The passwords in the example were all free text, as a test this works but for SI
     user=maxuser
     password=61DD955512C39A4A8BC4BB1E5F116705
     ```
+
+## References
+
+Refer to my YouTube videos that cover the same in detail
+
+https://www.youtube.com/playlist?list=PLb88NRKTvnTycKj7X0GKJ4hPoixVrQ4z6
+
+### Thank You
