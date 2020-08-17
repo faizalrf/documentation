@@ -351,7 +351,7 @@ MariaDB [(none)]> GRANT RELOAD, PROCESS, LOCK TABLES, REPLICATION CLIENT ON *.* 
 Query OK, 0 rows affected (0.009 sec)
 ```
 
-Perform the same setup on the other **two Galera** nodes before proceeding.
+Perform the same setup (creating the backupuser and grants) on the other **two Galera** nodes before proceeding.
 
 Our servers are now ready, time to stop MariaDB processes and define Galera specific configurations
 
@@ -360,7 +360,6 @@ Edit the /etc/my.cnf.d/server.cnf file and edit the `[mariadb]` section as follo
 ```txt
 [mariadb]
 log_error
-server_id=1000
 ```
 
 This will enable error logging on the server in, always a good idea to keep this enabled to monitor the server properly. Also take note of the `server_id`, define the server_id uniquely for each node, it's a good idea to use 1000, 2000 and 3000 respectively for each of the three nodes.
