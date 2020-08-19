@@ -362,9 +362,9 @@ Edit the /etc/my.cnf.d/server.cnf file and edit the `[mariadb]` section as follo
 log_error
 ```
 
-This will enable error logging on the server in, always a good idea to keep this enabled to monitor the server properly. Also take note of the `server_id`, define the server_id uniquely for each node, it's a good idea to use 1000, 2000 and 3000 respectively for each of the three nodes.
+This will enable error logging on the server in, always a good idea to keep this enabled to monitor the server properly.
 
-Edit the `[galera]` section as follows
+Edit the `[galera]` section as follows, also take note the `innodb_buffer_pool_size`, `innodb_log_file_size` & `max_allowed_packet` are just values for a very small setup, These needs to be adjusted depending on your server size and application requirements.
 
 ```txt
 [galera]
