@@ -786,20 +786,14 @@ Connect to any of the three Galera nodes and create the following users.
 MariaDB [(none)]>  create user maxuser@'%' identified by 'secretpassword';
 Query OK, 0 rows affected (0.021 sec)
 
-MariaDB [(none)]> grant select on mysql.user to maxuser@'%';
+MariaDB [(none)]> grant select on mysql.* to maxuser@'%';
 Query OK, 0 rows affected (0.017 sec)
-
-MariaDB [(none)]> grant select on mysql.tables_priv to maxuser@'%';
-Query OK, 0 rows affected (0.015 sec)
-
-MariaDB [(none)]> grant select on mysql.db to maxuser@'%';
-Query OK, 0 rows affected (0.015 sec)
 
 MariaDB [(none)]> grant show databases on *.* to maxuser@'%';
 Query OK, 0 rows affected (0.015 sec)
 ```
 
-Limited SELECT privilege is needed on `mysql.user`, `mysql.tables_priv`, `mysql.db` and `SHOW DATABASE` on all databases.
+Limited SELECT privilege is needed on `mysql.*`, and `SHOW DATABASE` on all databases.
 
 With user creation and grants done, we should be able to verify this user from any of the Galera nodes, this user should already exist there thanks to Galera's internal replication.
 
