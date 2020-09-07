@@ -145,8 +145,8 @@ slave_selection_criteria=ADAPTIVE_ROUTING
 ## The following needs to be tested but it's a nice feature to automatically retry a transaction failed due to deadlock, uncomment to enable.
 # transaction_replay_retry_on_deadlock=true
 
-## To send all the stored procedure calls to Master!
-strict_sp_calls=true
+## To send all the stored procedure calls to Primary DB Server!
+# strict_sp_calls=true
 
 [Read-Write-Listener]
 type=listener
@@ -166,3 +166,9 @@ Once the configuration is ready, restart trhe MaxScale `systemctl restart maxsca
 - Execute the command `maxctrl alter maxscale passive true` to chage the MaxScale to Passive mode.
 
 Refer to <https://mariadb.com/kb/en/mariadb-maxscale-23-maxscale-failover-with-keepalived-and-maxctrl/> for details on `KeepAliveD` configuration to auto active/passive setup of MaxScale.
+
+Note: If using MaxScale 2.5, there is no need to use thirdparty products like KeepAliveD or Corosync/Pacemaker etc, MaxScale alreay has built in "Cooperative Monotiring" capabilities. <https://mariadb.com/kb/en/mariadb-maxscale-25-mariadb-monitor/#cooperative-monitoring>
+
+Refer to my YouTube video for an explanation on how Cooperative monitoring works: https://youtu.be/6wc_5O8jHjc
+
+## Than you!
