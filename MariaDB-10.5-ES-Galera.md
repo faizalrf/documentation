@@ -58,29 +58,6 @@ Transaction Summary
 ==============================================================================================================================================================================================
 Install  3 Packages (+11 Dependent packages)
 
-Total download size: 47 M
-Installed size: 224 M
-Downloading packages:
-(1/14): MariaDB-backup-10.5.5_3-1.el7.x86_64.rpm                                                                                                                       | 7.0 MB  00:00:10     
-(2/14): boost-program-options-1.53.0-28.el7.x86_64.rpm                                                                                                                 | 156 kB  00:00:00     
-(3/14): MariaDB-client-10.5.5_3-1.el7.x86_64.rpm                                                                                                                       | 7.0 MB  00:00:16     
-(4/14): perl-Compress-Raw-Bzip2-2.061-3.el7.x86_64.rpm                                                                                                                 |  32 kB  00:00:00     
-(5/14): perl-Compress-Raw-Zlib-2.061-4.el7.x86_64.rpm                                                                                                                  |  57 kB  00:00:00     
-(6/14): perl-Data-Dumper-2.145-3.el7.x86_64.rpm                                                                                                                        |  47 kB  00:00:00     
-(7/14): lsof-4.87-6.el7.x86_64.rpm                                                                                                                                     | 331 kB  00:00:00     
-(8/14): perl-IO-Compress-2.061-2.el7.noarch.rpm                                                                                                                        | 260 kB  00:00:00     
-(9/14): perl-PlRPC-0.2020-14.el7.noarch.rpm                                                                                                                            |  36 kB  00:00:00     
-(10/14): perl-Net-Daemon-0.48-5.el7.noarch.rpm                                                                                                                         |  51 kB  00:00:00     
-(11/14): perl-DBI-1.627-4.el7.x86_64.rpm                                                                                                                               | 802 kB  00:00:00     
-(12/14): socat-1.7.3.2-2.el7.x86_64.rpm                                                                                                                                | 290 kB  00:00:00     
-(13/14): MariaDB-server-10.5.5_3-1.el7.x86_64.rpm                                                                                                                      |  21 MB  00:00:14     
-(14/14): galera-enterprise-4-26.4.5-1.el7.8.x86_64.rpm                                                                                                                 | 9.9 MB  00:00:08     
-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-Total                                                                                                                                                         1.9 MB/s |  47 MB  00:00:24     
-Running transaction check
-Running transaction test
-Transaction test succeeded
-Running transaction
   Installing : lsof-4.87-6.el7.x86_64                                                                                                                                                    1/14 
   Installing : perl-Data-Dumper-2.145-3.el7.x86_64                                                                                                                                       2/14 
   Installing : boost-program-options-1.53.0-28.el7.x86_64                                                                                                                                3/14 
