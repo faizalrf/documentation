@@ -9,7 +9,7 @@ Same way, a reverse replication is is to be set up from the Secondary data cente
 ***Note:** Ignore the Delayed slaves in the architecture model, we will just be setting up 1 MaxScale for each side*
 
 ref: Image-1
-![image info](./Images/GaleraArchitecture-1.png)
+![image info](./Images/GaleraArchitecture-2.png)
 
 
 ## Servers
