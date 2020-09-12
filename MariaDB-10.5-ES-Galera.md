@@ -6,11 +6,14 @@ The requirement is simple, setup 2 Galera clusters (3 nodes each) on two data ce
 
 Same way, a reverse replication is is to be set up from the Secondary data center to the primary data cetners using MaxScale binlog router.
 
-***Note:** Ignore the Delayed slaves in the architecture model, we will just be setting up 1 MaxScale for each side*
+***Note:** We will be setting up just 1 MaxScale for each side, process for setting up the second one is identical*
 
 ref: Image-1
 ![image info](./Images/GaleraArchitecture-2.png)
 
+Reference Architecture using MaxScale's new Binlog router to replicate a 10.5 Galera cluster using asynchronous replication for maximum performance.
+
+A stretched Galera cluster can be setup but if the latency numbers are bad between the two DC, galera cluster's performance will drop. It is recommended to set up two clusters instead using asyhcnronous replication for an **Active/Passive** site setup.
 
 ## Servers
 
