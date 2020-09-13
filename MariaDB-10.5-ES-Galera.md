@@ -192,8 +192,9 @@ Referring to the above two configurations:
 - **`gtid_domain_id`** needs to be setup as different values for each node in the cluster
   - We will be using **`gtid_domain_id=71`**, **`gtid_domain_id=72`** & **`gtid_domain_id=73`** for all three nodes of the first cluster.
   - We will be using **`gtid_domain_id=81`**, **`gtid_domain_id=82`** & **`gtid_domain_id=83`** for all three nodes of the second cluster.
-- **`innodb_buffer_pool_size`** to be calculated at 60% to 70% of the total memory size on each node. sin, since my setup is very small, 1GB RAM for each node, I have calculated 50% instead.
-- 
+- **`innodb_buffer_pool_size`** to be calculated at 60% to 70% of the total memory size on each node. Since our setup here is very small, 1GB RAM for each node, I have calculated InnoDB Buffer Pool as 50% instead.
+- **`innodb_flush_log_at_trx_commit=0`** worth mentioning that setting this to `0` imporoves Galera's TPS while still keeping the cluster ACID compliant thanks to it's replication nature.
+
 ***Note:** the **`wsrep_provider`** points to a different path/file for the Community version as `wsrep_provider=/usr/lib64/galera-4/libgalera_smm.so`*
 
 The above setup will enable Galera based GTID for each node and because of the `log_slave_upates=ON` we will get a consistent GTID for respective to each galera cluster individually.
@@ -362,6 +363,8 @@ protocol=MariaDBClient
 port=4007
 address=0.0.0.0
 ```
+
+***Note:** Best to encrypt the Passwords in the `maxscale.cnf` file, but we are keeping it simple here.*
 
 This setup gives us the basic read/write split and standard monitoring capabilities.
 
