@@ -6,14 +6,19 @@ The requirement is simple, setup 2 Galera clusters (3 nodes each) on two data ce
 
 Same way, a reverse replication is is to be set up from the Secondary data center to the primary data cetners using MaxScale binlog router.
 
-***Note:** We will be setting up just 1 MaxScale for each side, process for setting up the second one is identical*
-
-ref: Image-1
-![image info](./Images/GaleraArchitecture-2.png)
+ref: **Image-1**
+![image info](./Images/GaleraArchitecture-1.png)
 
 Reference Architecture using MaxScale's new Binlog router to replicate a 10.5 Galera cluster using asynchronous replication for maximum performance.
 
 A stretched Galera cluster can be setup but if the latency numbers are bad between the two DC, galera cluster's performance will drop. It is recommended to set up two clusters instead using asyhcnronous replication for an **Active/Passive** site setup.
+
+ref: **Image-2**
+![image info](./Images/GaleraArchitecture-2.png)
+
+A stretched galera cluster with 2 nodes on each side, this provides an Active/Active setup and capability to Read/Write anywhere. This architecture uses node weightage on both sides to help achieve Quorum, ideal setup is to use 3 data centers and ODD number of nodes but nost commonly only two data centers are available and this is the way to go. 
+
+***Note:** For this guide, we will be following the `ref: Image-1` as that is more challenging given the most common deployment due to latency issues bertween the data cetnters. Also, we will be ssetting up 2 MaxScale nodes, 1 on each side to keep it as simple as possble*
 
 ## Servers
 
@@ -181,12 +186,12 @@ Referring to the above two configurations:
 - **`wsrep_gtid_domain_id`** needs to be configured the with same value for each cluster.
   - We will be using **`wsrep_gtid_domain_id=70`** for all three nodes in the first cluster.
   - We will be using **`wsrep_gtid_domain_id=80`** for all three ndoes in the second cluster.
-- **`gtid_domain_id`** needs to be setup as different values for each node in the cluster
-  - We will be using **`gtid_domain_id=71`**, **`gtid_domain_id=72`** & **`gtid_domain_id=73`** for all three nodes of the first cluster.
-  - We will be using **`gtid_domain_id=81`**, **`gtid_domain_id=82`** & **`gtid_domain_id=83`** for all three nodes of the second cluster.
 - **`server_id`** needs to be configured the with same value for each cluster.
   - We will be using **`server_id=7000`** for all the three nodes of the first cluster.
   - We will be using **`server_id=8000`** for all the three nodes of the second cluster.
+- **`gtid_domain_id`** needs to be setup as different values for each node in the cluster
+  - We will be using **`gtid_domain_id=71`**, **`gtid_domain_id=72`** & **`gtid_domain_id=73`** for all three nodes of the first cluster.
+  - We will be using **`gtid_domain_id=81`**, **`gtid_domain_id=82`** & **`gtid_domain_id=83`** for all three nodes of the second cluster.
 - **`innodb_buffer_pool_size`** to be calculated at 60% to 70% of the total memory size on each node. sin, since my setup is very small, 1GB RAM for each node, I have calculated 50% instead.
 - 
 ***Note:** the **`wsrep_provider`** points to a different path/file for the Community version as `wsrep_provider=/usr/lib64/galera-4/libgalera_smm.so`*
