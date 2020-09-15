@@ -378,6 +378,9 @@ Query OK, 0 rows affected (0.058 sec)
 
 MariaDB [(none)]> grant select on mysql.* to maxuser@'192.168.56.%';
 Query OK, 0 rows affected (0.054 sec)
+
+MariaDB [(none)]> grant show databases on *.* to maxuser@'192.168.56.%';
+Query OK, 0 rows affected (0.054 sec)
 ```
 
 Now we can start MaxScale node on the Primary DC and verify the cluster status.
@@ -435,7 +438,7 @@ Create the defined replication user under the `[Replication-Proxy]` section with
 MariaDB [(none)]> create user repl_user@'192.168.56.%' identified by 'SecretP@ssw0rd';
 Query OK, 0 rows affected (0.051 sec)
 
-MariaDB [(none)]> grant replication slave, replication client on *.* to repl_user@'192.168.56.%';
+MariaDB [(none)]> grant show databases, replication slave, replication client on *.* to repl_user@'192.168.56.%';
 Query OK, 0 rows affected (0.051 sec)
 
 MariaDB [dbtest]> grant select on mysql.* to repl_user@'192.168.56.%';
