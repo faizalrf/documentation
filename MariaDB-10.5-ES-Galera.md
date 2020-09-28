@@ -973,4 +973,8 @@ This concludes our Setup as presented in the picture `Ref: Image-1`.
 
 There are few thing's to take note, only one data center should be ACTIVE at any given time, cannot use both in active state. This means, transactions should be coming from only 1 side and not from both sides at the same time, this will create conflicts and problems for the binlog router based asynchronous replication.
 
+# Video Reference
+
+Refer to my YouTube videos that implement this architecture with in depth discussion and explanation <https://www.youtube.com/playlist?list=PLb88NRKTvnTxOTBZ8OKDyvYVKUx2c1nH0>
+
 ### Thank You!
