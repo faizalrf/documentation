@@ -1,16 +1,10 @@
 # Setting up Xpand cluster With MariaDB X5
 
-Setup 3 EC2 instances (RHEL 7.6)
-
-- ssh -i "CentOS.pem" centos@ec2-13-212-128-120.ap-southeast-1.compute.amazonaws.com
-- ssh -i "CentOS.pem" centos@ec2-18-141-195-239.ap-southeast-1.compute.amazonaws.com
-- ssh -i "CentOS.pem" centos@ec2-13-212-131-111.ap-southeast-1.compute.amazonaws.com
-
-***Note:** All the following steps are to be done on all the nodes unless otherwise specified*
-***Note:** The filesystem on all the nodes must be `ext4`*
+This guide is to setup an Xpand cluster on the MariaDB X5 Enterprise server, Xpand is still in Beta/Gamma stages and this is to be considered as a preview of this breand new technology.
 
 ## Assumptions
 
+- Three nodes with RHEL 7 or CentOS 7
 - SELinux and firewalld has to be disabled
 - the nodes should be able to communicate with each other
 - filesystem on all the nodes used is `ext4` others are not supported by Xpand as shown here
@@ -24,6 +18,9 @@ Setup 3 EC2 instances (RHEL 7.6)
 For more details, refer to <https://mariadb.com/docs/deploy/xpand-node/>
 
 ## Installation
+
+***Note:** All the following steps are to be done on all the nodes unless otherwise specified*
+***Note:** The filesystem on all the nodes must be `ext4`*
 
 Install Dependencies
 
@@ -82,8 +79,6 @@ Download the XPAND Binaries from <https://dlm.mariadb.com/1154560/xpand-staging/
 Once transferred, un-tar the file and install.
 
 ```
-[shell]$ wget https://dlm.mariadb.com/3d8175a3-5418-49d1-bdb4-cec450ed92df/1154560/xpand-staging/xpand-5.3.11/xpand-5.3.11_rc.el7.tar.bz2
-
 [shell]$ ls -rlt
 total 128816
 -rwxr-xr-x 1 root root 131905837 Sep 28 06:31 xpand-5.3.11_rc.el7.tar.bz2
