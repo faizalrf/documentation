@@ -1,4 +1,4 @@
-# XPAND With MariaDB X5
+# Setting up Xpand cluster With MariaDB X5
 
 Setup 3 EC2 instances (RHEL 7.6)
 
