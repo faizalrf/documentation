@@ -45,11 +45,11 @@ For more details, refer to <https://mariadb.com/docs/deploy/Xpand-node/>
 
 Install Dependencies
 
-for RHEL 7
+For RHEL 7
 - `sudo rpm -ivh https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm`
 - `sudo yum-config-manager --enable rhui-REGION-rhel-server-optional`
 
-for CentOS 7
+For CentOS 7
 - `sudo yum -y install epel-release`
 
 After installing `epel-release` and optional packages, install the dependencies as follows.
