@@ -9,7 +9,7 @@ The minimum recommended architecture is to have 3 nodes of MariaDB enterprise se
 This particular guide implements a combined architecture, but the deployment methodology is the same, its just a matter of using relevant IP addresses for nodes being configured.
 
 **Reference Architecture:**
-![image info](./Images/XpandArchitecture-1.png)
+![image info](./Images/XpandCombinedArchitecture-1.png)
 
 ### High-level Instructions
 
