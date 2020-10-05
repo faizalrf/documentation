@@ -1,6 +1,6 @@
 # Setting up The Xpand Cluster With MariaDB X5
 
-This guide is to setup an Xpand cluster on the MariaDB X5 Enterprise server, Xpand is still in Beta/Gamma stages and this is to be considered as a preview of this cutting edge technology.
+This guide is to set up an Xpand cluster on the MariaDB X5 Enterprise server, Xpand is still in Beta/Gamma stages and this is to be considered as a preview of this cutting edge technology.
 
 ## Architecture
 
@@ -13,7 +13,7 @@ This particular guide implements a combined architecture, but the deployment met
 
 ### High-level Instructions
 
-- Prepare three VM/Nodes with CentOS 7/RHEL 7 (CentOS 7 requires less dependencies)
+- Prepare three VM/Nodes with CentOS 7/RHEL 7 (CentOS 7 requires fewer dependencies)
 - Download and Install Xpand Engine (Xpand Native)
 - Download and Install MariaDB 10.5 Enterprise Server with Xpand Plugin
 - Configure Xpand USER account `xpand@'%'`
@@ -288,7 +288,7 @@ MariaDB Xpand engine is installed successfully, now we can install the MariaDB s
 
 ## Install MariaDB 10.5 Enterprise
 
-Install MariaDB Enterprise server & Xpand plugin on all the nodes. All the RPM files are available in the Enterprise downloaded tar package.
+Install The MariaDB Enterprise server & Xpand plugin on all the nodes. All the RPM files are available in the Enterprise downloaded tar package.
 
 ```
 [shell]$ sudo yum -y install MariaDB-server MariaDB-backup MariaDB-Xpand-engine
@@ -321,7 +321,7 @@ This is a combined setup, with MariaDB ES and Xpand engine running on the same s
 
 ***Note:** The following is to be done only on the 1st Xpand node!*
 
-First thing to do would be to install the license provided by the MariaDB team using the `set global license='JSON Text';` syntax. This needs to be done on the **first Xpand** node directly and not on the MariaDB server.
+The first thing to do would be to install the license provided by the MariaDB team using the `set global license='JSON Text';` syntax. This needs to be done on the **first Xpand** node directly and not on the MariaDB server.
 
 ```
 [shell]$ sudo mariadb --socket /data/clustrix/mysql.sock
@@ -368,7 +368,7 @@ Xpand_password = SecretPassword
 
 ***Note:** Since this is a combined architecture, the Xpand host is defined as `Xpand_hosts = 127.0.0.1` but if Xpand nodes are separate, appropriate IP address needs to be used here instead of the loop-back localhost IP.*
 
-This will set up Xpand plugin, define the Xpand local host name, Xpand port that we define will installing Xpand node and the Xpand user name/password
+This will set up Xpand plugin, define the Xpand local hostname, Xpand port that we define will installing Xpand node and the Xpand user name/password
 
 Once MariaDB has been restarted, we can now connect to the enterprise server using the MariaDB command line. 
 
@@ -459,9 +459,9 @@ Once MariaDB nodes are started on all the other nodes in the cluster, connect to
 
 ## Setting up the Xpand Cluster
 
-Now that the 1st node is working fine and the other two nodes area ready with MairaDB Enterprise + Xpand Plugin already installed along with Xpand nodes, we can add these two nodes to the Xpand cluster as per follows
+Now that the 1st node is working fine and the other two nodes are ready with MariaDB Enterprise + Xpand Plugin already installed along with Xpand nodes, we can add these two nodes to the Xpand cluster as per follows
 
-Login to the first Xpand node using Xpand socket and run the `ALTER CLUSTER ADD 'IP for Node 2', 'IP for Node 3;`
+Log in to the first Xpand node using Xpand socket and run the `ALTER CLUSTER ADD 'IP for Node 2', 'IP for Node 3;`
 
 ***Note:** This is to be done only on the 1st node where "license" was added*
 
@@ -479,7 +479,7 @@ MySQL [(none)]> ALTER CLUSTER ADD '172.31.1.151', '172.31.0.17';
 Query OK, 0 rows affected (0.008 sec)
 ```
 
-Now the cluster is ready, lets verify 
+Now the cluster is ready, let's verify 
 
 ```
 [centos@ip-172-31-9-224 ~]$ sudo /opt/clustrix/bin/clx stat
@@ -498,11 +498,11 @@ nid |     Hostname     | Status |   IP Address  | TPS  |      Used      |  Total
                                                    309 |  50.4M (0.01%) |  974.6G
 ```
 
-This confirms that the Xpand is running as a 3 node cluster. Next thing to do would be to set up MariaDB native replication so that the schema can be synchronized between all the MariaDB nodes because that is going to be our front-end for the application connections.
+This confirms that the Xpand is running as a 3 node cluster. The next thing to do would be to set up MariaDB native replication so that the schema can be synchronized between all the MariaDB nodes because that is going to be our front-end for the application connections.
 
-But for now, if we connect to the second or third MariaDB node, we will not be able to see the `testdb` that we created from MariaDB node 1, however if we connect to the Xpand nodes directly, any of them, the `testdb.tab` will be available. This is because the MariaDB nodes are not replicating to other MariaDB nodes but Xpand is replicating the data natively.
+But for now, if we connect to the second or third MariaDB node, we will not be able to see the `testdb` that we created from MariaDB node 1, however, if we connect to the Xpand nodes directly, any of them, the `testdb.tab` will be available. This is because the MariaDB nodes are not replicating to other MariaDB nodes but Xpand is replicating the data natively.
 
-Solution to this problem is that we need to setup basic MariaDB replication between all the MariaDB nodes so that whenever we create a new non-Xpand object, it is available on all the nodes. This setup however expects that  we don't have a mixed InnoDB/Xpand replication as this can create conflicts since we are creating a Multi-Master replication setup so that Reads/Writes can be done from any of the nodes. Basically, we want only the meta data replicating like Databases and probably some other non Xpand objects so that these are available on each node.
+The solution to this problem is that we need to set up basic MariaDB replication between all the MariaDB nodes so that whenever we create a new non-Xpand object, it is available on all the nodes. This setup however expects that we don't have a mixed InnoDB/Xpand replication as this can create conflicts since we are creating a Multi-Master replication setup so that Reads/Writes can be done from any of the nodes. Basically, we want only the metadata replicating like Databases and probably some other non Xpand objects so that these are available on each node.
 
 When we are done, we will have a STAR Schema design where each node is replicating to each other node. No longer a 1 Primary and many Replica nodes.
 
@@ -510,7 +510,7 @@ When we are done, we will have a STAR Schema design where each node is replicati
 
 Xpand nodes automatically handled the replication by Xpand engine natively, it's not really considered replication, rather, data distribution and we don't need to do much to get it started, just the single `ALTER CLUSTER ADD ...` starts the data distribution when the cluster is formed.
 
-We now need to setup replication for the meta-data so that the databases and non Xpand tables/objects like databases can be synchronised between MariaDB nodes.
+We now need to set up replication for the meta-data so that the databases and non-Xpand tables/objects like databases can be synchronized between MariaDB nodes.
 
 ### Replication Parameters
 
@@ -536,20 +536,20 @@ xpand_master_skip_dml_binlog=1
 xpand_replicate_alter_as_create_select=1
 xpand_slave_ignore_ddl=1
 
-# This is ensure databases starting with `Xpand` are NOT replicated
+# This is to ensure, the databases starting with `Xpand` are NOT replicated
 replicate_wild_ignore_table=xpand%.%.
 
 # Subsequent auto increment values inserted from same server - 1,21,41
 auto_increment_increment=20
 
 # The following settings will have to be unique for each server
-# Offset for other servers. Each server should have a different offset i.e. 1 for first, 2 for second and 3 for 3rd and so on. So that first server generates value 10, second will generate 11 and third will general 12
+# Offset for other servers. Each server should have a different offset i.e. 1 for first, 2 for second and 3 for 3rd, and so on. So that first server generates value 10, second will generate 11 and third will general 12
 auto_increment_offset=1 
 
-#Each server should have different server id i.e. 1 for first, 2 for second and 3 for 3rd server and so on
+# Each server should have different server_id i.e. 1 for first, 2 for second and 3 for 3rd server and so on
 server_id=1
 
-#Each server should have different gtid_doman i.e. 1 for first, 2 for second and 3 for 3rd server and so on
+# Each server should have different gtid_doman i.e. 1 for first, 2 for second and 3 for 3rd server and so on
 gtid_domain_id=1 
 ```
 
@@ -644,7 +644,7 @@ Since we already have binary logs enabled, and the above user creation/grants ar
   1 row in set (0.000 sec)
   ```
 
-The Binary Log File & Position are identical but the GTID are different since each of the servers have their own `server_id` and `domain_id`
+The Binary Log File & Position are identical but the GTID is different since each of the servers have their own `server_id` and `domain_id`
 
 Now we can set the Star Schema up, it means, all the nodes must replicate from all the other nodes. Since we have 3 nodes, when we do `SHOW SLAVE STATUS\G` on all the nodes, all the nodes must report 2 Replica 
 
@@ -1161,7 +1161,7 @@ Let's do this, Since we want to get rid of all the binary logs up to now, we can
 
 This completes our STAR Schema replication where all nodes are replicating from multiple nodes "Multi-Master" replication.
 
-We can now use `SHOW ALL SLAVES STATUS\G`, `STOP ALL SLAVES;` and `START ALL SLAVES` etc to manage this replication setup.
+We can now use `SHOW ALL SLAVES STATUS\G`, `STOP ALL SLAVES;` and `START ALL SLAVES`, etc to manage this replication setup.
 
 Let's test some DDL/DML to see if this replication works?
 
@@ -1253,6 +1253,6 @@ Now checking on all nodes to see if all the databases have been replicated to al
   6 rows in set (0.000 sec)
   ```
 
-This concludes our document on how to setup a Xpand cluster with a Star Schema using GTID based replication!
+This concludes our document on how to set up an Xpand cluster with a Star Schema using GTID-based replication!
 
 ### Thanks!
