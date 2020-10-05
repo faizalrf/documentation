@@ -1,11 +1,32 @@
-# Setting up Xpand cluster With MariaDB X5
+# Setting up The Xpand Cluster With MariaDB X5
 
-This guide is to setup an Xpand cluster on the MariaDB X5 Enterprise server, Xpand is still in Beta/Gamma stages and this is to be considered as a preview of this breand new technology.
+This guide is to setup an Xpand cluster on the MariaDB X5 Enterprise server, Xpand is still in Beta/Gamma stages and this is to be considered as a preview of this cutting edge technology.
+
+## Architecture
+
+The minimum recommended architecture is to have 3 nodes of MariaDB enterprise server and 3 Xpand engine nodes. This is the recommendation for best performance, but Xpand can also be deployed by using a combined architecture where both MariaDB and Xpand engine sits on the same node. 
+
+This particular guide implements a combined architecture, but the deployment methodology is the same, its just a matter of using relevant IP addresses for nodes being configured.
+
+**Reference Architecture:**
+![image info](./Images/XpandArchitecture-1.png)
+
+### High-level Instructions
+
+- Prepare three VM/Nodes with CentOS 7/RHEL 7 (CentOS 7 requires less dependencies)
+- Download and Install Xpand Engine (Xpand Native)
+- Download and Install MariaDB 10.5 Enterprise Server with Xpand Plugin
+- Configure Xpand USER account `xpand@'%'`
+- Activate Xpand Licence on 1st Xpand Node
+- Setup MariaDB Enterprise Xpand Plugin Configuration
+- Setup MariaDB Enterprise Star-Schema replication (Master `<->` Master)
+
+We will go through all of the above in the sections below.
 
 ## Assumptions
 
 - Three nodes with RHEL 7 or CentOS 7
-- SELinux and firewalld has to be disabled
+- `SELinux` and `firewalld` has to be disabled
 - the nodes should be able to communicate with each other
 - filesystem on all the nodes used is `ext4` others are not supported by Xpand as shown here
   ```
@@ -25,13 +46,13 @@ For more details, refer to <https://mariadb.com/docs/deploy/Xpand-node/>
 Install Dependencies
 
 for RHEL 7
-- sudo rpm -ivh https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
-- sudo yum-config-manager --enable rhui-REGION-rhel-server-optional
+- `sudo rpm -ivh https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm`
+- `sudo yum-config-manager --enable rhui-REGION-rhel-server-optional`
 
 for CentOS 7
-- sudo yum -y install epel-release
+- `sudo yum -y install epel-release`
 
-After installing epel-release and optional packages, install the dependencies.
+After installing `epel-release` and optional packages, install the dependencies as follows.
 
 ```
 [shell]$ sudo yum -y install bzip2 xz wget screen ntp ntpdate htop mdadm
@@ -353,7 +374,7 @@ Copyright (c) 2000, 2018, Oracle, MariaDB Corporation Ab and others.
 
 Type 'help;' or '\h' for help. Type '\c' to clear the current input statement.
 
-MySQL [(none)]> set global license='{"expiration":"2020-11-01 00:00:00","maxnodes":"3","company":"MariaDB","maxcores":"32","email":"Faisal.Saeed@mariadb.com","person":"Faisal Saeed","signature":"...signature_key_string..."}';
+MySQL [(none)]> set global license='{"expiration":"2020-11-01 00:00:00","maxnodes":"3","company":"MariaDB","maxcores":"32","email":"faisal@mariadb.com","person":"Faisal Saeed","signature":"...my_special_signature_key_string..."}';
 Query OK, 0 rows affected (0.024 sec)
 ```
 
@@ -384,6 +405,8 @@ Xpand_port = 5001
 Xpand_username = xpand
 Xpand_password = SecretPassword
 ```
+
+***Note:** Since this is a combined architecture, the Xpand host is defined as `Xpand_hosts = 127.0.0.1` but if Xpand nodes are separate, appropriate IP address needs to be used here instead of the loop-back localhost IP.*
 
 This will set up Xpand plugin, define the Xpand local host name, Xpand port that we define will installing Xpand node and the Xpand user name/password
 
@@ -574,7 +597,7 @@ As explained above, some of the variables should have unique values while others
 - **`xpand_master_skip_dml_binlog=1`**
   - This ensures that Xpand table related DML statements are not captured in the binary logs, because these are already handled by Xpand engine natively 
 - **`xpand_replicate_alter_as_create_select=1`**
-  - When someone ALTERs an Xpand table to a local InnoDB or local table, capture all the rows in the binary logs because this must be replciated to other MariaDB nodes.
+  - When someone ALTERs an Xpand table to a local InnoDB or local table, capture all the rows in the binary logs because this must be replicated to other MariaDB nodes.
 - **`xpand_slave_ignore_ddl=1`**
   - This ensures that the DDL statements for Xpand tables are not captured in the binary logs, because these are handled and distributed automatically by Xpand natively.
 
@@ -589,7 +612,7 @@ MariaDB [(none)]> SET GLOBAL slave_ddl_exec_mode=STRICT;
 Query OK, 0 rows affected (0.001 sec)
 ```
 
-More details here <https://mariadb.com/kb/en/replication-and-binary-log-system-variables/#slave_ddl_exec_mode> But this is needed for our STAR Schema replicaiton setup in an Xpand-engine setup.
+More details here <https://mariadb.com/kb/en/replication-and-binary-log-system-variables/#slave_ddl_exec_mode> But this is needed for our STAR Schema replication setup in an Xpand-engine setup.
 
 Create a user to use for Replication between all the nodes, this user must be created on all nodes.
 
