@@ -148,41 +148,10 @@ Resolving Dependencies
 Installing:
  Xpand-common                                                  x86_64                                        glassbutte-1068.el7                                        /Xpand-common-glassbutte-1068.el7.x86_64                                         44 M
 Installing for dependencies:
- MySQL-python                                                  x86_64                                        1.2.5-1.el7                                                rhui-REGION-rhel-server-releases                                                 90 k
- libaio                                                        x86_64                                        0.3.109-13.el7                                             rhui-REGION-rhel-server-releases                                                 24 k
- libdwarf                                                      x86_64                                        20130207-4.el7                                             rhui-REGION-rhel-server-releases                                                109 k
- libdwarf-tools                                                x86_64                                        20130207-4.el7                                             rhui-REGION-rhel-server-optional                                                161 k
- libicu                                                        x86_64                                        50.2-4.el7_7                                               rhui-REGION-rhel-server-releases                                                6.9 M
- mariadb                                                       x86_64                                        1:5.5.65-1.el7                                             rhui-REGION-rhel-server-releases                                                9.0 M
- perl                                                          x86_64                                        4:5.16.3-295.el7                                           rhui-REGION-rhel-server-releases                                                8.0 M
- perl-Carp                                                     noarch                                        1.26-244.el7                                               rhui-REGION-rhel-server-releases                                                 19 k
- perl-Encode                                                   x86_64                                        2.51-7.el7                                                 rhui-REGION-rhel-server-releases                                                1.5 M
- perl-Exporter                                                 noarch                                        5.68-3.el7                                                 rhui-REGION-rhel-server-releases                                                 28 k
- perl-File-Path                                                noarch                                        2.09-2.el7                                                 rhui-REGION-rhel-server-releases                                                 27 k
- perl-File-Temp                                                noarch                                        0.23.01-3.el7                                              rhui-REGION-rhel-server-releases                                                 56 k
- perl-Filter                                                   x86_64                                        1.49-3.el7                                                 rhui-REGION-rhel-server-releases                                                 76 k
- perl-Getopt-Long                                              noarch                                        2.40-3.el7                                                 rhui-REGION-rhel-server-releases                                                 56 k
- perl-HTTP-Tiny                                                noarch                                        0.033-3.el7                                                rhui-REGION-rhel-server-releases                                                 38 k
- perl-PathTools                                                x86_64                                        3.40-5.el7                                                 rhui-REGION-rhel-server-releases                                                 83 k
- perl-Pod-Escapes                                              noarch                                        1:1.04-295.el7                                             rhui-REGION-rhel-server-releases                                                 51 k
- perl-Pod-Perldoc                                              noarch                                        3.20-4.el7                                                 rhui-REGION-rhel-server-releases                                                 87 k
- perl-Pod-Simple                                               noarch                                        1:3.28-4.el7                                               rhui-REGION-rhel-server-releases                                                216 k
- perl-Pod-Usage                                                noarch                                        1.63-3.el7                                                 rhui-REGION-rhel-server-releases                                                 27 k
- perl-Scalar-List-Utils                                        x86_64                                        1.27-248.el7                                               rhui-REGION-rhel-server-releases                                                 36 k
- perl-Socket                                                   x86_64                                        2.010-5.el7                                                rhui-REGION-rhel-server-releases                                                 49 k
- perl-Storable                                                 x86_64                                        2.45-3.el7                                                 rhui-REGION-rhel-server-releases                                                 77 k
- perl-Text-ParseWords                                          noarch                                        3.29-4.el7                                                 rhui-REGION-rhel-server-releases                                                 14 k
- perl-Time-HiRes                                               x86_64                                        4:1.9725-3.el7                                             rhui-REGION-rhel-server-releases                                                 45 k
- perl-Time-Local                                               noarch                                        1.2300-2.el7                                               rhui-REGION-rhel-server-releases                                                 24 k
- perl-constant                                                 noarch                                        1.27-2.el7                                                 rhui-REGION-rhel-server-releases                                                 19 k
- perl-libs                                                     x86_64                                        4:5.16.3-295.el7                                           rhui-REGION-rhel-server-releases                                                689 k
- perl-macros                                                   x86_64                                        4:5.16.3-295.el7                                           rhui-REGION-rhel-server-releases                                                 44 k
- perl-parent                                                   noarch                                        1:0.225-244.el7                                            rhui-REGION-rhel-server-releases                                                 12 k
- perl-podlators                                                noarch                                        2.5.1-3.el7                                                rhui-REGION-rhel-server-releases                                                112 k
- perl-threads                                                  x86_64                                        1.87-4.el7                                                 rhui-REGION-rhel-server-releases                                                 49 k
- perl-threads-shared                                           x86_64                                        1.43-6.el7                                                 rhui-REGION-rhel-server-releases                                                 39 k
- psmisc                                                        x86_64                                        22.20-16.el7                                               rhui-REGION-rhel-server-releases                                                141 k
- yajl                                                          x86_64                                        2.0.4-4.el7                                                rhui-REGION-rhel-server-releases                                                 39 k
+ MySQL-python                                                  x86_64                                        1.2.5-1.el7                                                
+ ...
+ ...
+ ...
 Updating for dependencies:
  mariadb-libs                                                  x86_64                                        1:5.5.65-1.el7                                             rhui-REGION-rhel-server-releases                                                759 k
 
@@ -334,17 +303,8 @@ Installing:
  MariaDB-server                                                      x86_64                                             10.5.5_3-1.el7                                              mariadb-es-main                                                      21 M
  MariaDB-Xpand-engine                                                x86_64                                             10.5.5_3-1.el7                                              mariadb-es-main                                                      67 k
 Installing for dependencies:
- boost-program-options                                               x86_64                                             1.53.0-28.el7                                               rhel-7-server-rhui-rpms                                             156 k
- galera-enterprise-4                                                 x86_64                                             26.4.5-1.el7.8                                              mariadb-es-main                                                     9.9 M
- lsof                                                                x86_64                                             4.87-6.el7                                                  rhel-7-server-rhui-rpms                                             331 k
- perl-Compress-Raw-Bzip2                                             x86_64                                             2.061-3.el7                                                 rhel-7-server-rhui-rpms                                              32 k
- perl-Compress-Raw-Zlib                                              x86_64                                             1:2.061-4.el7                                               rhel-7-server-rhui-rpms                                              57 k
- perl-DBI                                                            x86_64                                             1.627-4.el7                                                 rhel-7-server-rhui-rpms                                             802 k
- perl-Data-Dumper                                                    x86_64                                             2.145-3.el7                                                 rhel-7-server-rhui-rpms                                              47 k
- perl-IO-Compress                                                    noarch                                             2.061-2.el7                                                 rhel-7-server-rhui-rpms                                             260 k
- perl-Net-Daemon                                                     noarch                                             0.48-5.el7                                                  rhel-7-server-rhui-rpms                                              51 k
- perl-PlRPC                                                          noarch                                             0.2020-14.el7                                               rhel-7-server-rhui-rpms                                              36 k
- socat                                                               x86_64                                             1.7.3.2-2.el7                                               rhel-7-server-rhui-rpms                                             290 k
+ ...
+ ...
 
 Transaction Summary
 ==============================================================================================================================================================================================================================================================
@@ -557,6 +517,7 @@ We now need to setup replication for the meta-data so that the databases and non
 On each MariaDB server, edit the /etc/my.cnf.d/server.cnf file and add the following under the `[mariadb]` section
 
 ```
+[mariadb]
 log_bin
 
 # Name of the binlog file
@@ -605,7 +566,7 @@ With this config in place, restart all the MariaDB nodes `systemctl restart mari
 
 ### Setup Replication
 
-Before setting up the replication using `CHANGE MASTER ...` we need to do the following
+Before setting up the replication using `CHANGE MASTER ...` we need to do the following, this is only required to be once online before setting up the replication. 
 
 ```
 MariaDB [(none)]> SET GLOBAL slave_ddl_exec_mode=STRICT;
@@ -698,6 +659,8 @@ Now we can set the Star Schema up, it means, all the nodes must replicate from a
   Node 3 ──> Node 1
      └─────> Node 2
   ```
+
+***Note:** Refer to the reference architecture image.*
 
 - From Node 1 We will `CHANGE MASTER TO <Node 2>` and `CHANGE MASTER TO <Node 3>`
 - From Node 2 We will `CHANGE MASTER TO <Node 1>` and `CHANGE MASTER TO <Node 3>`
