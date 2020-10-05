@@ -95,7 +95,7 @@ Enable NTP process on all three nodes
 
 ## Download the Xpand binaries
 
-Download the Xpand Binaries from <https://dlm.mariadb.com/1154560/Xpand-staging/Xpand-5.3.11/Xpand-5.3.11_rc.el7.tar.bz2> and transfer to all the Xpand nodes
+Contact MariaDB Sales team to get the Xpand binaries download link and transfer the binary `tar` to all of the Xpand nodes
 
 Once transferred, un-tar the file and install.
 
