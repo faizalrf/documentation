@@ -16,7 +16,7 @@ This particular guide implements a combined architecture, but the deployment met
 - Prepare three VM/Nodes with CentOS 7/RHEL 7 (CentOS 7 requires fewer dependencies).
 - Download and Install Xpand Engine (Xpand Native).
 - Download and Install MariaDB 10.5 Enterprise Server with Xpand Plugin.
-- Configure Xpand USER account `xpand@'%'` and setup permissions.
+- Configure Xpand USER account `xpand@'%'` and grant permissions.
 - Activate Xpand Licence on 1st Xpand Node.
 - Setup MariaDB Enterprise Xpand Plugin Configuration.
 - Setup MariaDB Enterprise Star-Schema replication (Master `<->` Master).
