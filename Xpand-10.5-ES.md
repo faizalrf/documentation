@@ -25,8 +25,8 @@ We will go through all of the above in the sections below.
 
 ## Assumptions
 
-- Three nodes with RHEL 7 or CentOS 7.
-- 8 CPU x 16 GB minimum reqruiment. 
+- **Three** nodes with `RHEL 7` or `CentOS 7`.
+- 8 CPU x 16 GB minimum requirement. 
 - `SELinux` and `firewalld` are disabled.
 - the nodes should be able to communicate with each other.
 - filesystem on all the nodes used is `ext4` others are not supported by Xpand as shown here.
