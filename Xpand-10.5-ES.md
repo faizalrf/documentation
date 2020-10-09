@@ -94,6 +94,22 @@ Enable NTP process on all three nodes
 [shell]$ sudo systemctl enable ntpd
 ```
 
+## Preparing Filesystem
+
+A dedicated mount `/data` with the type of `ext4` should be available, the output of the `df -h --print-type` should report a dedicated mount for `/data` with sufficient storage as follows
+
+```
+[shell] df -h --print-type
+Filesystem     Type      Size  Used Avail Use% Mounted on
+/dev/sda2      ext4       40G  1.4G   39G   2% /
+devtmpfs       devtmpfs   16G     0   16G   0% /dev
+tmpfs          tmpfs      16G     0   16G   0% /dev/shm
+/dev/sda1      ext4      240G   50G  174G  23% /boot
+/dev/sdc       ext4      500G     0  500G   0% /data
+```
+
+_**Note:** If the mount is not avaialbe with the type of `ext4` the installation of Xpand will fail._
+
 ## Download the Xpand binaries
 
 Contact MariaDB Sales team to get the Xpand binaries download link and transfer the binary `tar` to all of the Xpand nodes
