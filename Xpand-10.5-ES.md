@@ -37,7 +37,7 @@ We will go through all of the above in the sections below.
   ======================
   ```
 
-For more details, refer to <https://mariadb.com/docs/deploy/Xpand-node/>
+For more details, refer to <https://mariadb.com/docs/deploy/xpand-node/>
 
 ## Installation
 
@@ -119,21 +119,21 @@ Once transferred, un-tar the file and install.
 ```txt
 [shell]$ ls -rlt
 total 128816
--rwxr-xr-x 1 root root 131905837 Sep 28 06:31 Xpand-5.3.11_rc.el7.tar.bz2
+-rwxr-xr-x 1 root root 131905837 Sep 28 06:31 xpand-5.3.11_rc.el7.tar.bz2
 
-[shell]$ tar -xvf Xpand-5.3.11_rc.el7.tar.bz2
-Xpand-5.3.11_rc.el7/
-Xpand-5.3.11_rc.el7/Xpand-xpdnode-5.3.11_rc-1.el7.x86_64.rpm
-Xpand-5.3.11_rc.el7/clxdbi-combined-2.2.1-962.el7.tar.bz2
-Xpand-5.3.11_rc.el7/README
-Xpand-5.3.11_rc.el7/clxgui-combined-2.2.1-703.el7.tar.bz2
-Xpand-5.3.11_rc.el7/Xpand-common-glassbutte-1068.el7.x86_64.rpm
-Xpand-5.3.11_rc.el7/Xpand-utils-5.3.11_rc-1.el7.x86_64.rpm
-Xpand-5.3.11_rc.el7/clxgui_configure.sh
-Xpand-5.3.11_rc.el7/clxdbi_configure.sh
-Xpand-5.3.11_rc.el7/LICENSE-SWDL
-Xpand-5.3.11_rc.el7/checksums.md5
-Xpand-5.3.11_rc.el7/xpdnode_install.py
+[shell]$ tar -xvf xpand-5.3.11_rc.el7.tar.bz2
+xpand-5.3.11_rc.el7/
+xpand-5.3.11_rc.el7/xpand-xpdnode-5.3.11_rc-1.el7.x86_64.rpm
+xpand-5.3.11_rc.el7/clxdbi-combined-2.2.1-962.el7.tar.bz2
+xpand-5.3.11_rc.el7/README
+xpand-5.3.11_rc.el7/clxgui-combined-2.2.1-703.el7.tar.bz2
+xpand-5.3.11_rc.el7/xpand-common-glassbutte-1068.el7.x86_64.rpm
+xpand-5.3.11_rc.el7/xpand-utils-5.3.11_rc-1.el7.x86_64.rpm
+xpand-5.3.11_rc.el7/clxgui_configure.sh
+xpand-5.3.11_rc.el7/clxdbi_configure.sh
+xpand-5.3.11_rc.el7/LICENSE-SWDL
+xpand-5.3.11_rc.el7/checksums.md5
+xpand-5.3.11_rc.el7/xpdnode_install.py
 ```
 
 ### Install the Xpand binaries
@@ -144,7 +144,7 @@ Installing Xpand binaries on all the nodes as follows, the port `5001` is someth
 
 
 ```txt
-[shell]$ cd Xpand-5.3.11_rc.el7
+[shell]$ cd xpand-5.3.11_rc.el7
 [shell]$ sudo ./xpdnode_install.py --mysql-port 5001 --yes
 
 === Warning: ===
@@ -155,15 +155,15 @@ LOG_PATH should not be on the same storage volume (/data) as
 
 MariaDB Xpand successfully configured!
 Loaded plugins: amazon-id, rhui-lb, search-disabled-repos
-Examining /home/ec2-user/Xpand-5.3.11_rc.el7/Xpand-common-glassbutte-1068.el7.x86_64.rpm: Xpand-common-glassbutte-1068.el7.x86_64
-Marking /home/ec2-user/Xpand-5.3.11_rc.el7/Xpand-common-glassbutte-1068.el7.x86_64.rpm to be installed
+Examining /home/ec2-user/xpand-5.3.11_rc.el7/xpand-common-glassbutte-1068.el7.x86_64.rpm: xpand-common-glassbutte-1068.el7.x86_64
+Marking /home/ec2-user/xpand-5.3.11_rc.el7/xpand-common-glassbutte-1068.el7.x86_64.rpm to be installed
 Resolving Dependencies
 
 ==============================================================================================================================================================================================================================================================
  Package                                                       Arch                                          Version                                                    Repository                                                                       Size
 ==============================================================================================================================================================================================================================================================
 Installing:
- Xpand-common                                                  x86_64                                        glassbutte-1068.el7                                        /Xpand-common-glassbutte-1068.el7.x86_64                                         44 M
+ xpand-common                                                  x86_64                                        glassbutte-1068.el7                                        /Xpand-common-glassbutte-1068.el7.x86_64                                         44 M
 Installing for dependencies:
  MySQL-python                                                  x86_64                                        1.2.5-1.el7                                                
  ...
@@ -178,11 +178,11 @@ Transaction Summary
 Complete!
 
 Loaded plugins: amazon-id, rhui-lb, search-disabled-repos
-Examining /home/ec2-user/Xpand-5.3.11_rc.el7/Xpand-xpdnode-5.3.11_rc-1.el7.x86_64.rpm: Xpand-xpdnode-5.3.11_rc-1.el7.x86_64
-Marking /home/ec2-user/Xpand-5.3.11_rc.el7/Xpand-xpdnode-5.3.11_rc-1.el7.x86_64.rpm to be installed
+Examining /home/ec2-user/xpand-5.3.11_rc.el7/xpand-xpdnode-5.3.11_rc-1.el7.x86_64.rpm: xpand-xpdnode-5.3.11_rc-1.el7.x86_64
+Marking /home/ec2-user/xpand-5.3.11_rc.el7/xpand-xpdnode-5.3.11_rc-1.el7.x86_64.rpm to be installed
 Resolving Dependencies
 --> Running transaction check
----> Package Xpand-xpdnode.x86_64 0:5.3.11_rc-1.el7 will be installed
+---> Package xpand-xpdnode.x86_64 0:5.3.11_rc-1.el7 will be installed
 --> Finished Dependency Resolution
 
 Dependencies Resolved
@@ -191,7 +191,7 @@ Dependencies Resolved
  Package                                                  Arch                                              Version                                                    Repository                                                                        Size
 ==============================================================================================================================================================================================================================================================
 Installing:
- Xpand-xpdnode                                            x86_64                                            5.3.11_rc-1.el7                                            /Xpand-xpdnode-5.3.11_rc-1.el7.x86_64                                            333 M
+ xpand-xpdnode                                            x86_64                                            5.3.11_rc-1.el7                                            /Xpand-xpdnode-5.3.11_rc-1.el7.x86_64                                            333 M
 
 Transaction Summary
 ==============================================================================================================================================================================================================================================================
@@ -199,11 +199,11 @@ Transaction Summary
 Complete!
 
 Loaded plugins: amazon-id, rhui-lb, search-disabled-repos
-Examining /home/ec2-user/Xpand-5.3.11_rc.el7/Xpand-utils-5.3.11_rc-1.el7.x86_64.rpm: Xpand-utils-5.3.11_rc-1.el7.x86_64
-Marking /home/ec2-user/Xpand-5.3.11_rc.el7/Xpand-utils-5.3.11_rc-1.el7.x86_64.rpm to be installed
+Examining /home/ec2-user/xpand-5.3.11_rc.el7/xpand-utils-5.3.11_rc-1.el7.x86_64.rpm: xpand-utils-5.3.11_rc-1.el7.x86_64
+Marking /home/ec2-user/xpand-5.3.11_rc.el7/xpand-utils-5.3.11_rc-1.el7.x86_64.rpm to be installed
 Resolving Dependencies
 --> Running transaction check
----> Package Xpand-utils.x86_64 0:5.3.11_rc-1.el7 will be installed
+---> Package xpand-utils.x86_64 0:5.3.11_rc-1.el7 will be installed
 --> Finished Dependency Resolution
 
 Dependencies Resolved
@@ -212,7 +212,7 @@ Dependencies Resolved
  Package                                                 Arch                                               Version                                                     Repository                                                                       Size
 ==============================================================================================================================================================================================================================================================
 Installing:
- Xpand-utils                                             x86_64                                             5.3.11_rc-1.el7                                             /Xpand-utils-5.3.11_rc-1.el7.x86_64                                              15 M
+ xpand-utils                                             x86_64                                             5.3.11_rc-1.el7                                             /Xpand-utils-5.3.11_rc-1.el7.x86_64                                              15 M
 
 Transaction Summary
 ==============================================================================================================================================================================================================================================================
@@ -220,13 +220,13 @@ Transaction Summary
 
 Complete!
 
-MariaDB Xpand RPMs installed successfully
-MariaDB Xpand service started... Please wait for the database to
+MariaDB xpand RPMs installed successfully
+MariaDB xpand service started... Please wait for the database to
   initialize (This will take a minute.)
 .......................
-MariaDB Xpand initialized.
+MariaDB xpand initialized.
 
-MariaDB Xpand is now ready for use.
+MariaDB xpand is now ready for use.
 checking options
 setting config path
 reading settings from /etc/clustrix/clxdbi.conf
@@ -308,7 +308,7 @@ MariaDB Xpand engine is installed successfully, now we can install the MariaDB s
 Install The MariaDB Enterprise server & Xpand plugin on all the nodes. All the RPM files are available in the Enterprise downloaded tar package.
 
 ```txt
-[shell]$ sudo yum -y install MariaDB-server MariaDB-backup MariaDB-Xpand-engine
+[shell]$ sudo yum -y install MariaDB-server MariaDB-backup MariaDB-xpand-engine
 
 Dependencies Resolved
 
@@ -318,7 +318,7 @@ Dependencies Resolved
 Installing:
  MariaDB-backup                                                      x86_64                                             10.5.5_3-1.el7                                              mariadb-es-main                                                     7.0 M
  MariaDB-server                                                      x86_64                                             10.5.5_3-1.el7                                              mariadb-es-main                                                      21 M
- MariaDB-Xpand-engine                                                x86_64                                             10.5.5_3-1.el7                                              mariadb-es-main                                                      67 k
+ MariaDB-xpand-engine                                                x86_64                                             10.5.5_3-1.el7                                              mariadb-es-main                                                      67 k
 Installing for dependencies:
  ...
  ...
@@ -345,7 +345,7 @@ The first thing to do would be to install the license provided by the MariaDB te
 
 Welcome to the MariaDB monitor.  Commands end with ; or \g.
 Your MySQL connection id is 37889
-Server version: 5.0.45-Xpand-5.3.11_rc 
+Server version: 5.0.45-xpand-5.3.11_rc 
 
 Copyright (c) 2000, 2018, Oracle, MariaDB Corporation Ab and others.
 
