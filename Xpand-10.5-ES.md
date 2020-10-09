@@ -89,7 +89,7 @@ Complete!
 
 Enable NTP process on all three nodes
 
-```
+```txt
 [shell]$ sudo systemctl start ntpd
 [shell]$ sudo systemctl enable ntpd
 ```
@@ -98,7 +98,7 @@ Enable NTP process on all three nodes
 
 A dedicated mount `/data` with the type of `ext4` should be available, the output of the `df -h --print-type` should report a dedicated mount for `/data` with sufficient storage as follows
 
-```
+```txt
 [shell]$ df -h --print-type
 Filesystem     Type      Size  Used Avail Use% Mounted on
 /dev/sda2      ext4       40G  1.4G   39G   2% /
@@ -116,7 +116,7 @@ Contact MariaDB Sales team to get the Xpand binaries download link and transfer 
 
 Once transferred, un-tar the file and install.
 
-```
+```txt
 [shell]$ ls -rlt
 total 128816
 -rwxr-xr-x 1 root root 131905837 Sep 28 06:31 Xpand-5.3.11_rc.el7.tar.bz2
@@ -143,7 +143,7 @@ Installing Xpand binaries on all the nodes as follows, the port `5001` is someth
 ***Note:** The warning `LOG_PATH should not be on the same storage volume (/data) as DATA_PATH.` can be ignored for this test, but as a best practice considering performance, the data directory and the log directory should be in separate physical mounts.*
 
 
-```
+```txt
 [shell]$ cd Xpand-5.3.11_rc.el7
 [shell]$ sudo ./xpdnode_install.py --mysql-port 5001 --yes
 
@@ -307,7 +307,7 @@ MariaDB Xpand engine is installed successfully, now we can install the MariaDB s
 
 Install The MariaDB Enterprise server & Xpand plugin on all the nodes. All the RPM files are available in the Enterprise downloaded tar package.
 
-```
+```txt
 [shell]$ sudo yum -y install MariaDB-server MariaDB-backup MariaDB-Xpand-engine
 
 Dependencies Resolved
@@ -340,7 +340,7 @@ This is a combined setup, with MariaDB ES and Xpand engine running on the same s
 
 The first thing to do would be to install the license provided by the MariaDB team using the `set global license='JSON Text';` syntax. This needs to be done on the **first Xpand** node directly and not on the MariaDB server.
 
-```
+```txt
 [shell]$ sudo mariadb --socket /data/clustrix/mysql.sock
 
 Welcome to the MariaDB monitor.  Commands end with ; or \g.
@@ -357,7 +357,7 @@ Query OK, 0 rows affected (0.024 sec)
 
 Set the password for the user `xpand@'%'` and `xpand@'localhost'` and set the required grants for Xpand plugin
 
-```
+```txt
 MySQL [(none)]> grant all on *.* to xpand@'%';
 Query OK, 0 rows affected (0.005 sec)
 
@@ -373,7 +373,7 @@ Query OK, 0 rows affected (0.005 sec)
 
 Edit the `/etc/my.cnf.d/xpand.cnf` file and add the **first Xpand** plugin details followed by a `systemctl restart mariadb` on first nodes.
 
-```
+```txt
 [mariadb]
 plugin_load_add = ha_xpand.so
 plugin_maturity = gamma
@@ -389,7 +389,7 @@ This will set up Xpand plugin, define the Xpand local hostname, Xpand port that 
 
 Once MariaDB has been restarted, we can now connect to the enterprise server using the MariaDB command line. 
 
-```
+```txt
 [ec2-user@ip-172-31-20-172 ~]$ sudo mariadb
 Welcome to the MariaDB monitor.  Commands end with ; or \g.
 Your MariaDB connection id is 3
@@ -433,7 +433,7 @@ MariaDB [(none)]> show plugins;
 
 We can see the Xpand engine and Xpand plugin is available, time to create a test table on the first MariaDB node and see if it works.
 
-```
+```txt
 MariaDB [(none)]> create database testdb;
 Query OK, 1 row affected (0.000 sec)
 
@@ -482,7 +482,7 @@ Log in to the first Xpand node using Xpand socket and run the `ALTER CLUSTER ADD
 
 ***Note:** This is to be done only on the 1st node where "license" was added*
 
-```
+```txt
 [shell]$ sudo mariadb --socket /data/clustrix/mysql.sock
 Welcome to the MariaDB monitor.  Commands end with ; or \g.
 Your MySQL connection id is 21505
@@ -498,8 +498,8 @@ Query OK, 0 rows affected (0.008 sec)
 
 Now the cluster is ready, let's verify 
 
-```
-[centos@ip-172-31-9-224 ~]$ sudo /opt/clustrix/bin/clx stat
+```txt
+[shell]$ sudo /opt/clustrix/bin/clx stat
 Cluster Name:    cld06281c052a00a35
 Cluster Version: 5.3.11_rc
 Cluster Status:   OK 
@@ -533,7 +533,7 @@ We now need to set up replication for the meta-data so that the databases and no
 
 On each MariaDB server, edit the /etc/my.cnf.d/server.cnf file and add the following under the `[mariadb]` section
 
-```
+```txt
 [mariadb]
 log_bin
 
@@ -585,7 +585,7 @@ With this config in place, restart all the MariaDB nodes `systemctl restart mari
 
 Before setting up the replication using `CHANGE MASTER ...` we need to do the following, this is only required to be once online before setting up the replication. 
 
-```
+```txt
 MariaDB [(none)]> SET GLOBAL slave_ddl_exec_mode=STRICT;
 Query OK, 0 rows affected (0.001 sec)
 ```
@@ -594,7 +594,7 @@ More details here <https://mariadb.com/kb/en/replication-and-binary-log-system-v
 
 Create a user to use for Replication between all the nodes, this user must be created on all nodes.
 
-```
+```txt
 MariaDB [(none)]> CREATE USER replication_user@'%' IDENTIFIED BY 'SecretPassw0rd!';
 Query OK, 0 rows affected (0.001 sec)
 
@@ -605,7 +605,7 @@ Query OK, 0 rows affected (0.002 sec)
 Since we already have binary logs enabled, and the above user creation/grants are done on all the nodes manually, we can start the replication but we need to skip all the GTIDs up to now. Let's check for the current GTID on all the nodes.
 
 - Node 1
-  ```
+  ```txt
   MariaDB [(none)]> SHOW MASTER STATUS\G
   *************************** 1. row ***************************
               File: mariadb-xpand-bin.000001
@@ -624,7 +624,7 @@ Since we already have binary logs enabled, and the above user creation/grants ar
   ```
   
 - Node 2
-  ```
+  ```txt
   MariaDB [(none)]> SHOW MASTER STATUS\G
   *************************** 1. row ***************************
               File: mariadb-xpand-bin.000001
@@ -643,7 +643,7 @@ Since we already have binary logs enabled, and the above user creation/grants ar
   ```
 
 - Node 3
-  ```
+  ```txt
   MariaDB [(none)]> SHOW MASTER STATUS\G
   *************************** 1. row ***************************
               File: mariadb-xpand-bin.000001
@@ -666,7 +666,7 @@ The Binary Log File & Position are identical but the GTID is different since eac
 Now we can set the Star Schema up, it means, all the nodes must replicate from all the other nodes. Since we have 3 nodes, when we do `SHOW SLAVE STATUS\G` on all the nodes, all the nodes must report 2 Replica 
 
 - The Replication should look like this
-  ```
+  ```txt
   Node 1 ──> Node 2
      └─────> Node 3
 
@@ -686,7 +686,7 @@ Now we can set the Star Schema up, it means, all the nodes must replicate from a
 Let's do this, Since we want to get rid of all the binary logs up to now, we can simply do `RESET MASTER;` on all nodes to clear all the local binary logs and start from empty GTID for each node.
 
 - Node 1
-  ```
+  ```txt
   MariaDB [(none)]> RESET MASTER;
   Query OK, 0 rows affected (0.006 sec)
 
@@ -852,7 +852,7 @@ Let's do this, Since we want to get rid of all the binary logs up to now, we can
   We can see Node 1 replicating from `XPAND-NODE-2` and `XPAND-NODE-3`, we will do the same on the remaining two nodes using the respective IP addresses.
 
 - Node 2
-  ```
+  ```txt
   MariaDB [(none)]> RESET MASTER;
   Query OK, 0 rows affected (0.006 sec)
 
@@ -1019,7 +1019,7 @@ Let's do this, Since we want to get rid of all the binary logs up to now, we can
   Node 2 Replicating from Node 1 and Node 3
 
 - Node 3
-  ```
+  ```txt
   MariaDB [(none)]> RESET MASTER;
   Query OK, 0 rows affected (0.006 sec)
 
@@ -1185,7 +1185,7 @@ Let's test some DDL/DML to see if this replication works?
 We will create three databases, one from each node, and we should be able to all the databases from all the MariaDB nodes.
 
 - Node 1
-  ```
+  ```txt
   MariaDB [(none)]> CREATE DATABASE db_node1;  
   Query OK, 1 row affected (0.001 sec)
 
@@ -1197,7 +1197,7 @@ We will create three databases, one from each node, and we should be able to all
   ```
 
 - Node 2
-  ```
+  ```txt
   MariaDB [(none)]> CREATE DATABASE db_node2;  
   Query OK, 1 row affected (0.001 sec)
 
@@ -1209,7 +1209,7 @@ We will create three databases, one from each node, and we should be able to all
   ```
 
 - Node 3
-  ```
+  ```txt
   MariaDB [(none)]> CREATE DATABASE db_node3;  
   Query OK, 1 row affected (0.001 sec)
 
@@ -1223,7 +1223,7 @@ We will create three databases, one from each node, and we should be able to all
 Now checking on all nodes to see if all the databases have been replicated to all nodes?
 
 - Node 1
-  ```
+  ```txt
   MariaDB [db_node1]> show databases;
   +--------------------+
   | Database           |
@@ -1239,7 +1239,7 @@ Now checking on all nodes to see if all the databases have been replicated to al
   ```
 
 - Node 2
-  ```
+  ```txt
   MariaDB [db_node2]> show databases;
   +--------------------+
   | Database           |
@@ -1255,7 +1255,7 @@ Now checking on all nodes to see if all the databases have been replicated to al
   ```
 
 - Node 3
-  ```
+  ```txt
   MariaDB [db_node3]> show databases;
   +--------------------+
   | Database           |
