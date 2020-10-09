@@ -99,7 +99,7 @@ Enable NTP process on all three nodes
 A dedicated mount `/data` with the type of `ext4` should be available, the output of the `df -h --print-type` should report a dedicated mount for `/data` with sufficient storage as follows
 
 ```
-[shell] df -h --print-type
+[shell]$ df -h --print-type
 Filesystem     Type      Size  Used Avail Use% Mounted on
 /dev/sda2      ext4       40G  1.4G   39G   2% /
 devtmpfs       devtmpfs   16G     0   16G   0% /dev
