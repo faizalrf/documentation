@@ -108,7 +108,7 @@ tmpfs          tmpfs      16G     0   16G   0% /dev/shm
 /dev/sdc       ext4      500G     0  500G   0% /data
 ```
 
-_**Note:** If the mount is not avaialbe with the type of `ext4` the installation of Xpand will fail._
+_**Note:** If the mount is not available with the type of `ext4` the installation of Xpand will fail._
 
 ## Download the Xpand binaries
 
@@ -306,6 +306,51 @@ MariaDB Xpand engine is installed successfully, now we can install the MariaDB s
 ## Install MariaDB 10.5 Enterprise
 
 Install The MariaDB Enterprise server & Xpand plugin on all the nodes. All the RPM files are available in the Enterprise downloaded tar package.
+
+First we need to install an additional tool that will help us create a local repository
+
+```
+[shell]$ sudo yum -y install createrepo
+```
+
+Assuming the downloaded rpm packaged tar file is under `/tmp/mariadb-enterprise-10.5.6-4-centos-7-x86_64-rpms`
+
+```
+[shell]$ pwd
+/tmp
+
+[shell]$ ls -lrt
+total 337744
+drwxrwxr-x. 3 centos centos      4096 Oct  7 03:10 mariadb-enterprise-10.5.6-4-centos-7-x86_64-rpms
+-rwxr-xr-x. 1 centos centos 345845760 Oct 10 15:18 mariadb-enterprise-10.5.6-4-centos-7-x86_64-rpms.tar
+```
+
+We can execute the `createrepo` tool to create a local repository pointing to this location.
+
+```
+[shell]$ sudo createrepo /tmp/mariadb-enterprise-10.5.6-4-centos-7-x86_64-rpms
+Spawning worker 0 with 15 pkgs
+Spawning worker 1 with 15 pkgs
+Workers Finished
+Saving Primary metadata
+Saving file lists metadata
+Saving other metadata
+Generating sqlite DBs
+Sqlite DBs complete
+```
+
+The above will create meta data for the local repository, let's create a repository file `/etc/yum.repos.d/mariadb.repo` and add the following to it.
+
+```
+[local]
+name=MariaDB ES 10.5
+baseurl=file:///tmp/mariadb-enterprise-10.5.6-4-centos-7-x86_64-rpms
+enabled=1
+gpgcheck=0
+protect=1
+```
+
+Save the file and exit to shell prompt. Now we can directly execute the `yum install` without worrying about the dependencies as follows since we have already set up a local MariaDB Enterprise server repository.
 
 ```txt
 [shell]$ sudo yum -y install MariaDB-server MariaDB-backup MariaDB-xpand-engine
