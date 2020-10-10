@@ -307,6 +307,8 @@ MariaDB Xpand engine is installed successfully, now we can install the MariaDB s
 
 Install The MariaDB Enterprise server & Xpand plugin on all the nodes. All the RPM files are available in the Enterprise downloaded tar package.
 
+### Local Repo Setup
+
 First we need to install an additional tool that will help us create a local repository
 
 ```
@@ -350,7 +352,9 @@ gpgcheck=0
 protect=1
 ```
 
-Save the file and exit to shell prompt. Now we can directly execute the `yum install` without worrying about the dependencies as follows since we have already set up a local MariaDB Enterprise server repository.
+### Install MariaDB Enterprise
+
+Now we can directly execute the `yum install` without worrying about the dependencies as follows since we have already set up a local MariaDB Enterprise server repository.
 
 ```txt
 [shell]$ sudo yum -y install MariaDB-server MariaDB-backup MariaDB-xpand-engine
