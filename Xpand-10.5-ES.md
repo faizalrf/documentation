@@ -100,12 +100,15 @@ A dedicated mount `/data` with the type of `ext4` should be available, the outpu
 
 ```txt
 [shell]$ df -h --print-type
+[centos@ip-172-31-9-216 ~]$ df -h --print-type 
 Filesystem     Type      Size  Used Avail Use% Mounted on
-/dev/sda2      ext4       40G  1.4G   39G   2% /
-devtmpfs       devtmpfs   16G     0   16G   0% /dev
-tmpfs          tmpfs      16G     0   16G   0% /dev/shm
-/dev/sda1      ext4      240G   50G  174G  23% /boot
-/dev/sdc       ext4      500G     0  500G   0% /data
+devtmpfs       devtmpfs  7.4G     0  7.4G   0% /dev
+tmpfs          tmpfs     7.4G     0  7.4G   0% /dev/shm
+tmpfs          tmpfs     7.4G   17M  7.4G   1% /run
+tmpfs          tmpfs     7.4G     0  7.4G   0% /sys/fs/cgroup
+/dev/xvda1     xfs       8.0G  1.4G  6.7G  17% /
+tmpfs          tmpfs     1.5G     0  1.5G   0% /run/user/1000
+/dev/nvme0n1   ext4      436G   73M  414G   1% /data
 ```
 
 _**Note:** If the mount is not available with the type of `ext4` the installation of Xpand will fail._
@@ -309,13 +312,7 @@ Install The MariaDB Enterprise server & Xpand plugin on all the nodes. All the R
 
 ### Local Repo Setup
 
-First we need to install an additional tool that will help us create a local repository
-
-```
-[shell]$ sudo yum -y install createrepo
-```
-
-Assuming the downloaded rpm packaged tar file is under `/tmp/mariadb-enterprise-10.5.6-4-centos-7-x86_64-rpms`
+Assuming the downloaded rpm package was untared is under `/tmp/mariadb-enterprise-10.5.6-4-centos-7-x86_64-rpms`
 
 ```
 [shell]$ pwd
@@ -327,21 +324,7 @@ drwxrwxr-x. 3 centos centos      4096 Oct  7 03:10 mariadb-enterprise-10.5.6-4-c
 -rwxr-xr-x. 1 centos centos 345845760 Oct 10 15:18 mariadb-enterprise-10.5.6-4-centos-7-x86_64-rpms.tar
 ```
 
-We can execute the `createrepo` tool to create a local repository pointing to this location.
-
-```
-[shell]$ sudo createrepo /tmp/mariadb-enterprise-10.5.6-4-centos-7-x86_64-rpms
-Spawning worker 0 with 15 pkgs
-Spawning worker 1 with 15 pkgs
-Workers Finished
-Saving Primary metadata
-Saving file lists metadata
-Saving other metadata
-Generating sqlite DBs
-Sqlite DBs complete
-```
-
-The above will create meta data for the local repository, let's create a repository file `/etc/yum.repos.d/mariadb.repo` and add the following to it.
+Based on the above folder setup, we can now create a repository file `/etc/yum.repos.d/mariadb.repo` and add the following content to it. This will define a local repository for CentOS/RHEL.
 
 ```
 [local]
@@ -351,6 +334,8 @@ enabled=1
 gpgcheck=0
 protect=1
 ```
+
+Note: The `baseurl` must point to the location where the extracted tar exists. 
 
 ### Install MariaDB Enterprise
 
