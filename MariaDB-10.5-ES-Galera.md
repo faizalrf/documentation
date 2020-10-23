@@ -417,7 +417,7 @@ expire_log_minimum_files=3
 select_master=true
 user=repl_user
 password=SecretP@ssw0rd
-server_id=4008
+server_id=4000
 
 [Replication-Listener]
 type=listener
