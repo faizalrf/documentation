@@ -249,7 +249,7 @@ MariaDB [(none)]> show global status like 'wsrep_cluster_size';
 1 row in set (0.003 sec)
 ```
 
-Now we can see all the three nodes are in the cluster on the primary data center. Repeat the same on the second data center. 
+Now we can see all the three nodes are in the cluster on the primary data center. Repeat the same on the **second data center**. 
 
 - Bootstrap Galera using `galera_new_cluster` from node 1 (Galera-81)
 - Start the other two nodes using `systemctl start mariadb`
@@ -303,7 +303,7 @@ Updated:
 Complete!
 ```
 
-Edit the `/etc/maxscale.cnf` file on both data centers and define the respective Galera clusters, take note of the IP addresses and Node names need to be defined accordingly, the following is for the Primary data center, similarly just duplicate it and edit  the respective items for the second data center.
+Edit the `/etc/maxscale.cnf` file on **both data centers** and define the respective Galera clusters, take note of the IP addresses and Node names need to be defined accordingly, the following is for the Primary data center, similarly just duplicate it and edit  the respective items for the second data center.
 
 ```txt
 [maxscale]
@@ -370,20 +370,20 @@ This setup gives us the basic read/write split and standard monitoring capabilit
 
 ### Configure MaxScale User
 
-Based on the `/etc/maxscale.cnf` configuration we need to creare a `maxuser` account with a password of `SecretP@ssw0rd`, since the Galera with binary logs is already configured, we can creatre this user on any node of the Parimary Datacenter.
+We need to creare the `maxuser` account with a password of `SecretP@ssw0rd` (As defined in the `maxscale.cnf`), this needs to be done on both **Primary DC** and **DR DC**.
 
 ```
-MariaDB [(none)]> create user maxuser@'192.168.56.%' identified by 'SecretP@ssw0rd';
+MariaDB [(none)]> create user maxuser@'%' identified by 'SecretP@ssw0rd';
 Query OK, 0 rows affected (0.058 sec)
 
-MariaDB [(none)]> grant select on mysql.* to maxuser@'192.168.56.%';
+MariaDB [(none)]> grant select on mysql.* to maxuser@'%';
 Query OK, 0 rows affected (0.054 sec)
 
-MariaDB [(none)]> grant show databases on *.* to maxuser@'192.168.56.%';
+MariaDB [(none)]> grant show databases on *.* to maxuser@'%';
 Query OK, 0 rows affected (0.054 sec)
 ```
 
-Now we can start MaxScale node on the Primary DC and verify the cluster status.
+Now we can start MaxScale node on the **Primary DC** and verify the cluster status.
 
 ```
 ➜  systemctl start maxscale
@@ -391,11 +391,11 @@ Now we can start MaxScale node on the Primary DC and verify the cluster status.
 ┌───────────┬───────────────┬──────┬─────────────┬─────────────────────────┬───────────┐
 │ Server    │ Address       │ Port │ Connections │ State                   │ GTID      │
 ├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼───────────┤
-│ Galera-71 │ 192.168.56.71 │ 3306 │ 0           │ Master, Synced, Running │ 70-7000-2 │
+│ Galera-71 │ 192.168.56.71 │ 3306 │ 0           │ Master, Synced, Running │ 70-7000-3 │
 ├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼───────────┤
-│ Galera-72 │ 192.168.56.72 │ 3306 │ 0           │ Slave, Synced, Running  │ 70-7000-2 │
+│ Galera-72 │ 192.168.56.72 │ 3306 │ 0           │ Slave, Synced, Running  │ 70-7000-3 │
 ├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼───────────┤
-│ Galera-73 │ 192.168.56.73 │ 3306 │ 0           │ Slave, Synced, Running  │ 70-7000-2 │
+│ Galera-73 │ 192.168.56.73 │ 3306 │ 0           │ Slave, Synced, Running  │ 70-7000-3 │
 └───────────┴───────────────┴──────┴─────────────┴─────────────────────────┴───────────┘
 ```
 
@@ -403,7 +403,7 @@ We can see the clust is healthy with GTID / Domain & Server IDs showing up as pe
 
 We now need to define a binlog router so that while this node is doing quiery routing, it will also work as binary log router from Primary DC to DR DC.
 
-We will define all three Galera nodes in the Primary DC as the Primary DB nodes for this MaxScale, this means, MaxScale can switch from one DB to another DB if one of the nodes in Primary DB goes down.
+We will define all three Galera nodes in the **Primary DC** as the Primary DB nodes for this MaxScale, this means, MaxScale can switch from one DB to another DB if one of the nodes in Primary DB goes down.
 
 In the `/etc/maxscale.cnf` file, define a new router on the primary data center
 
@@ -417,6 +417,7 @@ expire_log_minimum_files=3
 select_master=true
 user=repl_user
 password=SecretP@ssw0rd
+server_id=4008
 
 [Replication-Listener]
 type=listener
@@ -432,16 +433,16 @@ Finally, the listener at which this replication service is going to listen to an
 
 #### Replication User
 
-Create the defined replication user under the `[Replication-Proxy]` section with standard replication privileges through any of the Galera nodes on the primary data center.
+Create the defined replication user on both of the data centers which is defined under the `[Replication-Proxy]` section followed by granting this user with standard replication privileges. This needs to be done on both **Primary DC** & **DR DC** clusters.
 
 ```
-MariaDB [(none)]> create user repl_user@'192.168.56.%' identified by 'SecretP@ssw0rd';
+MariaDB [(none)]> create user repl_user@'%' identified by 'SecretP@ssw0rd';
 Query OK, 0 rows affected (0.051 sec)
 
-MariaDB [(none)]> grant show databases, replication slave, replication client on *.* to repl_user@'192.168.56.%';
+MariaDB [(none)]> grant show databases, replication slave, replication client on *.* to repl_user@'%';
 Query OK, 0 rows affected (0.051 sec)
 
-MariaDB [dbtest]> grant select on mysql.* to repl_user@'192.168.56.%';
+MariaDB [dbtest]> grant select on mysql.* to repl_user@'%';
 Query OK, 0 rows affected (0.048 sec)
 ```
 
@@ -506,30 +507,31 @@ Now this MaxScale is ready to be setup as a PRIMARY node for one of the Galera n
 
 Primary DC is ready, now we need to pick up one of the nodes on the DR DC and set it up as a Replica to the MaxScale binloger service. The same repl_user and it's password will be used for this. It's basically just a matter of executing `CHANGE MASTER` command using the binlog router listener port to point to MaxScale as the source of the replication data.
 
-On the Primary data center, let's create a new database and a table with some data, which should replicate using standard asynchronous repliation to the DR datacenter using the MaxScale as the binlog router.
-
-```
-MariaDB [(none)]> create database dbtest;
-Query OK, 1 row affected (0.057 sec)
-
-MariaDB [(none)]> use dbtest;
-Database changed
-
-MariaDB [dbtest]> create table tab(id serial, c1 varchar(100));
-Query OK, 0 rows affected (0.125 sec)
-
-MariaDB [dbtest]> insert into tab(c1) select column_name from information_schema.columns;
-Query OK, 2244 rows affected (0.102 sec)
-Records: 2244  Duplicates: 0  Warnings: 0
-```
-
-Now this database, table and the inserted data should have been captured in the binlogs of the MaxScale binlog router.
-
 #### Set up Galera node as a Replica
 
 On the DR data center, execute `CHANGE MASTER` command on one of the Galera node, this node will become the Replica of the MaxScale binlog router using the GTID based replication mechanism.
 
-Before we execute `CHANGE MASTER` we need to set the `GTID_SLAVE_POS = ''` as empty string so that the MASTER_USE_GTID can start from `current_pos` which will pull all the transastions from the very first recorded GTID on the Primary data center.
+Take note of the IP address and replication service port of the MaxSclae node on the **Primnary Data Center**, this will be used in the `CHANGE MASTER` commander in the following section.
+
+Before we execute `CHANGE MASTER` we need to set the `GTID_SLAVE_POS = 'Primary Cluster GTID>'` as so that the MASTER_USE_GTID can start from the first transaction that took place on the **Primary DC Cluster** and pull it down to the **DR DC Cluster**.
+
+On **Primary MaxScale**, check the `server status` and take note of the GTID
+
+```
+➜  systemctl start maxscale
+➜  maxctrl list servers 
+┌───────────┬───────────────┬──────┬─────────────┬─────────────────────────┬───────────┐
+│ Server    │ Address       │ Port │ Connections │ State                   │ GTID      │
+├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼───────────┤
+│ Galera-71 │ 192.168.56.71 │ 3306 │ 0           │ Master, Synced, Running │ 70-7000-9 │
+├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼───────────┤
+│ Galera-72 │ 192.168.56.72 │ 3306 │ 0           │ Slave, Synced, Running  │ 70-7000-9 │
+├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼───────────┤
+│ Galera-73 │ 192.168.56.73 │ 3306 │ 0           │ Slave, Synced, Running  │ 70-7000-9 │
+└───────────┴───────────────┴──────┴─────────────┴─────────────────────────┴───────────┘
+```
+
+Since we have already done some transacitons on the Primary Galera Cluster, the GTID has moved to `70-7000-9`, It's important that the DR Cluster is at the same GTID, means, we should have already created those users and grants on the DR Cluster as well. We will use this GTID when setting the GTID for the SLAVE to start replication. The command would look like this `SET GLOBAL GTID_SLAVE_POS = '70-7000-9';`
 
 ```
 ➜  ~ mariadb -uroot
@@ -559,10 +561,10 @@ MariaDB [(none)]> SHOW DATABASES;
 +--------------------+
 3 rows in set (0.006 sec)
 
-MariaDB [(none)]> SET GLOBAL GTID_SLAVE_POS='';
+MariaDB [(none)]> SET GLOBAL GTID_SLAVE_POS='70-7000-9';
 Query OK, 0 rows affected (0.048 sec)
 
-MariaDB [(none)]> CHANGE MASTER TO MASTER_HOST='192.168.56.70', MASTER_PORT=4008, MASTER_USER='repl_user', MASTER_PASSWORD='SecretP@ssw0rd', MASTER_USE_GTID=current_pos;
+MariaDB [(none)]> CHANGE MASTER TO MASTER_HOST='192.168.56.70', MASTER_PORT=4008, MASTER_USER='repl_user', MASTER_PASSWORD='SecretP@ssw0rd', MASTER_USE_GTID=slave_pos;
 Query OK, 0 rows affected (0.083 sec)
 
 MariaDB [(none)]> START SLAVE;
@@ -613,11 +615,11 @@ MariaDB [(none)]> show slave status\G
                 Last_SQL_Errno: 0
                 Last_SQL_Error: 
    Replicate_Ignore_Server_Ids: 
-              Master_Server_Id: 1234
+              Master_Server_Id: 4000
                 Master_SSL_Crl: 
             Master_SSL_Crlpath: 
                     Using_Gtid: Current_Pos
-                   Gtid_IO_Pos: 70-7000-10
+                   Gtid_IO_Pos: 70-7000-9
        Replicate_Do_Domain_Ids: 
    Replicate_Ignore_Domain_Ids: 
                  Parallel_Mode: optimistic
@@ -630,18 +632,37 @@ Slave_Non_Transactional_Groups: 0
 1 row in set (0.001 sec)
 ```
 
-We can see this Galera node is arleady at **`70-7000-10`** GTID which should match with `maxctrl list server` output
+### Create test data for replication
+
+On the **Primary DC**, let's create a new database and a table with some data, which should replicate using standard asynchronous repliation to the DR datacenter using the MaxScale as the binlog router.
+
+```
+MariaDB [(none)]> create database testdb;
+Query OK, 1 row affected (0.057 sec)
+
+MariaDB [(none)]> use testdb;
+Database changed
+
+MariaDB [dbtest]> create table tab(id serial, c1 varchar(100));
+Query OK, 0 rows affected (0.125 sec)
+
+MariaDB [dbtest]> insert into tab(c1) select column_name from information_schema.columns;
+Query OK, 2244 rows affected (0.102 sec)
+Records: 2244  Duplicates: 0  Warnings: 0
+```
+
+Now this database, table and the inserted data should have been captured in the binlogs of the MaxScale binlog router and already replicated to the **DR DC Cluster**. We can easily verify this through MaxScale's `maxctrl list servers` command on the Primary MaxScale and also through `SHOW SLAVE STATUS\G` on the DR DC Cluster.
 
 ```
 ➜  maxctrl list servers; 
 ┌───────────┬───────────────┬──────┬─────────────┬─────────────────────────┬────────────┐
 │ Server    │ Address       │ Port │ Connections │ State                   │ GTID       │
 ├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼────────────┤
-│ Galera-71 │ 192.168.56.71 │ 3306 │ 0           │ Master, Synced, Running │ 70-7000-10 │
+│ Galera-71 │ 192.168.56.71 │ 3306 │ 0           │ Master, Synced, Running │ 70-7000-12 │
 ├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼────────────┤
-│ Galera-72 │ 192.168.56.72 │ 3306 │ 0           │ Slave, Synced, Running  │ 70-7000-10 │
+│ Galera-72 │ 192.168.56.72 │ 3306 │ 0           │ Slave, Synced, Running  │ 70-7000-12 │
 ├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼────────────┤
-│ Galera-73 │ 192.168.56.73 │ 3306 │ 0           │ Slave, Synced, Running  │ 70-7000-10 │
+│ Galera-73 │ 192.168.56.73 │ 3306 │ 0           │ Slave, Synced, Running  │ 70-7000-12 │
 └───────────┴───────────────┴──────┴─────────────┴─────────────────────────┴────────────┘
 ```
 
@@ -662,28 +683,83 @@ MariaDB [(none)]> show databases;
 +--------------------+
 | Database           |
 +--------------------+
-| dbtest             |
+| testdb             |
 | information_schema |
 | mysql              |
 | performance_schema |
 +--------------------+
 4 rows in set (0.006 sec)
 
-MariaDB [(none)]> use dbtest;
-Reading table information for completion of table and column names
-You can turn off this feature to get a quicker startup with -A
-
+MariaDB [(none)]> use testdb;
 Database changed
-MariaDB [dbtest]> select count(*)  from tab;
+
+MariaDB [testdb]> select count(*)  from tab;
 +----------+
 | count(*) |
 +----------+
 |     2244 |
 +----------+
 1 row in set (0.014 sec)
+
+MariaDB [testdb]> show slave status\G
+*************************** 1. row ***************************
+                Slave_IO_State: Waiting for master to send event
+                   Master_Host: 172.31.26.250
+                   Master_User: repl_user
+                   Master_Port: 4008
+                 Connect_Retry: 60
+               Master_Log_File: ip-172-31-16-16-bin.000001
+           Read_Master_Log_Pos: 54686
+                Relay_Log_File: ip-172-31-46-199-relay-bin.000002
+                 Relay_Log_Pos: 53556
+         Relay_Master_Log_File: ip-172-31-16-16-bin.000001
+              Slave_IO_Running: Yes
+             Slave_SQL_Running: Yes
+               Replicate_Do_DB: 
+           Replicate_Ignore_DB: 
+            Replicate_Do_Table: 
+        Replicate_Ignore_Table: 
+       Replicate_Wild_Do_Table: 
+   Replicate_Wild_Ignore_Table: 
+                    Last_Errno: 0
+                    Last_Error: 
+                  Skip_Counter: 0
+           Exec_Master_Log_Pos: 54686
+               Relay_Log_Space: 53876
+               Until_Condition: None
+                Until_Log_File: 
+                 Until_Log_Pos: 0
+            Master_SSL_Allowed: No
+            Master_SSL_CA_File: 
+            Master_SSL_CA_Path: 
+               Master_SSL_Cert: 
+             Master_SSL_Cipher: 
+                Master_SSL_Key: 
+         Seconds_Behind_Master: 0
+ Master_SSL_Verify_Server_Cert: No
+                 Last_IO_Errno: 0
+                 Last_IO_Error: 
+                Last_SQL_Errno: 0
+                Last_SQL_Error: 
+   Replicate_Ignore_Server_Ids: 
+              Master_Server_Id: 4000
+                Master_SSL_Crl: 
+            Master_SSL_Crlpath: 
+                    Using_Gtid: Slave_Pos
+                   Gtid_IO_Pos: 70-7000-12
+       Replicate_Do_Domain_Ids: 
+   Replicate_Ignore_Domain_Ids: 
+                 Parallel_Mode: optimistic
+                     SQL_Delay: 0
+           SQL_Remaining_Delay: NULL
+       Slave_SQL_Running_State: Slave has read all relay log; waiting for more updates
+              Slave_DDL_Groups: 3
+Slave_Non_Transactional_Groups: 0
+    Slave_Transactional_Groups: 1
+1 row in set (0.000 sec)
 ```
 
-Indeed, all the data from the Prumary DC has been synced up with all the nodes in the DR DC.
+Indeed, all the data from the Prumary DC has been synced up with all the nodes in the DR DC and the GTID is already at `70-7000-12` which is in sync as per Primary MacxScale.
 
 This concludes 50% of our architecture, we now have data replicating from Primary to DR galera using asynchronoyus replication and MaxScale's binlog router.
 
@@ -760,6 +836,7 @@ expire_log_minimum_files=3
 select_master=true
 user=repl_user
 password=SecretP@ssw0rd
+server_id=5000
 
 [Replication-Listener]
 type=listener
@@ -771,22 +848,20 @@ address=0.0.0.0
 
 This setup gives us the basic read/write split, standard monitoring capabilities and a binlog router for the DR data center.
 
-***Note:** We don't need to worry about creating the maxuser & repl_user accounts on the DR Galera cluster as these are already replicated over from the Primary thanks to our initial setup of the binlog router.*
-
 Once the above config is in, we can just start the MaxScale service and it will start the binlog service using the three nodes on the DR cluster. Let's try.
 
 ```
 ➜  systemctl restart maxscale         
 ➜  maxctrl list servers && maxctrl list services && maxctrl list listeners
-┌───────────┬───────────────┬──────┬─────────────┬─────────────────────────┬────────────┐
-│ Server    │ Address       │ Port │ Connections │ State                   │ GTID       │
-├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼────────────┤
-│ Galera-81 │ 192.168.56.81 │ 3306 │ 0           │ Master, Synced, Running │ 70-7000-10 │
-├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼────────────┤
-│ Galera-82 │ 192.168.56.82 │ 3306 │ 0           │ Slave, Synced, Running  │            │
-├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼────────────┤
-│ Galera-83 │ 192.168.56.83 │ 3306 │ 0           │ Slave, Synced, Running  │            │
-└───────────┴───────────────┴──────┴─────────────┴─────────────────────────┴────────────┘
+┌───────────┬───────────────┬──────┬─────────────┬─────────────────────────┬──────────────────────┐
+│ Server    │ Address       │ Port │ Connections │ State                   │ GTID                 │
+├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼──────────────────────┤
+│ Galera-81 │ 192.168.56.81 │ 3306 │ 0           │ Master, Synced, Running │ 70-7000-12,80-8000-6 │
+├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼──────────────────────┤
+│ Galera-82 │ 192.168.56.82 │ 3306 │ 0           │ Slave, Synced, Running  │ 80-8000-6            │
+├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼──────────────────────┤
+│ Galera-83 │ 192.168.56.83 │ 3306 │ 0           │ Slave, Synced, Running  │ 80-8000-6            │
+└───────────┴───────────────┴──────┴─────────────┴─────────────────────────┴──────────────────────┘
 ┌───────────────────┬────────────────┬─────────────┬───────────────────┬─────────────────────────────────┐
 │ Service           │ Router         │ Connections │ Total Connections │ Servers                         │
 ├───────────────────┼────────────────┼─────────────┼───────────────────┼─────────────────────────────────┤
@@ -807,44 +882,17 @@ We have all the services running on the DR envuronment wthout problems.
 
 We will now create a new table on the DR Galera Node 1 to see if it gets replicated over to Primary and how does the GTID looks like for the DR cluster.
 
-```
-MariaDB [dbtest]> select @@hostname;
-+------------+
-| @@hostname |
-+------------+
-| galera-81  |
-+------------+
-1 row in set (0.000 sec)
+The `list servers` output above tells that the cluster has already received the additonal tranaction from the `70-7000` cluster and it has it's own 6 transactions under `80-8000`. 
 
-MariaDB [dbtest]> create table tab2 like tab;
-Query OK, 0 rows affected (0.086 sec)
-```
+Let's set Galera Node 1 on the Primary DC cluster to replicate from the DR MaxScale binlog router. We will follow the same sequence, **take note** we need to set any GTID_SLAVE_POS based on the `maxctrl list servers` output from the DR MacxScale i.e. **`80-8000-6`**, we will use this GTID as this is going to be the starting point for replication from DR to Primary.
 
-If we verify the `maxctrl list servers` on the DR MaxScale, we will see a mixed GTID, this tells each data center has it's unque GTID values in the setup.
-
-```
-➜  maxctrl list servers
-┌───────────┬───────────────┬──────┬─────────────┬─────────────────────────┬──────────────────────┐
-│ Server    │ Address       │ Port │ Connections │ State                   │ GTID                 │
-├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼──────────────────────┤
-│ Galera-81 │ 192.168.56.81 │ 3306 │ 0           │ Master, Synced, Running │ 70-7000-10,80-8000-1 │
-├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼──────────────────────┤
-│ Galera-82 │ 192.168.56.82 │ 3306 │ 0           │ Slave, Synced, Running  │ 80-8000-1            │
-├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼──────────────────────┤
-│ Galera-83 │ 192.168.56.83 │ 3306 │ 0           │ Slave, Synced, Running  │ 80-8000-1            │
-└───────────┴───────────────┴──────┴─────────────┴─────────────────────────┴──────────────────────┘
-```
-
-The `70-7000-10` was replicated from Primary DC to DR, while DR got it's own `80-8000-1` transaction as donated by it's unique Domain and Server ID.
-
-Let's set Galera Node 1 on the Primary DC cluster to replicate from the DR MaxScale binlog router. We will follow the same sequence
-
-- SET GTID_SLAVE_POS to ''
-- CHANGE MASTER
+- SET GLOBAL GTID_SLAVE_POS='<Current Position as per DR MaxScale>
+  - This will give a warning, ignore it and proceed.
+- CHANGE MASTER MASTER_USE_GTID=slave_pos
 - START SLAVE
 
 ```
-MariaDB [dbtest]> select @@hostname;
+MariaDB [testdb]> select @@hostname;
 +------------+
 | @@hostname |
 +------------+
@@ -852,18 +900,10 @@ MariaDB [dbtest]> select @@hostname;
 +------------+
 1 row in set (0.000 sec)
 
-MariaDB [dbtest]> SET GLOBAL GTID_SLAVE_POS='';
-Query OK, 0 rows affected, 1 warning (0.054 sec)
+MariaDB [testdb]> SET GLOBAL GTID_SLAVE_POS='80-8000-6';
+Query OK, 0 rows affected, 1 warning (0.009 sec)
 
-MariaDB [dbtest]> show warnings;
-+---------+------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-| Level   | Code | Message                                                                                                                                                                                                                                                          |
-+---------+------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-| Warning | 1948 | Specified value for @@gtid_slave_pos contains no value for replication domain 70. This conflicts with the binary log which contains GTID 70-7000-10. If MASTER_GTID_POS=CURRENT_POS is used, the binlog position will override the new value of @@gtid_slave_pos |
-+---------+------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-1 row in set (0.000 sec)
-
-MariaDB [dbtest]> CHANGE MASTER TO MASTER_HOST='192.168.56.80', MASTER_PORT=4008, MASTER_USER='repl_user', MASTER_PASSWORD='SecretP@ssw0rd', MASTER_USE_GTID=current_pos;
+MariaDB [dbtest]> CHANGE MASTER TO MASTER_HOST='192.168.56.80', MASTER_PORT=4008, MASTER_USER='repl_user', MASTER_PASSWORD='SecretP@ssw0rd', MASTER_USE_GTID=slave_pos;
 Query OK, 0 rows affected (0.093 sec)
 
 MariaDB [dbtest]> START SLAVE;
@@ -910,11 +950,11 @@ MariaDB [dbtest]> SHOW SLAVE STATUS\G
                 Last_SQL_Errno: 0
                 Last_SQL_Error: 
    Replicate_Ignore_Server_Ids: 
-              Master_Server_Id: 1234
+              Master_Server_Id: 5000
                 Master_SSL_Crl: 
             Master_SSL_Crlpath: 
                     Using_Gtid: Current_Pos
-                   Gtid_IO_Pos: 70-7000-10,80-8000-1
+                   Gtid_IO_Pos: 80-8000-6,70-7000-12
        Replicate_Do_Domain_Ids: 
    Replicate_Ignore_Domain_Ids: 
                  Parallel_Mode: optimistic
@@ -929,52 +969,29 @@ Slave_Non_Transactional_Groups: 0
 
 Refer to the warning, we can ignore it because our cluster has a differnet domain ID and we will never have a conflict. The `CHANGE MASTER` is now pointing to the DR MaxScale's binlog router service and port `4008` using the same user `repl_user` and it's password.
 
-Let's check the MaxScale `maxctrl list servers` on the Primary site.
+Let's check the MaxScale `maxctrl list servers` on the Primary site after doing a few transactions on both sides.
 
 ```
 ➜  maxctrl list servers;
 ┌───────────┬───────────────┬──────┬─────────────┬─────────────────────────┬──────────────────────┐
 │ Server    │ Address       │ Port │ Connections │ State                   │ GTID                 │
 ├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼──────────────────────┤
-│ Galera-71 │ 192.168.56.71 │ 3306 │ 0           │ Master, Synced, Running │ 70-7000-10,80-8000-1 │
+│ Galera-71 │ 192.168.56.71 │ 3306 │ 0           │ Master, Synced, Running │ 70-7000-13,80-8000-9 │
 ├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼──────────────────────┤
-│ Galera-72 │ 192.168.56.72 │ 3306 │ 0           │ Slave, Synced, Running  │ 70-7000-10           │
+│ Galera-72 │ 192.168.56.72 │ 3306 │ 0           │ Slave, Synced, Running  │ 70-7000-13           │
 ├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼──────────────────────┤
-│ Galera-73 │ 192.168.56.73 │ 3306 │ 0           │ Slave, Synced, Running  │ 70-7000-10           │
+│ Galera-73 │ 192.168.56.73 │ 3306 │ 0           │ Slave, Synced, Running  │ 70-7000-13           │
 └───────────┴───────────────┴──────┴─────────────┴─────────────────────────┴──────────────────────┘
 ```
 
-We can se the Node 1 actualy recevied `80-8000-1` transaction from the DR DC, this transaction was performed earlier to create a new table in the `dbtest` database.
-
-Let's verify.
-
-```
-MariaDB [dbtest]> select @@hostname;
-+------------+
-| @@hostname |
-+------------+
-| galera-71  |
-+------------+
-1 row in set (0.000 sec)
-
-MariaDB [dbtest]> show tables;
-+------------------+
-| Tables_in_dbtest |
-+------------------+
-| tab              |
-| tab2             |
-+------------------+
-2 rows in set (0.001 sec)
-```
-
-We can see the data has been received from DR DC successfully.
+We can see the data has is replicating both ways! 
 
 This concludes our Setup as presented in the picture `Ref: Image-1`.
 
-There are few thing's to take note, only one data center should be ACTIVE at any given time, cannot use both in active state. This means, transactions should be coming from only 1 side and not from both sides at the same time, this will create conflicts and problems for the binlog router based asynchronous replication.
+There are few thing's to take note, **only one data center** should be ACTIVE at any given time, cannot use both in active state. This means, transactions should be coming from only 1 side and not from both sides at the same time, this will create conflicts and problems for the binlog router based asynchronous replication.
 
 # Video Reference
 
 Refer to my YouTube videos that implement this architecture with in depth discussion and explanation <https://www.youtube.com/playlist?list=PLb88NRKTvnTxOTBZ8OKDyvYVKUx2c1nH0>
 
-### Thank You!
+## Thank You!
