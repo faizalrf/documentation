@@ -91,7 +91,7 @@ Now that Galera Cluster has been installed on all 6 nodes, we can now configure 
 
 The following needs to be edited in the `/etc/my.cnf.d/server.cnf` file
 
-***Note:*** Don't forget to add **`log_error`** under the **`[mariadb]`** section as for all MariaDB nodes. 
+***Note:*** Don't forget to add **`log_error=/var/lib/mysql/server.log`** under the **`[mariadb]`** section for all MariaDB nodes. 
 
 - Primary Data Center
 
