@@ -1,5 +1,9 @@
 # MariaDB 10.5 Enterprise - Galera Architecture
 
+## Assumptions
+
+This guide is meant to be used with MariaDB 10.5 Enterprise Server on RHEL/CentOS 7 operating systems, however the setup on RHEL/CentOS 8 should not be much different. 
+
 ## Architecture
 
 The requirement is simple, setup 2 Galera clusters (3 nodes each) on two data centers. Setup MaxScale 2.5 binlog router to replicate data from Galera cluster on the primary data cetner to the the other Galera cluster on the secondary data center. 
