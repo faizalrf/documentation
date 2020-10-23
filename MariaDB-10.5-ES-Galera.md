@@ -64,24 +64,6 @@ Installing for dependencies:
 
 Transaction Summary
 ==============================================================================================================================================================================================
-Install  3 Packages (+11 Dependent packages)
-
-  Installing : lsof-4.87-6.el7.x86_64                                                                                                                                                    1/14 
-  Installing : perl-Data-Dumper-2.145-3.el7.x86_64                                                                                                                                       2/14 
-  Installing : boost-program-options-1.53.0-28.el7.x86_64                                                                                                                                3/14 
-  Installing : socat-1.7.3.2-2.el7.x86_64                                                                                                                                                4/14 
-  Installing : galera-enterprise-4-26.4.5-1.el7.8.x86_64                                                                                                                                 5/14 
-  Installing : 1:perl-Compress-Raw-Zlib-2.061-4.el7.x86_64                                                                                                                               6/14 
-  Installing : MariaDB-client-10.5.5_3-1.el7.x86_64                                                                                                                                      7/14 
-  Installing : perl-Net-Daemon-0.48-5.el7.noarch                                                                                                                                         8/14 
-  Installing : perl-Compress-Raw-Bzip2-2.061-3.el7.x86_64                                                                                                                                9/14 
-  Installing : perl-IO-Compress-2.061-2.el7.noarch                                                                                                                                      10/14 
-  Installing : perl-PlRPC-0.2020-14.el7.noarch                                                                                                                                          11/14 
-  Installing : perl-DBI-1.627-4.el7.x86_64                                                                                                                                              12/14 
-  Installing : MariaDB-server-10.5.5_3-1.el7.x86_64                                                                                                                                     13/14 
-2020-09-11  9:21:24 server_audit: MariaDB Audit Plugin version 2.0.2 STARTED.
-2020-09-11  9:21:24 server_audit: Query cache is enabled with the TABLE events. Some table reads can be veiled.
-2020-09-11  9:21:26 server_audit: STOPPED
 ..
 ..
 Complete!
@@ -108,6 +90,8 @@ All the required binaries are insalled on all the 6 galera nodes.
 Now that Galera Cluster has been installed on all 6 nodes, we can now configure those as 2 separate Galera clusters, here is a reference configuration for both clusters
 
 The following needs to be edited in the `/etc/my.cnf.d/server.cnf` file
+
+***Note:*** Don't forget to add **`log_error`** under the **`[mariadb]`** section as for all MariaDB nodes. 
 
 - Primary Data Center
 
@@ -276,30 +260,8 @@ Installing for dependencies:
 
 Transaction Summary
 ==============================================================================================================================================================================================
-Install             ( 1 Dependent package)
-Upgrade  1 Package
-
-Total size: 168 M
-Total download size: 50 k
-Downloading packages:
-libatomic-4.8.5-39.el7.x86_64.rpm                                                                                                                                      |  50 kB  00:00:00     
-Running transaction check
-Running transaction test
-Transaction test succeeded
-Running transaction
-  Installing : libatomic-4.8.5-39.el7.x86_64                                                                                                                                              1/3 
-  Updating   : maxscale-2.5.3-2.rhel.7.x86_64                                                                                                                                             2/3 
-  Cleanup    : maxscale-2.4.11-1.x86_64                                                                                                                                                   3/3 
-  Verifying  : libatomic-4.8.5-39.el7.x86_64                                                                                                                                              1/3 
-  Verifying  : maxscale-2.5.3-2.rhel.7.x86_64                                                                                                                                             2/3 
-  Verifying  : maxscale-2.4.11-1.x86_64                                                                                                                                                   3/3 
-
-Dependency Installed:
-  libatomic.x86_64 0:4.8.5-39.el7                                                                                                                                                             
-
-Updated:
-  maxscale.x86_64 0:2.5.3-2.rhel.7                                                                                                                                                            
-
+..
+..                                                                                                                                                            
 Complete!
 ```
 
