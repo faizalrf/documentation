@@ -886,10 +886,10 @@ The `list servers` output above tells that the cluster has already received the 
 
 Let's set Galera Node 1 on the Primary DC cluster to replicate from the DR MaxScale binlog router. We will follow the same sequence, **take note** we need to set any GTID_SLAVE_POS based on the `maxctrl list servers` output from the DR MacxScale i.e. **`80-8000-6`**, we will use this GTID as this is going to be the starting point for replication from DR to Primary.
 
-- SET GLOBAL GTID_SLAVE_POS='<Current Position as per DR MaxScale>
+- `SET GLOBAL GTID_SLAVE_POS='<Current GTID Position as per DR MaxScale>'`
   - This will give a warning, ignore it and proceed.
-- CHANGE MASTER MASTER_USE_GTID=slave_pos
-- START SLAVE
+- `CHANGE MASTER MASTER_USE_GTID=slave_pos`
+- `START SLAVE`
 
 ```
 MariaDB [testdb]> select @@hostname;
