@@ -471,15 +471,15 @@ On **Primary MaxScale**, check the `server status` and take note of the GTID
 ┌───────────┬───────────────┬──────┬─────────────┬─────────────────────────┬───────────┐
 │ Server    │ Address       │ Port │ Connections │ State                   │ GTID      │
 ├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼───────────┤
-│ Galera-71 │ 192.168.56.71 │ 3306 │ 0           │ Master, Synced, Running │ 70-7000-9 │
+│ Galera-71 │ 192.168.56.71 │ 3306 │ 0           │ Master, Synced, Running │ 70-7000-6 │
 ├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼───────────┤
-│ Galera-72 │ 192.168.56.72 │ 3306 │ 0           │ Slave, Synced, Running  │ 70-7000-9 │
+│ Galera-72 │ 192.168.56.72 │ 3306 │ 0           │ Slave, Synced, Running  │ 70-7000-6 │
 ├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼───────────┤
-│ Galera-73 │ 192.168.56.73 │ 3306 │ 0           │ Slave, Synced, Running  │ 70-7000-9 │
+│ Galera-73 │ 192.168.56.73 │ 3306 │ 0           │ Slave, Synced, Running  │ 70-7000-6 │
 └───────────┴───────────────┴──────┴─────────────┴─────────────────────────┴───────────┘
 ```
 
-Since we have already done some transacitons on the Primary Galera Cluster, the GTID has moved to `70-7000-9`, It's important that the DR Cluster is at the same GTID, means, we should have already created those users and grants on the DR Cluster as well. We will use this GTID when setting the GTID for the SLAVE to start replication. The command would look like this `SET GLOBAL GTID_SLAVE_POS = '70-7000-9';`
+Since we have already done some transacitons on the Primary Galera Cluster, the GTID has moved to `70-7000-6`, It's important that the DR Cluster is at the same GTID, means, we should have already created those users and grants on the DR Cluster as well. We will use this GTID when setting the GTID for the SLAVE to start replication. The command would look like this `SET GLOBAL GTID_SLAVE_POS = '70-7000-6';`
 
 ```
 ➜  ~ mariadb -uroot
@@ -509,7 +509,7 @@ MariaDB [(none)]> SHOW DATABASES;
 +--------------------+
 3 rows in set (0.006 sec)
 
-MariaDB [(none)]> SET GLOBAL GTID_SLAVE_POS='70-7000-9';
+MariaDB [(none)]> SET GLOBAL GTID_SLAVE_POS='70-7000-6';
 Query OK, 0 rows affected (0.048 sec)
 
 MariaDB [(none)]> CHANGE MASTER TO MASTER_HOST='192.168.56.70', MASTER_PORT=4008, MASTER_USER='repl_user', MASTER_PASSWORD='SecretP@ssw0rd', MASTER_USE_GTID=slave_pos;
@@ -567,7 +567,7 @@ MariaDB [(none)]> show slave status\G
                 Master_SSL_Crl: 
             Master_SSL_Crlpath: 
                     Using_Gtid: Current_Pos
-                   Gtid_IO_Pos: 70-7000-9
+                   Gtid_IO_Pos: 70-7000-6
        Replicate_Do_Domain_Ids: 
    Replicate_Ignore_Domain_Ids: 
                  Parallel_Mode: optimistic
@@ -606,11 +606,11 @@ Now this database, table and the inserted data should have been captured in the 
 ┌───────────┬───────────────┬──────┬─────────────┬─────────────────────────┬────────────┐
 │ Server    │ Address       │ Port │ Connections │ State                   │ GTID       │
 ├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼────────────┤
-│ Galera-71 │ 192.168.56.71 │ 3306 │ 0           │ Master, Synced, Running │ 70-7000-12 │
+│ Galera-71 │ 192.168.56.71 │ 3306 │ 0           │ Master, Synced, Running │ 70-7000-9  │
 ├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼────────────┤
-│ Galera-72 │ 192.168.56.72 │ 3306 │ 0           │ Slave, Synced, Running  │ 70-7000-12 │
+│ Galera-72 │ 192.168.56.72 │ 3306 │ 0           │ Slave, Synced, Running  │ 70-7000-9  │
 ├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼────────────┤
-│ Galera-73 │ 192.168.56.73 │ 3306 │ 0           │ Slave, Synced, Running  │ 70-7000-12 │
+│ Galera-73 │ 192.168.56.73 │ 3306 │ 0           │ Slave, Synced, Running  │ 70-7000-9  │
 └───────────┴───────────────┴──────┴─────────────┴─────────────────────────┴────────────┘
 ```
 
@@ -694,7 +694,7 @@ MariaDB [testdb]> show slave status\G
                 Master_SSL_Crl: 
             Master_SSL_Crlpath: 
                     Using_Gtid: Slave_Pos
-                   Gtid_IO_Pos: 70-7000-12
+                   Gtid_IO_Pos: 70-7000-9
        Replicate_Do_Domain_Ids: 
    Replicate_Ignore_Domain_Ids: 
                  Parallel_Mode: optimistic
@@ -804,7 +804,7 @@ Once the above config is in, we can just start the MaxScale service and it will 
 ┌───────────┬───────────────┬──────┬─────────────┬─────────────────────────┬──────────────────────┐
 │ Server    │ Address       │ Port │ Connections │ State                   │ GTID                 │
 ├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼──────────────────────┤
-│ Galera-81 │ 192.168.56.81 │ 3306 │ 0           │ Master, Synced, Running │ 70-7000-12,80-8000-6 │
+│ Galera-81 │ 192.168.56.81 │ 3306 │ 0           │ Master, Synced, Running │ 70-7000-9,80-8000-6  │
 ├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼──────────────────────┤
 │ Galera-82 │ 192.168.56.82 │ 3306 │ 0           │ Slave, Synced, Running  │ 80-8000-6            │
 ├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼──────────────────────┤
@@ -902,7 +902,7 @@ MariaDB [dbtest]> SHOW SLAVE STATUS\G
                 Master_SSL_Crl: 
             Master_SSL_Crlpath: 
                     Using_Gtid: Current_Pos
-                   Gtid_IO_Pos: 80-8000-6,70-7000-12
+                   Gtid_IO_Pos: 80-8000-6,70-7000-9
        Replicate_Do_Domain_Ids: 
    Replicate_Ignore_Domain_Ids: 
                  Parallel_Mode: optimistic
@@ -924,15 +924,15 @@ Let's check the MaxScale `maxctrl list servers` on the Primary site after doing 
 ┌───────────┬───────────────┬──────┬─────────────┬─────────────────────────┬──────────────────────┐
 │ Server    │ Address       │ Port │ Connections │ State                   │ GTID                 │
 ├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼──────────────────────┤
-│ Galera-71 │ 192.168.56.71 │ 3306 │ 0           │ Master, Synced, Running │ 70-7000-13,80-8000-9 │
+│ Galera-71 │ 192.168.56.71 │ 3306 │ 0           │ Master, Synced, Running │ 70-7000-9,80-8000-6  │
 ├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼──────────────────────┤
-│ Galera-72 │ 192.168.56.72 │ 3306 │ 0           │ Slave, Synced, Running  │ 70-7000-13           │
+│ Galera-72 │ 192.168.56.72 │ 3306 │ 0           │ Slave, Synced, Running  │ 70-7000-9            │
 ├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼──────────────────────┤
-│ Galera-73 │ 192.168.56.73 │ 3306 │ 0           │ Slave, Synced, Running  │ 70-7000-13           │
+│ Galera-73 │ 192.168.56.73 │ 3306 │ 0           │ Slave, Synced, Running  │ 70-7000-9            │
 └───────────┴───────────────┴──────┴─────────────┴─────────────────────────┴──────────────────────┘
 ```
 
-We can see the data has is replicating both ways! 
+We can see the data is replicating both ways! 
 
 This concludes our Setup as presented in the picture `Ref: Image-1`.
 
