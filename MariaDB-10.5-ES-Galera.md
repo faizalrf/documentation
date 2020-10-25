@@ -328,52 +328,7 @@ service=Galera-RW-Service
 protocol=MariaDBClient
 port=4007
 address=0.0.0.0
-```
 
-***Note:** Best to encrypt the Passwords in the `maxscale.cnf` file, but we are keeping it simple here.*
-
-This setup gives us the basic read/write split and standard monitoring capabilities.
-
-### Configure MaxScale User
-
-We need to creare the `maxuser` account with a password of `SecretP@ssw0rd` (As defined in the `maxscale.cnf`), this needs to be done on both **Primary DC** and **DR DC**.
-
-```
-MariaDB [(none)]> create user maxuser@'%' identified by 'SecretP@ssw0rd';
-Query OK, 0 rows affected (0.058 sec)
-
-MariaDB [(none)]> grant select on mysql.* to maxuser@'%';
-Query OK, 0 rows affected (0.054 sec)
-
-MariaDB [(none)]> grant show databases on *.* to maxuser@'%';
-Query OK, 0 rows affected (0.054 sec)
-```
-
-Now we can start MaxScale node on the **Primary DC** and verify the cluster status.
-
-```
-➜  systemctl start maxscale
-➜  maxctrl list servers 
-┌───────────┬───────────────┬──────┬─────────────┬─────────────────────────┬───────────┐
-│ Server    │ Address       │ Port │ Connections │ State                   │ GTID      │
-├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼───────────┤
-│ Galera-71 │ 192.168.56.71 │ 3306 │ 0           │ Master, Synced, Running │ 70-7000-3 │
-├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼───────────┤
-│ Galera-72 │ 192.168.56.72 │ 3306 │ 0           │ Slave, Synced, Running  │ 70-7000-3 │
-├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼───────────┤
-│ Galera-73 │ 192.168.56.73 │ 3306 │ 0           │ Slave, Synced, Running  │ 70-7000-3 │
-└───────────┴───────────────┴──────┴─────────────┴─────────────────────────┴───────────┘
-```
-
-We can see the clust is healthy with GTID / Domain & Server IDs showing up as per our configuration.
-
-We now need to define a binlog router so that while this node is doing quiery routing, it will also work as binary log router from Primary DC to DR DC.
-
-We will define all three Galera nodes in the **Primary DC** as the Primary DB nodes for this MaxScale, this means, MaxScale can switch from one DB to another DB if one of the nodes in Primary DB goes down.
-
-In the `/etc/maxscale.cnf` file, define a new router on the primary data center
-
-```
 [Replication-Proxy]
 type=service
 router=binlogrouter
@@ -393,15 +348,26 @@ port=4008
 address=0.0.0.0
 ```
 
-The above config defines a `binlogrouter` service that covers all the 3 Galera nodes, the binlogs expiry is set to 72 hours and automatic master selection is set to true, which means, if the master, from which MaxScale is currently getting the binary logs, dies, MaxScale will automatically select a new node as Primary (Master)
+***Note:** Best to encrypt the Passwords in the `maxscale.cnf` file, but we are keeping it simple here.*
 
-Finally, the listener at which this replication service is going to listen to and the port for that listener is defined as `4008`. This port will be used in the `CHANGE MASTER` command executed on one of the Galera nodes on the DR data center.
+This setup gives us the basic read/write split and standard monitoring capabilities and a Replication Proxy as `binlogrouter`.
 
-#### Replication User
+The `binlogrouter` service covers all the 3 Galera nodes, the binlogs expiry is set to 72 hours and automatic master selection is set to true, which means, if the master, from which MaxScale is currently getting the binary logs, dies, MaxScale will automatically select a new node as Primary (Master)
 
-Create the defined replication user on both of the data centers which is defined under the `[Replication-Proxy]` section followed by granting this user with standard replication privileges. This needs to be done on both **Primary DC** & **DR DC** clusters.
+### Configure MaxScale & Replication Users
+
+We need to create the `maxuser` & `repl_user` accounts with a password of `SecretP@ssw0rd` (As defined in the `maxscale.cnf`), this needs to be done on both **Primary DC** and **DR DC**.
 
 ```
+MariaDB [(none)]> create user maxuser@'%' identified by 'SecretP@ssw0rd';
+Query OK, 0 rows affected (0.058 sec)
+
+MariaDB [(none)]> grant select on mysql.* to maxuser@'%';
+Query OK, 0 rows affected (0.054 sec)
+
+MariaDB [(none)]> grant show databases on *.* to maxuser@'%';
+Query OK, 0 rows affected (0.054 sec)
+
 MariaDB [(none)]> create user repl_user@'%' identified by 'SecretP@ssw0rd';
 Query OK, 0 rows affected (0.051 sec)
 
@@ -412,7 +378,23 @@ MariaDB [dbtest]> grant select on mysql.* to repl_user@'%';
 Query OK, 0 rows affected (0.048 sec)
 ```
 
-Restart the MaxScale service and the binlog router should automatically start.
+Now we can start MaxScale node on the **Primary DC** and verify the cluster status.
+
+```
+➜  systemctl start maxscale
+➜  maxctrl list servers 
+┌───────────┬───────────────┬──────┬─────────────┬─────────────────────────┬───────────┐
+│ Server    │ Address       │ Port │ Connections │ State                   │ GTID      │
+├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼───────────┤
+│ Galera-71 │ 192.168.56.71 │ 3306 │ 0           │ Master, Synced, Running │ 70-7000-6 │
+├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼───────────┤
+│ Galera-72 │ 192.168.56.72 │ 3306 │ 0           │ Slave, Synced, Running  │ 70-7000-6 │
+├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼───────────┤
+│ Galera-73 │ 192.168.56.73 │ 3306 │ 0           │ Slave, Synced, Running  │ 70-7000-6 │
+└───────────┴───────────────┴──────┴─────────────┴─────────────────────────┴───────────┘
+```
+
+We can see the clust is healthy with GTID / Domain & Server IDs showing up as per our configuration. At this point the GTID should be `70-7000-6` since we have only performed 6 transactions on this cluster, the DR DC should also be at the same state `80-8000-6`
 
 Let's verify if the service has already started or not
 
