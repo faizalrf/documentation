@@ -462,7 +462,7 @@ Let's verify if the service has already started or not
 
 #### Setup SST for Galera
 
-Edit the `/etc/my.cnf.d/server.cnf` file on all the nodes and add the following to the **`[galera]`** section
+Edit the `/etc/my.cnf.d/server.cnf` file on **all Galera nodes** and add the following to the **`[galera]`** section
 
 ```
 wsrep_sst_method=mysql
