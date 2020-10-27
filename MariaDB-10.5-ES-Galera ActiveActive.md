@@ -395,7 +395,7 @@ protocol=MariaDBClient
 port=4007
 ```
 
-The **`script=/var/lib/maxscale/monitor.sh`** script will be provided separately and needs some minor configuration to match the cluster.
+**Refer to:** [script=/var/lib/maxscale/monitor.sh](monitor.sh) for the source.
 
 ***Note:** Best to encrypt the Passwords in the `maxscale.cnf` file, but we are keeping it simple here.*
 
