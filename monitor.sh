@@ -5,7 +5,7 @@
 ## Kester Riley <kester.riley@mariadb.com>       ##
 ## March 2020                                    ##
 ## Updated by: Faisal Saeed <faisal@mariadb.com> ##
-## October 26th 2020                             ##
+## October 27th 2020                             ##
 ###################################################
 
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
@@ -40,11 +40,14 @@ process_arguments()
    done
 }
 
-if [[ $MAX_PASSIVE = "true" ]];
+# Log output file, this path must be owned by maxscale OS user
+Log_Path=/var/lib/maxscale/monitor.log
+
+if [[ ${MAX_PASSIVE} = "true" ]];
 then
-   echo "NOTIFY SCRIPT: Server is Passive, exiting" >> /tmp/notify.log
+   echo "$(date) | NOTIFY SCRIPT: Server is Passive, exiting" >> ${Log_Path}
 else
-  echo "NOTIFY SCRIPT: Server is Active" >> /tmp/notify.log
+  echo "$(date) | NOTIFY SCRIPT: Server is Active" >> ${Log_Path}
 
   # Initialize the variables
   initiator=""
@@ -63,75 +66,79 @@ else
   Remote_MaxScale_Name="<MaxScale Name>" 
   # Port of the ReadConRoute Listener port, recommended to use instead of Read/WriteSplit Setvice
   Remote_MaxScale_Port="<MaxScale ReadConnRoute Port>"
+  # Replication User name use in Setting up the CHANGE MASTER
+  Replication_User_Name="repl_user"
+  # Password for the Replication User
+  Replication_User_Pwd="<Password as per the Setup>"
   
   #Read the arguments passed in by MaxScale
   process_arguments $@
 
-  if [[ $Remote_MaxScale_Host = "none" ]]
+  if [[ ${Remote_MaxScale_Host} = "none" ]]
   then
-     echo "NOTIFY SCRIPT: No change master required" >> /tmp/notify.log
+     echo "$(date) | NOTIFY SCRIPT: No change master required" >> ${Log_Path}
   else
-    if [[ -z $master_list ]]
+    if [[ -z ${master_list} ]]
     then
-       echo "NOTIFY SCRIPT: Master list is empty" >> /tmp/notify.log
+       echo "$(date) | NOTIFY SCRIPT: Master list is empty" >> ${Log_Path}
     else
-      echo "master list is not empty $master_list, event is $event" >> /tmp/notify.log
-      if [[ $event = "lost_master" ]]
+      echo "$(date) | master list is not empty ${master_list}, event is ${event}" >> ${Log_Path}
+      if [[ ${event} = "lost_master" ]]
       then
-        echo "NOTIFY SCRIPT: We have lost a master ($initiator), trying to connect and stop slave'" >> /tmp/notify.log
-        if [[ $initiator =~ "," ]];
+        echo "$(date) | NOTIFY SCRIPT: We have lost a master (${initiator}), trying to connect and stop slave'" >> ${Log_Path}
+        if [[ ${initiator} =~ "," ]];
         then
-           echo "NOTIFY SCRIPT: ... more than one master in list, using first one." >> /tmp/notify.log
-           lv_initiator=`echo $initiator | cut -f1 -d"," | sed 's/\[//g' | sed 's/\]//g'`
+           echo "$(date) | NOTIFY SCRIPT: ... more than one master in list, using first one." >> ${Log_Path}
+           lv_initiator=`echo ${initiator} | cut -f1 -d"," | sed 's/\[//g' | sed 's/\]//g'`
         else
-           echo "NOTIFY SCRIPT: ... there is only one master in the list." >> /tmp/notify.log
-           lv_initiator=`echo $initiator | sed 's/\[//g' | sed 's/\]//g'`
+           echo "$(date) | NOTIFY SCRIPT: ... there is only one master in the list." >> ${Log_Path}
+           lv_initiator=`echo ${initiator} | sed 's/\[//g' | sed 's/\]//g'`
         fi
-        lv_master_host=`echo $lv_initiator | cut -f1 -d":"`
-        lv_master_port=`echo $lv_initiator | cut -f2 -d":"`
+        lv_master_host=`echo ${lv_initiator} | cut -f1 -d":"`
+        lv_master_port=`echo ${lv_initiator} | cut -f2 -d":"`
         # This may fail depending on why server went away
         TMPFILE=`mktemp`
-        echo "STOP ALL SLAVES; RESET SLAVE ALL;" > $TMPFILE
-        echo "STOP ALL SLAVES; RESET SLAVE ALL;" >> /tmp/notify.log
-        mariadb -urepl_user -pSecretP@ssw0rd -h$lv_master_host -P$lv_master_port < $TMPFILE
-        rm $TMPFILE
+        echo "$(date) | STOP ALL SLAVES; RESET SLAVE ALL;" > ${TMPFILE}
+        echo "$(date) | STOP ALL SLAVES; RESET SLAVE ALL;" >> ${Log_Path}
+        mariadb -u${Replication_User_Name} -p${Replication_User_Pwd} -h${lv_master_host} -P${lv_master_port} < ${TMPFILE}
+        rm ${TMPFILE}
       fi
 
 
-      if [[ $event = "new_master" ]]
+      if [[ ${event} = "new_master" ]]
       then
-        echo "NOTIFY SCRIPT: Dectected a new master event, new master list = '$master_list'" >> /tmp/notify.log
-        if [[ $master_list =~ "," ]];
+        echo "$(date) | NOTIFY SCRIPT: Dectected a new master event, new master list = '${master_list}'" >> ${Log_Path}
+        if [[ ${master_list} =~ "," ]];
         then
-           echo "NOTIFY SCRIPT: ... more than one master in list, using first one." >> /tmp/notify.log
-           lv_master_to_use=`echo $master_list | cut -f1 -d"," | sed 's/\[//g' | sed 's/\]//g'`
+           echo "$(date) | NOTIFY SCRIPT: ... more than one master in list, using first one." >> ${Log_Path}
+           lv_master_to_use=`echo ${master_list} | cut -f1 -d"," | sed 's/\[//g' | sed 's/\]//g'`
         else
-           echo "NOTIFY SCRIPT: ... there is only one master in the list." >> /tmp/notify.log
-           lv_master_to_use=`echo $master_list | sed 's/\[//g' | sed 's/\]//g'`
+           echo "$(date) | NOTIFY SCRIPT: ... there is only one master in the list." >> ${Log_Path}
+           lv_master_to_use=`echo ${master_list} | sed 's/\[//g' | sed 's/\]//g'`
         fi
-        lv_master_host=`echo $lv_master_to_use | cut -f1 -d":"`
-        lv_master_port=`echo $lv_master_to_use | cut -f2 -d":"`
+        lv_master_host=`echo ${lv_master_to_use} | cut -f1 -d":"`
+        lv_master_port=`echo ${lv_master_to_use} | cut -f2 -d":"`
 
         TMPFILE=`mktemp`
 
         #Ensure all slaves are stopped first
-        echo "STOP ALL SLAVES; RESET SLAVE ALL;" > $TMPFILE
-        echo "STOP ALL SLAVES; RESET SLAVE ALL;" >> /tmp/notify.log
-        mariadb -urepl_user -pSecretP@ssw0rd -h$lv_master_host -P$lv_master_port < $TMPFILE
+        echo "$(date) | STOP ALL SLAVES; RESET SLAVE ALL;" > ${TMPFILE}
+        echo "$(date) | STOP ALL SLAVES; RESET SLAVE ALL;" >> ${Log_Path}
+        mariadb -u${Replication_User_Name} -p${Replication_User_Pwd} -h${lv_master_host} -P${lv_master_port} < ${TMPFILE}
 
-        if [[ $Remote_MaxScale_Host = "none" ]]
+        if [[ ${Remote_MaxScale_Host} = "none" ]]
         then
-           echo "NOTIFY SCRIPT: No master host set for Remote_MaxScale_Host" >> /tmp/notify.log
+           echo "$(date) | NOTIFY SCRIPT: No master host set for Remote_MaxScale_Host" >> ${Log_Path}
         else
-           echo "NOTIFY SCRIPT: Running change master on master server $lv_master_to_use to $Remote_MaxScale_Host" >> /tmp/notify.log
-           echo "CHANGE MASTER '${Remote_MaxScale_Name}' TO master_use_gtid = slave_pos, MASTER_HOST='$Remote_MaxScale_Host', MASTER_USER='repl_user', MASTER_PASSWORD='SecretP@ssw0rd', MASTER_PORT=$Remote_MaxScale_Port, MASTER_CONNECT_RETRY=10; " > $TMPFILE
-           echo "CHANGE MASTER '${Remote_MaxScale_Name}' TO master_use_gtid = slave_pos, MASTER_HOST='$Remote_MaxScale_Host', MASTER_USER='repl_user', MASTER_PASSWORD='SecretP@ssw0rd', MASTER_PORT=$Remote_MaxScale_Port, MASTER_CONNECT_RETRY=10; "  >> /tmp/notify.log
-           mariadb -urepl_user -pSecretP@ssw0rd -h$lv_master_host -P$lv_master_port < $TMPFILE
-           echo "return status $?" >> /tmp/notify.log
-           echo "START SLAVE '${Remote_MaxScale_Name}';" > $TMPFILE
-           mariadb -urepl_user -pSecretP@ssw0rd -h$lv_master_host -P$lv_master_port < $TMPFILE
+           echo "$(date) | NOTIFY SCRIPT: Running change master on master server ${lv_master_to_use} to ${Remote_MaxScale_Host}" >> ${Log_Path}
+           echo "$(date) | CHANGE MASTER '${Remote_MaxScale_Name}' TO master_use_gtid = slave_pos, MASTER_HOST='${Remote_MaxScale_Host}', MASTER_USER='${Replication_User_Name}', MASTER_PASSWORD='${Replication_User_Pwd}', MASTER_PORT=$Remote_MaxScale_Port, MASTER_CONNECT_RETRY=10; " > ${TMPFILE}
+           echo "$(date) | CHANGE MASTER '${Remote_MaxScale_Name}' TO master_use_gtid = slave_pos, MASTER_HOST='${Remote_MaxScale_Host}', MASTER_USER='${Replication_User_Name}', MASTER_PASSWORD='${Replication_User_Pwd}', MASTER_PORT=$Remote_MaxScale_Port, MASTER_CONNECT_RETRY=10; "  >> ${Log_Path}
+           mariadb -u${Replication_User_Name} -p${Replication_User_Pwd} -h${lv_master_host} -P${lv_master_port} < ${TMPFILE}
+           echo "$(date) | return status $?" >> ${Log_Path}
+           echo "$(date) | START SLAVE '${Remote_MaxScale_Name}';" > ${TMPFILE}
+           mariadb -u${Replication_User_Name} -p${Replication_User_Pwd} -h${lv_master_host} -P${lv_master_port} < ${TMPFILE}
         fi
-        rm $TMPFILE
+        rm ${TMPFILE}
       fi
     fi
   fi
