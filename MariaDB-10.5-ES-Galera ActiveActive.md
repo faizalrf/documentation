@@ -298,7 +298,7 @@ Transaction Summary
 Complete!
 ```
 
-Edit the `/etc/maxscale.cnf` file on **both data centers** and define the respective Galera clusters, take note of the IP addresses and Node names need to be defined accordingly, the following is for the Primary data center, similarly just duplicate it and edit  the respective items for the second data center.
+Edit the `/etc/maxscale.cnf` file on **both data centers** and define the respective Galera clusters, take note of the IP addresses and Node names need to be defined accordingly, the following is for the **Primary** data center, similarly just duplicate it and edit the respective IP / node names for the **DR** data center.
 
 ```txt
 [maxscale]
@@ -399,7 +399,7 @@ port=4007
 
 ***Note:** Best to encrypt the Passwords in the `maxscale.cnf` file, but we are keeping it simple here.*
 
-This setup gives us the basic read/write split and standard monitoring capabilities.
+This setup gives us the basic read/write split, standard monitoring and a connection router used for replication across DC.
 
 ### Configure MaxScale & Replication Users
 
