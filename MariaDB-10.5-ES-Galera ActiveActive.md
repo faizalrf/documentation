@@ -465,7 +465,7 @@ Let's verify if the service has already started or not
 Edit the `/etc/my.cnf.d/server.cnf` file on **all Galera nodes** and add the following to the **`[galera]`** section
 
 ```
-wsrep_sst_method=mysql
+wsrep_sst_method=mariabackup
 wsrep_sst_auth=mysql:
 ```
 
