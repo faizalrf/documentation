@@ -58,8 +58,11 @@ else
   synced_list=""
 
   #This needs to point to the remove MaxScale on the opposite DC
-  Remote_MaxScale_Host="172.31.28.176"
-  Remote_MaxScale_Name="DR-RemoteMaxScale"
+  Remote_MaxScale_Host="<IP of the Remote MaxScale Node"
+  # For Instance: DR-RemoteMaxScale or DC-RemoteMaxScale
+  Remote_MaxScale_Name="<MaxScale Name>" 
+  # Port of the ReadConRoute Listener port, recommended to use instead of Read/WriteSplit Setvice
+  Remote_MaxScale_Port="<MaxScale ReadConnRoute Port>"
   
   #Read the arguments passed in by MaxScale
   process_arguments $@
@@ -121,8 +124,8 @@ else
            echo "NOTIFY SCRIPT: No master host set for Remote_MaxScale_Host" >> /tmp/notify.log
         else
            echo "NOTIFY SCRIPT: Running change master on master server $lv_master_to_use to $Remote_MaxScale_Host" >> /tmp/notify.log
-           echo "CHANGE MASTER '${Remote_MaxScale_Name}' TO master_use_gtid = slave_pos, MASTER_HOST='$Remote_MaxScale_Host', MASTER_USER='repl_user', MASTER_PASSWORD='SecretP@ssw0rd', MASTER_PORT=4007, MASTER_CONNECT_RETRY=10; " > $TMPFILE
-           echo "CHANGE MASTER '${Remote_MaxScale_Name}' TO master_use_gtid = slave_pos, MASTER_HOST='$Remote_MaxScale_Host', MASTER_USER='repl_user', MASTER_PASSWORD='SecretP@ssw0rd', MASTER_PORT=4007, MASTER_CONNECT_RETRY=10; "  >> /tmp/notify.log
+           echo "CHANGE MASTER '${Remote_MaxScale_Name}' TO master_use_gtid = slave_pos, MASTER_HOST='$Remote_MaxScale_Host', MASTER_USER='repl_user', MASTER_PASSWORD='SecretP@ssw0rd', MASTER_PORT=$Remote_MaxScale_Port, MASTER_CONNECT_RETRY=10; " > $TMPFILE
+           echo "CHANGE MASTER '${Remote_MaxScale_Name}' TO master_use_gtid = slave_pos, MASTER_HOST='$Remote_MaxScale_Host', MASTER_USER='repl_user', MASTER_PASSWORD='SecretP@ssw0rd', MASTER_PORT=$Remote_MaxScale_Port, MASTER_CONNECT_RETRY=10; "  >> /tmp/notify.log
            mariadb -urepl_user -pSecretP@ssw0rd -h$lv_master_host -P$lv_master_port < $TMPFILE
            echo "return status $?" >> /tmp/notify.log
            echo "START SLAVE '${Remote_MaxScale_Name}';" > $TMPFILE
