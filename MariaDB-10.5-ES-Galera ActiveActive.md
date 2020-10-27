@@ -703,7 +703,7 @@ Slave_Non_Transactional_Groups: 0
 1 row in set (0.000 sec)
 ```
 
-We can now start the stopped Galera nodes using `galera_new_cluster` on both **DC**, we will first need to edit the **`/var/lib/mysql/grastate.dat`** and set the **`safe_to_bootstrap: 1`**
+We can now start the stopped Galera nodes using `systemctl start mariadb`
 
 From this point onwards the replication is confirmed between both data centers and also provide HA no matter which node is available / down the monitor script will automatically handle the cluster to cluster replicaiton.
 
