@@ -393,6 +393,7 @@ type=listener
 service=Replication-Service
 protocol=MariaDBClient
 port=4007
+address=0.0.0.0
 ```
 
 **Refer to:** [script=/var/lib/maxscale/monitor.sh](monitor.sh) for the source.
