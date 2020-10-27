@@ -422,10 +422,10 @@ Query OK, 0 rows affected (0.051 sec)
 MariaDB [(none)]> GRANT REPLICATION SLAVE, REPLICATION SLAVE ADMIN ON *.* TO repl_user@'%';
 Query OK, 0 rows affected (0.051 sec)
 
-MariaDB [(none)]> CREATE USER mariabackup@localhost IDENTIFIED VIA unix_socket;
+MariaDB [(none)]> CREATE USER mysql@localhost IDENTIFIED VIA unix_socket;
 Query OK, 0 rows affected (0.004 sec)
 
-MariaDB [(none)]> GRANT RELOAD, PROCESS, LOCK TABLES, REPLICATION CLIENT ON *.* TO mariabackup@localhost;
+MariaDB [(none)]> GRANT RELOAD, PROCESS, LOCK TABLES, REPLICATION CLIENT ON *.* TO mysql@localhost;
 Query OK, 0 rows affected (0.004 sec)
 ```
 
@@ -460,32 +460,13 @@ Let's verify if the service has already started or not
 └─────────────────────┴────────────────┴─────────────┴───────────────────┴─────────────────────────────────┘
 ```
 
-#### Create mariabackup OS user on all Galera nodes
-
-We can now add `mariabackup` OS user on all the MariaDB Galera nodes and set it's group as `mysql` followed by a secure password. This username must be identical to the backup user created previously.
-
-```
-➜  groupadd mariabackup
-
-➜  useradd -g mysql mariabackup
-
-➜  id mariabackup
-uid=1001(mariabackup) gid=994(mysql) groups=994(mysql)
-
-➜  passwd mariabackup
-Changing password for user mariabackup.
-New password: 
-Retype new password: 
-passwd: all authentication tokens updated successfully.
-```
-
-This will create the `mariabackup` user under the `mysql` user group.
+#### Setup SST for Galera
 
 Edit the `/etc/my.cnf.d/server.cnf` file on all the nodes and add the following to the **`[galera]`** section
 
 ```
-wsrep_sst_method=mariabackup
-wsrep_sst_auth=mariabackup:
+wsrep_sst_method=mysql
+wsrep_sst_auth=mysql:
 ```
 
 This will tell MariaDB Galera to use MariaDB Backup for SST, this will improve the cluster availability and stability. Once defined, restart all the nodes `systemctl restart mariadb` on **both data centers** one by one.
