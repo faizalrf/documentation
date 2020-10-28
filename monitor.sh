@@ -143,12 +143,11 @@ else
            # Execute START SLAVE only when CHANGE MASTER is successful
            if [ ${RetStatus} -eq 0 ]
            then
-              echo "$(date) | Failed to execute CHANGE MASTER on Host: ${lv_master_host} Port: ${lv_master_port}" >> ${Log_Path}
-           else
-              echo "$(date) | CHANGE MASTER: return status ${RetStatus}" >> ${Log_Path}
               echo "START SLAVE '${Remote_MaxScale_Name}';" > ${TMPFILE}
               echo "$(date) | START SLAVE '${Remote_MaxScale_Name}';" >> ${Log_Path}
               mariadb -u${Replication_User_Name} -p${Replication_User_Pwd} -h${lv_master_host} -P${lv_master_port} < ${TMPFILE}
+           else
+              echo "$(date) | Failed to execute CHANGE MASTER on Host: ${lv_master_host} Port: ${lv_master_port}" >> ${Log_Path}
            fi
         fi
         rm ${TMPFILE}
