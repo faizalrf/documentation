@@ -276,10 +276,10 @@ The two independent clusters are ready!
 
 ## Setup MaxScale 2.5
 
-Install MaxScale RPM on both MaxScale nodes
+Install MaxScale + MariaDB-client on both MaxScale nodes
 
 ```txt
-➜  yum -y install maxscale
+➜  yum -y install maxscale MariaDB-client
 
 Dependencies Resolved
 
@@ -287,6 +287,7 @@ Dependencies Resolved
  Package                                Arch                                Version                                        Repository                                                    Size
 ==============================================================================================================================================================================================
 Updating:
+ MariaDB-client                         x86_64                              10.5.5_3-1.el7                                 mariadb-es-main                                              7.0 M
  maxscale                               x86_64                              2.5.3-2.rhel.7                                 /maxscale-2.5.3-2.rhel.7.x86_64                              168 M
 Installing for dependencies:
  libatomic                              x86_64                              4.8.5-39.el7                                   base                                                          50 k
