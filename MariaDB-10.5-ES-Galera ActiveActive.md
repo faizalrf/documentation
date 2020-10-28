@@ -572,8 +572,8 @@ MariaDB [(none)]> show all slaves status\G
                 Relay_Log_File: MariaDB-relay-bin-dc@002dremotemaxscale.000010
                  Relay_Log_Pos: 717
          Relay_Master_Log_File: MariaDB-bin.000017
-              Slave_IO_Running: YES
-             Slave_SQL_Running: YES
+              Slave_IO_Running: Yes
+             Slave_SQL_Running: Yes
                Replicate_Do_DB: 
            Replicate_Ignore_DB: 
             Replicate_Do_Table: 
@@ -655,8 +655,8 @@ MariaDB [(none)]> show all slaves status\G
                 Relay_Log_File: MariaDB-relay-bin-dc@002dremotemaxscale.000010
                  Relay_Log_Pos: 717
          Relay_Master_Log_File: MariaDB-bin.000017
-              Slave_IO_Running: YES
-             Slave_SQL_Running: YES
+              Slave_IO_Running: Yes
+             Slave_SQL_Running: Yes
                Replicate_Do_DB: 
            Replicate_Ignore_DB: 
             Replicate_Do_Table: 
