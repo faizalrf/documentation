@@ -98,7 +98,7 @@ else
         lv_master_port=`echo ${lv_initiator} | cut -f2 -d":"`
         # This may fail depending on why server went away
         TMPFILE=`mktemp`
-        echo "$(date) | STOP ALL SLAVES; RESET SLAVE ALL;" > ${TMPFILE}
+        echo "STOP ALL SLAVES; RESET SLAVE ALL;" > ${TMPFILE}
         echo "$(date) | STOP ALL SLAVES; RESET SLAVE ALL;" >> ${Log_Path}
         mariadb -u${Replication_User_Name} -p${Replication_User_Pwd} -h${lv_master_host} -P${lv_master_port} < ${TMPFILE}
         rm ${TMPFILE}
@@ -122,7 +122,7 @@ else
         TMPFILE=`mktemp`
 
         #Ensure all slaves are stopped first
-        echo "$(date) | STOP ALL SLAVES; RESET SLAVE ALL;" > ${TMPFILE}
+        echo "STOP ALL SLAVES; RESET SLAVE ALL;" > ${TMPFILE}
         echo "$(date) | STOP ALL SLAVES; RESET SLAVE ALL;" >> ${Log_Path}
         mariadb -u${Replication_User_Name} -p${Replication_User_Pwd} -h${lv_master_host} -P${lv_master_port} < ${TMPFILE}
 
@@ -131,11 +131,11 @@ else
            echo "$(date) | NOTIFY SCRIPT: No master host set for Remote_MaxScale_Host" >> ${Log_Path}
         else
            echo "$(date) | NOTIFY SCRIPT: Running change master on master server ${lv_master_to_use} to ${Remote_MaxScale_Host}" >> ${Log_Path}
-           echo "$(date) | CHANGE MASTER '${Remote_MaxScale_Name}' TO master_use_gtid = slave_pos, MASTER_HOST='${Remote_MaxScale_Host}', MASTER_USER='${Replication_User_Name}', MASTER_PASSWORD='${Replication_User_Pwd}', MASTER_PORT=$Remote_MaxScale_Port, MASTER_CONNECT_RETRY=10; " > ${TMPFILE}
-           echo "$(date) | CHANGE MASTER '${Remote_MaxScale_Name}' TO master_use_gtid = slave_pos, MASTER_HOST='${Remote_MaxScale_Host}', MASTER_USER='${Replication_User_Name}', MASTER_PASSWORD='${Replication_User_Pwd}', MASTER_PORT=$Remote_MaxScale_Port, MASTER_CONNECT_RETRY=10; "  >> ${Log_Path}
+           echo "CHANGE MASTER '${Remote_MaxScale_Name}' TO master_use_gtid = slave_pos, MASTER_HOST='${Remote_MaxScale_Host}', MASTER_USER='${Replication_User_Name}', MASTER_PASSWORD='${Replication_User_Pwd}', MASTER_PORT=${Remote_MaxScale_Port}, MASTER_CONNECT_RETRY=10; " > ${TMPFILE}
+           echo "$(date) | CHANGE MASTER '${Remote_MaxScale_Name}' TO master_use_gtid = slave_pos, MASTER_HOST='${Remote_MaxScale_Host}', MASTER_USER='${Replication_User_Name}', MASTER_PASSWORD='${Replication_User_Pwd}', MASTER_PORT=${Remote_MaxScale_Port}, MASTER_CONNECT_RETRY=10; "  >> ${Log_Path}
            mariadb -u${Replication_User_Name} -p${Replication_User_Pwd} -h${lv_master_host} -P${lv_master_port} < ${TMPFILE}
-           echo "$(date) | return status $?" >> ${Log_Path}
-           echo "$(date) | START SLAVE '${Remote_MaxScale_Name}';" > ${TMPFILE}
+           echo "CHANGE MASTER: return status $?" >> ${Log_Path}
+           echo "START SLAVE '${Remote_MaxScale_Name}';" > ${TMPFILE}
            mariadb -u${Replication_User_Name} -p${Replication_User_Pwd} -h${lv_master_host} -P${lv_master_port} < ${TMPFILE}
         fi
         rm ${TMPFILE}
