@@ -68,7 +68,7 @@ else
   Remote_MaxScale_Name="<MaxScale Name>" 
   # Port of the ReadConRoute Listener port, recommended to use instead of Read/WriteSplit Setvice
   Remote_MaxScale_Port="<MaxScale ReadConnRoute Port>"
-  # Replication User name use in Setting up the CHANGE MASTER
+  # Replication User name use in Setting up the CHANGE MASTER, GRANT REPLICATION SLAVE, REPLICATION SLAVE ADMIN ON *.* TO repl_user@'%';
   Replication_User_Name="repl_user"
   # Password for the Replication User
   Replication_User_Pwd="<Password as per the Setup>"
