@@ -174,7 +174,7 @@ The following needs to be edited in the `/etc/my.cnf.d/server.cnf` file
     default_storage_engine=InnoDB
     innodb_autoinc_lock_mode=2
     innodb_lock_schedule_algorithm=FCFS
-    innodb_flush_log_at_trx_commit=0
+    innodb_flush_log_at_trx_commit=2
     innodb_buffer_pool_size=512M
     innodb_log_file_size=512M
 
@@ -192,6 +192,9 @@ The following needs to be edited in the `/etc/my.cnf.d/server.cnf` file
 
 Referring to the above two configurations:
 
+- **`wsrep_cluster_name`** needs to be different on both data centers
+  - we will be using **`DC`** for first data center all three nodes
+  - we will be using **`DR`** for the second data center all three nodes
 - **`wsrep_gtid_domain_id`** needs to be configured the with same value for each cluster.
   - We will be using **`wsrep_gtid_domain_id=70`** for all three nodes in the first cluster.
   - We will be using **`wsrep_gtid_domain_id=80`** for all three ndoes in the second cluster.
@@ -276,7 +279,7 @@ The two independent clusters are ready!
 
 ## Setup MaxScale 2.5
 
-Install MaxScale + MariaDB-client on both MaxScale nodes
+Install **MaxScale + MariaDB-client** on both MaxScale nodes
 
 ```txt
 ➜  yum -y install maxscale MariaDB-client
@@ -396,10 +399,31 @@ protocol=MariaDBClient
 port=4007
 address=0.0.0.0
 ```
+***Note:** Best to encrypt the Passwords in the `maxscale.cnf` file, but we are keeping it simple here.*
 
 **Refer to:** [script=/var/lib/maxscale/monitor.sh](monitor.sh) for the source.
 
-***Note:** Best to encrypt the Passwords in the `maxscale.cnf` file, but we are keeping it simple here.*
+Set the `/var/lib/maxscale/monitor.sh` with the ownership of `maxscale` user / group and change the permission to `500` to ensure minimum permission for users.
+
+This needs to be done on all the MaxScale nodes on both data centers.
+
+```
+➜  chown maxscale:maxscale /var/lib/maxscale/monitor.sh
+➜  chmod 500 /var/lib/maxscale/monitor.sh
+```
+
+Within the script, the following variables needs to be changed
+
+- `Remote_MaxScale_Host="<IP of the Remote MaxScale Node>"`
+  - This will point to the VIP or the physical IP of the MaxScale on the other **data center**
+- `Remote_MaxScale_Name="<MaxScale Name>"`
+  - This is the name that you want to give to the Replication connection, generally we can use "DR-MaxScale" or "DC-MaxScale"
+- `Remote_MaxScale_Port="<MaxScale ReadConnRoute Port>"`
+  - The port of the ReadConRoute listener service that we configured, e.g `4007`
+- `Replication_User_Name="repl_user"`
+  - The replication user name that we created earlier with permission to replicate and replication slave admin.
+- `Replication_User_Pwd="<Password as per the Setup>"`
+  - The password for the replication user. This is the only password that will be open text but because of the limited access it's quite safe.
 
 This setup gives us the basic read/write split, standard monitoring and a connection router used for replication across DC.
 
