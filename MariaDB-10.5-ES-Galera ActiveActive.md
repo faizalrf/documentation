@@ -459,15 +459,15 @@ Now we can start MaxScale node on the **Primary DC** and verify the cluster stat
 ┌───────────┬───────────────┬──────┬─────────────┬─────────────────────────┬───────────┐
 │ Server    │ Address       │ Port │ Connections │ State                   │ GTID      │
 ├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼───────────┤
-│ Galera-71 │ 192.168.56.71 │ 3306 │ 0           │ Master, Synced, Running │ 70-7000-5 │
+│ Galera-71 │ 192.168.56.71 │ 3306 │ 0           │ Master, Synced, Running │ 70-7000-6 │
 ├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼───────────┤
-│ Galera-72 │ 192.168.56.72 │ 3306 │ 0           │ Slave, Synced, Running  │ 70-7000-5 │
+│ Galera-72 │ 192.168.56.72 │ 3306 │ 0           │ Slave, Synced, Running  │ 70-7000-6 │
 ├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼───────────┤
-│ Galera-73 │ 192.168.56.73 │ 3306 │ 0           │ Slave, Synced, Running  │ 70-7000-5 │
+│ Galera-73 │ 192.168.56.73 │ 3306 │ 0           │ Slave, Synced, Running  │ 70-7000-6 │
 └───────────┴───────────────┴──────┴─────────────┴─────────────────────────┴───────────┘
 ```
 
-We can see the clust is healthy with GTID / Domain & Server IDs showing up as per our configuration. At this point the GTID should be `70-7000-5` since we have only performed 5 transactions on this cluster, the DR DC should also be at the same state `80-8000-5`
+We can see the clust is healthy with GTID / Domain & Server IDs showing up as per our configuration. At this point the GTID should be `70-7000-6` since we have only performed 5 transactions on this cluster, the DR DC should also be at the same state `80-8000-6`
 
 Let's verify if the service has already started or not
 
@@ -476,13 +476,13 @@ Let's verify if the service has already started or not
 ┌─────────────────────┬────────────────┬─────────────┬───────────────────┬─────────────────────────────────┐
 │ Service             │ Router         │ Connections │ Total Connections │ Servers                         │
 ├─────────────────────┼────────────────┼─────────────┼───────────────────┼─────────────────────────────────┤
-│ Replication-Service │ readconnroute  │ 1           │ 3                 │ Galera-71, Galera-72, Galera-73 │
+│ Replication-Service │ readconnroute  │ 0           │ 0                 │ Galera-71, Galera-72, Galera-73 │
 ├─────────────────────┼────────────────┼─────────────┼───────────────────┼─────────────────────────────────┤
 │ Galera-RW-Service   │ readwritesplit │ 0           │ 0                 │ Galera-71, Galera-72, Galera-73 │
 └─────────────────────┴────────────────┴─────────────┴───────────────────┴─────────────────────────────────┘
 ```
 
-#### Setup SST for Galera
+#### Setup SST for Galera Nodes
 
 Edit the `/etc/my.cnf.d/server.cnf` file on **all Galera nodes** and add the following to the **`[galera]`** section
 
@@ -495,10 +495,10 @@ This will tell MariaDB Galera to use MariaDB Backup for SST, this will improve t
 
 ### Setting up GTID_SLAVE_POS
 
-Take note of the GTID from the **DR Cluster** as that GTID will be required to set up on all the **Primary DC** nodes.
+Take note of the GTID from the **DR Cluster**, we will need to set this `GTID_SLAVE_POS` on all the **Primary DC** Galera nodes.
 
 ```
-MariaDB [(none)]> SET GLOBAL GTID_SLAVE_POS='80-8000-5';
+MariaDB [(none)]> SET GLOBAL GTID_SLAVE_POS='80-8000-6';
 Query OK, 0 rows affected (0.048 sec)
 ```
 
@@ -508,18 +508,18 @@ At this time, the **Primary MaxScale** will show the following status since we h
 ┌───────────┬───────────────┬──────┬─────────────┬─────────────────────────┬─────────────────────┐
 │ Server    │ Address       │ Port │ Connections │ State                   │ GTID                │
 ├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼─────────────────────┤
-│ Galera-71 │ 192.168.56.71 │ 3306 │ 0           │ Master, Synced, Running │ 70-7000-5,80-8000-5 │
+│ Galera-71 │ 192.168.56.71 │ 3306 │ 0           │ Master, Synced, Running │ 70-7000-6,80-8000-6 │
 ├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼─────────────────────┤
-│ Galera-72 │ 192.168.56.71 │ 3306 │ 0           │ Slave, Synced, Running  │ 70-7000-5,80-8000-5 │
+│ Galera-72 │ 192.168.56.71 │ 3306 │ 0           │ Slave, Synced, Running  │ 70-7000-6,80-8000-6 │
 ├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼─────────────────────┤
-│ Galera-73 │ 192.168.56.71 │ 3306 │ 0           │ Slave, Synced, Running  │ 70-7000-5,80-8000-5 │
+│ Galera-73 │ 192.168.56.71 │ 3306 │ 0           │ Slave, Synced, Running  │ 70-7000-6,80-8000-6 │
 └───────────┴───────────────┴──────┴─────────────┴─────────────────────────┴─────────────────────┘
 ```
 
-Similarly, set up the the GTID_SLAVE_POS on all the nodes on the **DR Cluster** based on the GTID from Primary Cluster
+Similarly, set up the the `GTID_SLAVE_POS` on all the **DR Cluster** Galera nodes, based on the GTID from Primary Cluster
 
 ```
-MariaDB [(none)]> SET GLOBAL GTID_SLAVE_POS='70-7000-5';
+MariaDB [(none)]> SET GLOBAL GTID_SLAVE_POS='70-7000-6';
 Query OK, 0 rows affected (0.048 sec)
 ```
 
@@ -529,11 +529,11 @@ At this time, the **DR MaxScale** will show the following status since we have a
 ┌───────────┬───────────────┬──────┬─────────────┬─────────────────────────┬─────────────────────┐
 │ Server    │ Address       │ Port │ Connections │ State                   │ GTID                │
 ├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼─────────────────────┤
-│ Galera-81 │ 192.168.56.81 │ 3306 │ 0           │ Master, Synced, Running │ 70-7000-5,80-8000-5 │
+│ Galera-81 │ 192.168.56.81 │ 3306 │ 0           │ Master, Synced, Running │ 70-7000-6,80-8000-6 │
 ├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼─────────────────────┤
-│ Galera-82 │ 192.168.56.82 │ 3306 │ 0           │ Slave, Synced, Running  │ 70-7000-5,80-8000-5 │
+│ Galera-82 │ 192.168.56.82 │ 3306 │ 0           │ Slave, Synced, Running  │ 70-7000-6,80-8000-6 │
 ├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼─────────────────────┤
-│ Galera-83 │ 192.168.56.83 │ 3306 │ 0           │ Slave, Synced, Running  │ 70-7000-5,80-8000-5 │
+│ Galera-83 │ 192.168.56.83 │ 3306 │ 0           │ Slave, Synced, Running  │ 70-7000-6,80-8000-6 │
 └───────────┴───────────────┴──────┴─────────────┴─────────────────────────┴─────────────────────┘
 ```
 
@@ -549,9 +549,9 @@ Use `systemctl stop mariadb` on both Master Nodes on DC Clusters
 ├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼─────────────────────┤
 │ Galera-71 │ 192.168.56.71 │ 3306 │ 0           │ Down                    │                     │
 ├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼─────────────────────┤
-│ Galera-72 │ 192.168.56.72 │ 3306 │ 1           │ Master, Synced, Running │ 70-7000-6,80-8000-5 │
+│ Galera-72 │ 192.168.56.72 │ 3306 │ 1           │ Master, Synced, Running │ 70-7000-6,80-8000-6 │
 ├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼─────────────────────┤
-│ Galera-73 │ 192.168.56.73 │ 3306 │ 1           │ Slave, Synced, Running  │ 70-7000-7,80-8000-5 │
+│ Galera-73 │ 192.168.56.73 │ 3306 │ 1           │ Slave, Synced, Running  │ 70-7000-6,80-8000-6 │
 └───────────┴───────────────┴──────┴─────────────┴─────────────────────────┴─────────────────────┘
 ```
 
@@ -572,8 +572,8 @@ MariaDB [(none)]> show all slaves status\G
                 Relay_Log_File: MariaDB-relay-bin-dc@002dremotemaxscale.000010
                  Relay_Log_Pos: 717
          Relay_Master_Log_File: MariaDB-bin.000017
-              Slave_IO_Running: No
-             Slave_SQL_Running: No
+              Slave_IO_Running: YES
+             Slave_SQL_Running: YES
                Replicate_Do_DB: 
            Replicate_Ignore_DB: 
             Replicate_Do_Table: 
@@ -605,7 +605,7 @@ MariaDB [(none)]> show all slaves status\G
                 Master_SSL_Crl: 
             Master_SSL_Crlpath: 
                     Using_Gtid: Slave_Pos
-                   Gtid_IO_Pos: 70-7000-5,80-8000-5
+                   Gtid_IO_Pos: 70-7000-6,80-8000-6
        Replicate_Do_Domain_Ids: 
    Replicate_Ignore_Domain_Ids: 
                  Parallel_Mode: optimistic
@@ -620,7 +620,7 @@ Slave_Non_Transactional_Groups: 0
           Executed_log_entries: 57
      Slave_received_heartbeats: 0
         Slave_heartbeat_period: 30.000
-                Gtid_Slave_Pos: 70-7000-5,80-8000-5
+                Gtid_Slave_Pos: 70-7000-6,80-8000-6
 1 row in set (0.000 sec)
 ```
 
@@ -632,9 +632,9 @@ Similarly, once the Master Galera node is down, the monitor script will automati
 ├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼─────────────────────┤
 │ Galera-81 │ 192.168.56.81 │ 3306 │ 0           │ Down                    │                     │
 ├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼─────────────────────┤
-│ Galera-82 │ 192.168.56.82 │ 3306 │ 1           │ Master, Synced, Running │ 70-7000-6,80-8000-5 │
+│ Galera-82 │ 192.168.56.82 │ 3306 │ 1           │ Master, Synced, Running │ 70-7000-6,80-8000-6 │
 ├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼─────────────────────┤
-│ Galera-83 │ 192.168.56.83 │ 3306 │ 1           │ Slave, Synced, Running  │ 70-7000-7,80-8000-5 │
+│ Galera-83 │ 192.168.56.83 │ 3306 │ 1           │ Slave, Synced, Running  │ 70-7000-6,80-8000-6 │
 └───────────┴───────────────┴──────┴─────────────┴─────────────────────────┴─────────────────────┘
 ```
 
@@ -655,8 +655,8 @@ MariaDB [(none)]> show all slaves status\G
                 Relay_Log_File: MariaDB-relay-bin-dc@002dremotemaxscale.000010
                  Relay_Log_Pos: 717
          Relay_Master_Log_File: MariaDB-bin.000017
-              Slave_IO_Running: No
-             Slave_SQL_Running: No
+              Slave_IO_Running: YES
+             Slave_SQL_Running: YES
                Replicate_Do_DB: 
            Replicate_Ignore_DB: 
             Replicate_Do_Table: 
@@ -688,7 +688,7 @@ MariaDB [(none)]> show all slaves status\G
                 Master_SSL_Crl: 
             Master_SSL_Crlpath: 
                     Using_Gtid: Slave_Pos
-                   Gtid_IO_Pos: 80-8000-5,70-7000-5
+                   Gtid_IO_Pos: 80-8000-6,70-7000-6
        Replicate_Do_Domain_Ids: 
    Replicate_Ignore_Domain_Ids: 
                  Parallel_Mode: optimistic
@@ -703,7 +703,7 @@ Slave_Non_Transactional_Groups: 0
           Executed_log_entries: 57
      Slave_received_heartbeats: 0
         Slave_heartbeat_period: 30.000
-                Gtid_Slave_Pos: 80-8000-5,70-7000-5
+                Gtid_Slave_Pos: 80-8000-6,70-7000-6
 1 row in set (0.000 sec)
 ```
 
