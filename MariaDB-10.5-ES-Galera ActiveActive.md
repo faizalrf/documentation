@@ -422,9 +422,6 @@ Query OK, 0 rows affected (0.051 sec)
 MariaDB [(none)]> GRANT REPLICATION SLAVE, REPLICATION SLAVE ADMIN ON *.* TO repl_user@'%';
 Query OK, 0 rows affected (0.051 sec)
 
-MariaDB [(none)]> CREATE USER mysql@localhost IDENTIFIED VIA unix_socket;
-Query OK, 0 rows affected (0.004 sec)
-
 MariaDB [(none)]> GRANT RELOAD, PROCESS, LOCK TABLES, REPLICATION CLIENT ON *.* TO mysql@localhost;
 Query OK, 0 rows affected (0.004 sec)
 ```
