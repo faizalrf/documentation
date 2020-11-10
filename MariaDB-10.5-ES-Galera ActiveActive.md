@@ -429,7 +429,7 @@ This setup gives us the basic read/write split, standard monitoring and a connec
 
 ### Configure MaxScale & Replication Users
 
-We need to create the **`maxuser`** & **`repl_user`** accounts with a password of `SecretP@ssw0rd` (As defined in the `maxscale.cnf`), we will also create a **`mariabackup`** to use for SST, this needs to be done on both **Primary DC** and **DR DC**.
+We need to create the **`maxuser`** & **`repl_user`** accounts with a password of `SecretP@ssw0rd` (As defined in the `maxscale.cnf`), we will also grant **`mysql@localhost`** use the MariaDB Backup grants for SST, this needs to be done on both **Primary DC** and **DR DC**.
 
 ```
 MariaDB [(none)]> CREATE USER maxuser@'%' IDENTIFIED BY 'SecretP@ssw0rd';
