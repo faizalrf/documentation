@@ -13,12 +13,11 @@ query_cache_type = 0
 
 innodb_buffer_pool_size = 1024M
 innodb_log_buffer_size  = 1024M
-innodb_file_per_table   = 1
 innodb_open_files       = 400
 innodb_io_capacity      = 400
 innodb_flush_method     = O_DIRECT
 innodb_log_file_size    = 1024M
-innodb_flush_log_at_trx_commit = 1
+innodb_flush_log_at_trx_commit = 0
 innodb_doublewrite = 0
 innodb_autoinc_lock_mode = 2
 ```
