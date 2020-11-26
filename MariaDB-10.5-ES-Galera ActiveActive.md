@@ -281,6 +281,8 @@ The two independent clusters are ready!
 
 Install **MaxScale + MariaDB-client** on both MaxScale nodes
 
+**Note:** _Make Sure MariaDB-client is installed on all the MaxScale nodes!_
+
 ```txt
 ➜  yum -y install maxscale MariaDB-client
 
