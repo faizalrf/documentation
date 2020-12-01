@@ -65,15 +65,15 @@ else
 
   ############################################# -User Config- ##################################################
   #This needs to point to the remove MaxScale on the opposite DC
-  Remote_MaxScale_Host="10.0.0.180"
+  Remote_MaxScale_Host="Remote MaxScale VIP/IP"
   # For Instance: DR-RemoteMaxScale or DC-RemoteMaxScale
   Remote_MaxScale_Name="Primary-MaxScale"
   # Port of the ReadConRoute Listener port, recommended to use instead of Read/WriteSplit Setvice
-  Remote_MaxScale_Port="4007"
+  Remote_MaxScale_Port="Remote MaxScale ReadConRoute/ReadWriteSplit Port"
   # Replication User name use in Setting up the CHANGE MASTER, GRANT REPLICATION SLAVE, REPLICATION SLAVE ADMIN ON *.* TO repl_user@'%';
-  Replication_User_Name="repl_user"
+  Replication_User_Name="Replication User Name"
   # Password for the Replication User
-  Replication_User_Pwd="SecretP@ssw0rd"
+  Replication_User_Pwd="Replication User Password"
   ########################################## -User Config End- #################################################
 
   #Read the arguments passed in by MaxScale
