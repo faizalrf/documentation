@@ -1,4 +1,5 @@
 #!/bin/bash
+
 ###########################################################
 ## MaxScale Notify Script                                ##
 ## Kester Riley <kester.riley@mariadb.com>               ##
@@ -8,11 +9,13 @@
 ## Updated by: Kwangbock Lee <kwangbock.lee@mariadb.com> ##
 ## November 30th 2020                                    ##
 ###########################################################
+
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
 # INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE
 # AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
 # DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
 process_arguments()
 {
    while [ "$1" != "" ]; do
@@ -38,13 +41,16 @@ process_arguments()
       shift
    done
 }
+
 # Log output file, this path must be owned by maxscale OS user
 Log_Path=/var/lib/maxscale/monitor.log
+
 if [[ ${MAX_PASSIVE} = "true" ]];
 then
    echo "$(date) | NOTIFY SCRIPT: Server is Passive, exiting" >> ${Log_Path}
 else
   echo "$(date) | NOTIFY SCRIPT: Server is Active" >> ${Log_Path}
+
   # Initialize the variables
   initiator=""
   parent=""
@@ -56,11 +62,12 @@ else
   slave_list=""
   synced_list=""
   RetStatus=0
+
   ############################################# -User Config- ##################################################
   #This needs to point to the remove MaxScale on the opposite DC
-  Remote_MaxScale_Host=""
+  Remote_MaxScale_Host="10.0.0.180"
   # For Instance: DR-RemoteMaxScale or DC-RemoteMaxScale
-  Remote_MaxScale_Name=""
+  Remote_MaxScale_Name="Primary-MaxScale"
   # Port of the ReadConRoute Listener port, recommended to use instead of Read/WriteSplit Setvice
   Remote_MaxScale_Port="4007"
   # Replication User name use in Setting up the CHANGE MASTER, GRANT REPLICATION SLAVE, REPLICATION SLAVE ADMIN ON *.* TO repl_user@'%';
@@ -68,8 +75,10 @@ else
   # Password for the Replication User
   Replication_User_Pwd="SecretP@ssw0rd"
   ########################################## -User Config End- #################################################
+
   #Read the arguments passed in by MaxScale
   process_arguments $@
+
   if [[ ${Remote_MaxScale_Host} = "none" ]]
   then
      echo "$(date) | NOTIFY SCRIPT: No change master required" >> ${Log_Path}
@@ -99,6 +108,8 @@ else
         mariadb -u${Replication_User_Name} -p${Replication_User_Pwd} -h${lv_master_host} -P${lv_master_port} < ${TMPFILE}
         rm ${TMPFILE}
       fi
+
+
       if [[ ${event} = "new_master" ]]
       then
         echo "$(date) | NOTIFY SCRIPT: Dectected a new master event, new master list = '${master_list}'" >> ${Log_Path}
@@ -112,15 +123,19 @@ else
         fi
         lv_master_host=`echo ${lv_master_to_use} | cut -f1 -d":"`
         lv_master_port=`echo ${lv_master_to_use} | cut -f2 -d":"`
+
         TMPFILE=`mktemp`
+
         # Ensure all slaves are stopped first
         echo "STOP ALL SLAVES; RESET SLAVE '${Remote_MaxScale_Name}' ALL;" > ${TMPFILE}
         echo "$(date) | STOP ALL SLAVES; RESET SLAVE '${Remote_MaxScale_Name}' ALL;" >> ${Log_Path}
         mariadb -u${Replication_User_Name} -p${Replication_User_Pwd} -h${lv_master_host} -P${lv_master_port} < ${TMPFILE}
+
         # Get `gtid_slave_pos` and  `gtid_binlog_pos` (ex. gtid_slave_pos='1-100-11' | gtid_binlog_pos='1-100-13','2-200-6')
 	slave_pos=`mariadb -u${Replication_User_Name} -p${Replication_User_Pwd} -h${lv_master_host} -P${lv_master_port} -ss -e "select @@gtid_slave_pos"`;
         binlog_pos=`mariadb -u${Replication_User_Name} -p${Replication_User_Pwd} -h${lv_master_host} -P${lv_master_port} -ss -e "select @@gtid_binlog_pos"`;
         echo "$(date) | gtid_slave_pos = $slave_pos / gtid_binlog_pos = $binlog_pos" >> ${Log_Path}
+
 	# If current 'gtid_slave_pos' is not empty, assign the most up-to-date gtid_slave_pos before 'CHANGE MASTER ..'
 	if [[ ${slave_pos} = "none" ]]
 	then
@@ -129,14 +144,17 @@ else
 	   # Get 'Domain_id'-'server_id' from gtid_slave_pos (ex. '1-100-11' -> '1-100')
 	   slave_pos_noseq=${slave_pos%-*}
 	   echo "$(date) | slave_pos_noseq = $slave_pos_noseq" >> ${Log_Path}
+
 	   # Get the up-to-date SEQ of slave_pos from gtid_slave_pos ("1-100-13,2-200-6" -> 13)
 	   gtid_seq=`echo $binlog_pos | sed "s/.*$slave_pos_noseq-//" | sed "s/\,.*//"`
 	   echo "$(date) | gtid_seq = $gtid_seq" >> ${Log_Path}
+
 	   # Set the up-to-date gtid_slave_pos by combining slave_pos_noseq + gtid_seq ("1-100" + "-" + "13")
            echo "SET GLOBAL gtid_slave_pos = '$slave_pos_noseq-$gtid_seq';" > ${TMPFILE}
            echo "$(date) | SET GLOBAL gtid_slave_pos = '$slave_pos_noseq-$gtid_seq';" >> ${Log_Path}
            mariadb -u${Replication_User_Name} -p${Replication_User_Pwd} -h${lv_master_host} -P${lv_master_port} < ${TMPFILE}
 	fi
+
         # If Remote MaxScale Host is defined, then execute CHANGE MASTER to connect to it on the new MASTER selection
         if [[ ${Remote_MaxScale_Host} = "none" ]]
         then
