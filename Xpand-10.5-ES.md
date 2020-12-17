@@ -25,7 +25,7 @@ We will go through all of the above in the sections below.
 
 ## Assumptions
 
-- **Three** nodes with `RHEL 7` or `CentOS 7`.
+- **Three** nodes with `RHEL 7.x` or `CentOS 7.x`.
 - 8 CPU x 16 GB minimum requirement. 
 - `SELinux` and `firewalld` are disabled.
 - the nodes should be able to communicate with each other.
@@ -43,12 +43,15 @@ For more details, refer to <https://mariadb.com/docs/deploy/xpand-node/>
 
 ***Note:** All the following steps are to be done on all the nodes unless otherwise specified*
 ***Note:** The filesystem on all the nodes must be `ext4`*
+***Note:** `shell> mkfs -t ext4 /dev/nvme0n1` followed by `shell> mount /dev/nvme0n1 /data`*
 
 Install Dependencies
 
 For RHEL 7
+
 - `sudo rpm -ivh https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm`
-- `sudo yum-config-manager --enable rhui-REGION-rhel-server-optional`
+- `yum-config-manager --enable "Red Hat Enterprise Linux 7 Server - Optional from RHUI (RPMs)"`
+  - To get this name check the list of disabled repos through `yum repolist disabled` and copy the text that says **`Optional from RHUI`** as above
 
 For CentOS 7
 - `sudo yum -y install epel-release`
@@ -148,7 +151,7 @@ Installing Xpand binaries on all the nodes as follows, the port `5001` is someth
 
 ```txt
 [shell]$ cd xpand-5.3.11_rc.el7
-[shell]$ sudo ./xpdnode_install.py --mysql-port 5001 --yes
+[shell]$ sudo ./xpdnode_install.py --wizard --mysql-port 5001 --unix-socket /data/clustrix/mysql.sock
 
 === Warning: ===
 LOG_PATH should not be on the same storage volume (/data) as
@@ -312,7 +315,7 @@ Install The MariaDB Enterprise server & Xpand plugin on all the nodes. All the R
 
 ### Local Repo Setup
 
-Assuming the downloaded rpm package was untared is under `/tmp/mariadb-enterprise-10.5.6-4-centos-7-x86_64-rpms`
+Assuming the downloaded rpm package was untarred is under `/tmp/mariadb-enterprise-10.5.6-4-centos-7-x86_64-rpms`
 
 ```
 [shell]$ pwd
@@ -410,7 +413,6 @@ Edit the `/etc/my.cnf.d/xpand.cnf` file and add the **first Xpand** plugin detai
 ```txt
 [mariadb]
 plugin_load_add = ha_xpand.so
-plugin_maturity = gamma
 xpand_hosts = 127.0.0.1
 xpand_port = 5001
 xpand_username = xpand
