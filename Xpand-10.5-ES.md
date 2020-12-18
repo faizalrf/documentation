@@ -42,11 +42,8 @@ For more details, refer to <https://mariadb.com/docs/deploy/xpand-node/>
 ## Installation
 
 ***Note:** All the following steps are to be done on all the nodes unless otherwise specified*
-
 ***Note:** The filesystem on all the nodes must be `ext4`*
-
 ***Note:** `shell> lsblk`, `shell> mkfs -t ext4 /dev/nvme0n1` followed by `shell> mount /dev/nvme0n1 /data`*
-
 ***Note:** Recommended to create a separate munt for Xpand logs as well*
 
 Install Dependencies
