@@ -41,20 +41,24 @@ For more details, refer to <https://mariadb.com/docs/deploy/xpand-node/>
 
 ## Installation
 
-***Note:** All the following steps are to be done on all the nodes unless otherwise specified*
-***Note:** The filesystem on all the nodes must be `ext4`*
-***Note:** `shell> lsblk`, `shell> mkfs -t ext4 /dev/nvme0n1` followed by `shell> mount /dev/nvme0n1 /data`*
-***Note:** Recommended to create a separate munt for Xpand logs as well*
+### Important Nodes
+- All the following steps are to be done on all the nodes unless otherwise specified
+- The filesystem on all the nodes must be `ext4`
+- Filesystem creation example
+  - `shell> lsblk`
+  - `shell> mkfs -t ext4 /dev/nvme0n1`
+  - `shell> mount /dev/nvme0n1 /data`
+- Recommended to create a separate munt for Xpand logs as well
 
-Install Dependencies
+### Install Dependencies
 
-For RHEL 7
+#### For RHEL 7
 
 - `sudo rpm -ivh https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm`
 - `yum-config-manager --enable "Red Hat Enterprise Linux 7 Server - Optional from RHUI (RPMs)"`
   - To get this name check the list of disabled repos through `yum repolist disabled` and copy the text that says **`Optional from RHUI`** as above
 
-For CentOS 7
+#### For CentOS 7
 - `sudo yum -y install epel-release`
 
 After installing `epel-release` and optional packages, install the dependencies as follows.
@@ -98,7 +102,7 @@ Enable NTP process on all three nodes
 [shell]$ sudo systemctl enable ntpd
 ```
 
-## Preparing Filesystem
+### Preparing Filesystem
 
 A dedicated mount `/data` with the type of `ext4` should be available, the output of the `df -h --print-type` should report a dedicated mount for `/data` with sufficient storage as follows
 
@@ -117,7 +121,7 @@ tmpfs          tmpfs     1.5G     0  1.5G   0% /run/user/1000
 
 _**Note:** If the mount is not available with the type of `ext4` the installation of Xpand will fail._
 
-## Download the Xpand binaries
+### Download the Xpand binaries
 
 Contact MariaDB Sales team to get the Xpand binaries download link and transfer the binary `tar` to all of the Xpand nodes
 
@@ -143,7 +147,7 @@ xpand-5.3.11_rc.el7/checksums.md5
 xpand-5.3.11_rc.el7/xpdnode_install.py
 ```
 
-### Install the Xpand binaries
+#### Install the Xpand binaries
 
 Installing Xpand binaries on all the nodes as follows, the port `5001` is something that is up to us to decide as we don't want it to conflict with the MariaDB default port `3306`, the `--yes` makes sure that Xpand uses all the defaults and recommended settings.
 
