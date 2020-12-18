@@ -45,9 +45,9 @@ For more details, refer to <https://mariadb.com/docs/deploy/xpand-node/>
 - All the following steps are to be done on all the nodes unless otherwise specified
 - The filesystem on all the nodes must be `ext4`
 - Filesystem creation example
-  - `shell> lsblk`
-  - `shell> mkfs -t ext4 /dev/nvme0n1`
-  - `shell> mount /dev/nvme0n1 /data`
+  - `[shell]$ lsblk`
+  - `[shell]$ mkfs -t ext4 /dev/nvme0n1`
+  - `[shell]$ mount /dev/nvme0n1 /data`
 - Recommended to create a separate munt for Xpand logs as well
 
 ### Install Dependencies
@@ -156,7 +156,10 @@ Installing Xpand binaries on all the nodes as follows, the port `5001` is someth
 
 ```txt
 [shell]$ cd xpand-5.3.11_rc.el7
-[shell]$ sudo ./xpdnode_install.py --wizard --mysql-port 5001 --unix-socket /data/clustrix/mysql.sock
+[shell]$ ./xpdnode_install.py --wizard --mysql-port 5001 --unix-socket /data/clustrix/mysql.sock
+or
+[shell]$ ./xpdnode_install.py --yes --mysql-port 5001 --unix-socket /data/clustrix/mysql.sock
+### This will auto accept all the defaults and run install witnout any prompts
 
 === Warning: ===
 LOG_PATH should not be on the same storage volume (/data) as
