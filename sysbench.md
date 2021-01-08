@@ -47,7 +47,7 @@ shell> sudo yum -y install sysbench
 ```
 or 
 
-Download the latst through https://repo.percona.com/yum/release/7/RPMS/x86_64/sysbench-tpcc-1.0.20-6.el7.x86_64.rpm
+Download the latest package through https://repo.percona.com/yum/release/7/RPMS/x86_64/sysbench-tpcc-1.0.20-6.el7.x86_64.rpm
 
 Once sysbench is installed, verify the version. It should be 1.0.17 or higher.
 
