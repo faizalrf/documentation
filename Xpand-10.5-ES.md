@@ -54,9 +54,59 @@ For more details, refer to <https://mariadb.com/docs/deploy/xpand-node/>
 
 #### For RHEL 7
 
+- MariaDB Server & Xpand Dependencies
+  ```
+  ==========================================================================================================================================================================================
+  Package                                     Arch                         Version                                  Repository                                                        Size
+  ==========================================================================================================================================================================================
+  Installing:
+   MariaDB-backup                              x86_64                       10.5.8_5-1.el7                           /MariaDB-backup-10.5.8_5-1.el7.x86_64                             29 M
+   MariaDB-client                              x86_64                       10.5.8_5-1.el7                           /MariaDB-client-10.5.8_5-1.el7.x86_64                             42 M
+   MariaDB-shared                              x86_64                       10.5.8_5-1.el7                           /MariaDB-shared-10.5.8_5-1.el7.x86_64                            343 k
+   galera-enterprise-4                         x86_64                       26.4.6-1.el7.9                           /galera-enterprise-4-26.4.6-1.el7.9.x86_64                        42 M
+  Installing for dependencies:
+   boost-program-options                       x86_64                       1.53.0-28.el7                            rhel-7-server-rhui-rpms                                          156 k
+   libaio                                      x86_64                       0.3.109-13.el7                           rhel-7-server-rhui-rpms                                           24 k
+   lsof                                        x86_64                       4.87-6.el7                               rhel-7-server-rhui-rpms                                          331 k
+   make                                        x86_64                       1:3.82-24.el7                            rhel-7-server-rhui-rpms                                          421 k
+   openssl                                     x86_64                       1:1.0.2k-21.el7_9                        rhel-7-server-rhui-rpms                                          493 k
+   socat                                       x86_64                       1.7.3.2-2.el7                            rhel-7-server-rhui-rpms                                          290 k
+
+  ==========================================================================================================================================================================================
+  Package                                     Arch                         Version                                 Repository                                                         Size
+  ==========================================================================================================================================================================================
+  Installing:
+   MariaDB-server                             x86_64                       10.5.8_5-1.el7                           /MariaDB-server-10.5.8_5-1.el7.x86_64                             106 M
+   MariaDB-xpand-engine                       x86_64                       10.5.8_5-1.el7                           /MariaDB-xpand-engine-10.5.8_5-1.el7.x86_64                       207 k
+  Installing for dependencies:
+   perl-Compress-Raw-Bzip2                    x86_64                       2.061-3.el7                              rhel-7-server-rhui-rpms                                            32 k
+   perl-Compress-Raw-Zlib                     x86_64                       1:2.061-4.el7                            rhel-7-server-rhui-rpms                                            57 k
+   perl-DBI                                   x86_64                       1.627-4.el7                              rhel-7-server-rhui-rpms                                           802 k
+   perl-Data-Dumper                           x86_64                       2.145-3.el7                              rhel-7-server-rhui-rpms                                            47 k
+   perl-IO-Compress                           noarch                       2.061-2.el7                              rhel-7-server-rhui-rpms                                           260 k
+   perl-Net-Daemon                            noarch                       0.48-5.el7                               rhel-7-server-rhui-rpms                                            51 k
+   perl-PlRPC                                 noarch                       0.2020-14.el7                            rhel-7-server-rhui-rpms                                            36 k
+
+  ==========================================================================================================================================================================================
+  Package                                    Arch                       Version                                    Repository                                                         Size
+  ==========================================================================================================================================================================================
+  Installing:
+   xpand-common                              x86_64                      glassbutte-1074.el7                        /xpand-common-glassbutte-1074.el7.x86_64                          44 M
+  Installing for dependencies:
+   MySQL-python                              x86_64                      1.2.5-1.el7                                rhel-7-server-rhui-rpms                                           90 k
+   libdwarf                                  x86_64                      20130207-4.el7                             rhel-7-server-rhui-rpms                                          109 k
+   libdwarf-tools                            x86_64                      20130207-4.el7                             rhel-7-server-rhui-optional-rpms                                 161 k
+   libicu                                    x86_64                      50.2-4.el7_7                               rhel-7-server-rhui-rpms                                          6.9 M
+   psmisc                                    x86_64                      22.20-17.el7                               rhel-7-server-rhui-rpms                                          141 k
+   yajl                                      x86_64                      2.0.4-4.el7                                rhel-7-server-rhui-rpms                                           39 k
+  ```
+
 - `sudo rpm -ivh https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm`
 - `yum-config-manager --enable "Red Hat Enterprise Linux 7 Server - Optional from RHUI (RPMs)"`
   - To get this name check the list of disabled repos through `yum repolist disabled` and copy the text that says **`Optional from RHUI`** as above
+  - If the above is not possible, download the dependency manually and install
+    - libdwarf-tools `yum -y install https://rpmfind.net/linux/centos/7.9.2009/os/x86_64/Packages/libdwarf-20130207-4.el7.x86_64.rpm`
+    - libdwarf-tools `yum -y install https://rpmfind.net/linux/centos/7.9.2009/os/x86_64/Packages/libdwarf-tools-20130207-4.el7.x86_64.rpm`
 
 #### For CentOS 7
 - `sudo yum -y install epel-release`
