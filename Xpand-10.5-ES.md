@@ -123,7 +123,7 @@ _**Note:** If the mount is not available with the type of `ext4` the installatio
 
 ### Download the Xpand binaries
 
-Contact MariaDB Sales team to get the Xpand binaries download link and transfer the binary `tar` to all of the Xpand nodes
+Download from https://mariadb.com/downloads/#mariadb_platform-mariadb_xpand and transfer the binaries to all of the Xpand nodes
 
 Once transferred, un-tar the file and install.
 
