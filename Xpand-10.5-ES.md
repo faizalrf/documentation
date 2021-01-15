@@ -476,6 +476,8 @@ xpand_hosts = 127.0.0.1
 xpand_port = 5001
 xpand_username = xpand
 xpand_password = SecretPassword
+default_storage_engine=xpand
+enforce_storage_engine=xpand
 ```
 
 ***Note:** Since this is a combined architecture, the Xpand host is defined as `Xpand_hosts = 127.0.0.1` but if Xpand nodes are separate, appropriate IP address needs to be used here instead of the loop-back localhost IP.*
