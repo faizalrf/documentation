@@ -174,7 +174,7 @@ _**Note:** If the mount is not available with the type of `ext4` the installatio
 
 ### Download the Xpand binaries
 
-Download from https://mariadb.com/downloads/#mariadb_platform-mariadb_xpand and transfer the binaries to all of the Xpand nodes
+Download the latest binaries from https://mariadb.com/downloads/#mariadb_platform-mariadb_xpand and transfer the binaries to all of the Xpand nodes
 
 Once transferred, un-tar the file and install.
 
@@ -374,7 +374,7 @@ Install The MariaDB Enterprise server & Xpand plugin on all the nodes. All the R
 
 ### Local Repo Setup
 
-Assuming the downloaded rpm package was untarred is under `/tmp/mariadb-enterprise-10.5.6-4-centos-7-x86_64-rpms`
+Assuming the downloaded rpm package was untarred is under `/tmp/mariadb-enterprise-10.5.x.x-x86_64-rpms`
 
 ```
 [shell]$ pwd
@@ -382,8 +382,8 @@ Assuming the downloaded rpm package was untarred is under `/tmp/mariadb-enterpri
 
 [shell]$ ls -lrt
 total 337744
-drwxrwxr-x. 3 centos centos      4096 Oct  7 03:10 mariadb-enterprise-10.5.6-4-centos-7-x86_64-rpms
--rwxr-xr-x. 1 centos centos 345845760 Oct 10 15:18 mariadb-enterprise-10.5.6-4-centos-7-x86_64-rpms.tar
+drwxrwxr-x. 3 centos centos      4096 Oct  7 03:10 mariadb-enterprise-10.5.x.x-x86_64-rpms
+-rwxr-xr-x. 1 centos centos 345845760 Oct 10 15:18 mariadb-enterprise-10.5.x-x-x86_64-rpms.tar
 ```
 
 Based on the above folder setup, we can now create a repository file `/etc/yum.repos.d/mariadb.repo` and add the following content to it. This will define a local repository for CentOS/RHEL.
@@ -391,7 +391,7 @@ Based on the above folder setup, we can now create a repository file `/etc/yum.r
 ```
 [local]
 name=MariaDB ES 10.5
-baseurl=file:///tmp/mariadb-enterprise-10.5.6-4-centos-7-x86_64-rpms
+baseurl=file:///tmp/mariadb-enterprise-10.5.x-x-x86_64-rpms
 enabled=1
 gpgcheck=0
 protect=1
