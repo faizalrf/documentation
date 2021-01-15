@@ -103,7 +103,7 @@ For more details, refer to <https://mariadb.com/docs/deploy/xpand-node/>
 
 - `sudo rpm -ivh https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm`
 - `yum-config-manager --enable "Red Hat Enterprise Linux 7 Server - Optional from RHUI (RPMs)"`
-  - To get this name check the list of disabled repos through `yum repolist disabled` and copy the text that says **`Optional from RHUI`** as above
+  - To get this name check the list of disabled repos through **`yum repolist disabled`** and copy the text that says **`Optional from RHUI`** as above
   - If the above is not possible, download the dependency manually and install
     - **`libdwarf`** & **`libdwarf-tools`** available here:
       - `yum -y install https://rpmfind.net/linux/centos/7.9.2009/os/x86_64/Packages/libdwarf-20130207-4.el7.x86_64.rpm`
