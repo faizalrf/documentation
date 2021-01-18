@@ -103,7 +103,7 @@ For more details, refer to <https://mariadb.com/docs/deploy/xpand-node/>
 
 - `sudo rpm -ivh https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm`
 - `yum-config-manager --enable "Red Hat Enterprise Linux 7 Server - Optional from RHUI (RPMs)"`
-  - To get this name check the list of disabled repos through `yum repolist disabled` and copy the text that says **`Optional from RHUI`** as above
+  - To get this name check the list of disabled repos through **`yum repolist disabled`** and copy the text that says **`Optional from RHUI`** as above
   - If the above is not possible, download the dependency manually and install
     - **`libdwarf`** & **`libdwarf-tools`** available here:
       - `yum -y install https://rpmfind.net/linux/centos/7.9.2009/os/x86_64/Packages/libdwarf-20130207-4.el7.x86_64.rpm`
@@ -174,7 +174,7 @@ _**Note:** If the mount is not available with the type of `ext4` the installatio
 
 ### Download the Xpand binaries
 
-Download from https://mariadb.com/downloads/#mariadb_platform-mariadb_xpand and transfer the binaries to all of the Xpand nodes
+Download the latest binaries from https://mariadb.com/downloads/#mariadb_platform-mariadb_xpand and transfer the binaries to all of the Xpand nodes
 
 Once transferred, un-tar the file and install.
 
@@ -374,7 +374,7 @@ Install The MariaDB Enterprise server & Xpand plugin on all the nodes. All the R
 
 ### Local Repo Setup
 
-Assuming the downloaded rpm package was untarred is under `/tmp/mariadb-enterprise-10.5.6-4-centos-7-x86_64-rpms`
+Assuming the downloaded rpm package was untarred is under `/tmp/mariadb-enterprise-10.5.x.x-x86_64-rpms`
 
 ```
 [shell]$ pwd
@@ -382,8 +382,8 @@ Assuming the downloaded rpm package was untarred is under `/tmp/mariadb-enterpri
 
 [shell]$ ls -lrt
 total 337744
-drwxrwxr-x. 3 centos centos      4096 Oct  7 03:10 mariadb-enterprise-10.5.6-4-centos-7-x86_64-rpms
--rwxr-xr-x. 1 centos centos 345845760 Oct 10 15:18 mariadb-enterprise-10.5.6-4-centos-7-x86_64-rpms.tar
+drwxrwxr-x. 3 centos centos      4096 Oct  7 03:10 mariadb-enterprise-10.5.x.x-x86_64-rpms
+-rwxr-xr-x. 1 centos centos 345845760 Oct 10 15:18 mariadb-enterprise-10.5.x-x-x86_64-rpms.tar
 ```
 
 Based on the above folder setup, we can now create a repository file `/etc/yum.repos.d/mariadb.repo` and add the following content to it. This will define a local repository for CentOS/RHEL.
@@ -391,7 +391,7 @@ Based on the above folder setup, we can now create a repository file `/etc/yum.r
 ```
 [local]
 name=MariaDB ES 10.5
-baseurl=file:///tmp/mariadb-enterprise-10.5.6-4-centos-7-x86_64-rpms
+baseurl=file:///tmp/mariadb-enterprise-10.5.x-x-x86_64-rpms
 enabled=1
 gpgcheck=0
 protect=1
@@ -476,6 +476,8 @@ xpand_hosts = 127.0.0.1
 xpand_port = 5001
 xpand_username = xpand
 xpand_password = SecretPassword
+default_storage_engine=xpand
+enforce_storage_engine=xpand
 ```
 
 ***Note:** Since this is a combined architecture, the Xpand host is defined as `Xpand_hosts = 127.0.0.1` but if Xpand nodes are separate, appropriate IP address needs to be used here instead of the loop-back localhost IP.*
