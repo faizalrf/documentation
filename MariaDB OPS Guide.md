@@ -41,7 +41,7 @@ This means, there is a soft/hard limit of 1024/4096 files opened at any given ti
 
 Assuming, the MariaDB Backup is going to be execute using the **`mysql`** OS user, for instance.
 
-Using the OS **`root`** user, execute the following statements to set `ulimit` for `mysql` OS user, we need to define the soft/hard limits for the `mysql` user in the file `/etc/security/limits.conf`. 
+Using the OS **`root`** user, execute the following statements to set `ulimit` for `mysql` OS user. This will define the soft/hard limits for the `mysql` user to 65535 in the file `/etc/security/limits.conf`. 
 
 ```bash
 shell> echo "mysql              soft    nofile          65535" >> /etc/security/limits.conf
@@ -70,7 +70,11 @@ Make sure that this is done for the correct user, the user that executes **`mari
 
 ## Full Backup
 
-Following is a sample script that takes performs a full backup
+Following is a sample script that takes performs a full backup, copy the contents of the block in `mariadb_full_backup.sh` and grant read/execute permissions 
+
+- `chmod 750 mariadb_full_backup.sh`. 
+
+The user executing the script must have permissions on the MariaDB data directories and other folders that are being used here.
 
 ```bash
 #!/bin/bash
@@ -189,7 +193,11 @@ Once the backup is done successfully, `--prepare` is automatically executed. A f
 
 ## Full Restore
 
-Based on the backup script, we know that the backup was created in a dynamic folder under `${TARGET_DIR}` The restore will be similar 
+Based on the backup script, we know that the backup was created in a dynamic folder under `${TARGET_DIR}` The restore will be similar.
+
+Copy the contents of the following block in to a shell script `mariadb_restore.sh` and grant read/execute permission. The OS user executing the script must have permissions to read/write the MariaDB data directory structures and other folders referred in the script
+
+- `chmod 750 mariadb_restore.sh`
 
 ```bash
 #!/bin/bash
