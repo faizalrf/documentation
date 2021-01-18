@@ -373,7 +373,7 @@ This will let the slave start from the point of backup and pull all the new tran
 
 There is no need to reset master/slave at this time or the need to do `skip-slave-start`
 
-## Promoting a Slave node to a Master
+## Promoting a Slave node to a Master Manually
 
 Finally the process of manually promoting one of the slave nodes as the new Master
 
@@ -402,5 +402,34 @@ Assuming the current master is down and unrecoverable, we can decide to promote 
 - When the original master comes back online, this node most likely will not be able to join back the cluster and will need to be rebuild based on a fresh backup from the new master, process as explained previously **"Rebuilding a Slave after restore"**
 
 ***Note:** However on a controlled switch over to a new master, the original node should be able to join back the cluster as a slave without needing a rebuild.*
+
+## Promoting a Slave as the new Master through MaxScale (Failover/Switchover)
+
+To swith Master from one node to Another or even from one data center to another data center, the process is as follows:
+
+- Stop all the application nodes, ensure no new transaction is coming on to the servers (GTID not moving)
+- On the Active MaxScale node execute the following
+  - `maxctrl call command mariadbmon switchover -t999 <MariaDB Monitor Name> <New Master Server Name> <Old MAster Server Name>` 
+  - This will swithover from the old master to a new master.
+  - To check, which is the active MaxScale, execute `maxctrl show maxscale | grep -i "passive"`
+    - The node that returns **`"passive:false"`** is the active node
+- Restart the application nodes and traffic will start to flow to the new Master automatically.
+
+Another scenario is if the master node goes down while all the MaxScale nodes are running in Passive mode, we can manually trigger failover through MaxScale but first need to switch the MaxScale to "Active"
+
+- `maxctrl alter maxscale passive false`
+- `maxctrl call command mariadbmon failover <MariaDB Monitor Name>`
+
+Other useful MaxScale commands are 
+
+- `maxctrl call command mariadbmon rejoin <MariaDB Monitor Name> <Old Server Name>`
+- `maxctrl call command mariadbmon reset-replication <MariaDB Monitor Name>`
+- `maxctrl call command mariadbmon reset-replication <MariaDB Monitor Name> <New Master Name>`
+- `maxctrl call command mariadbmon switchover <MariaDB Monitor Name>`
+- `maxctrl call command mariadbmon switchover <MariaDB Monitor Name> <New Master Name>`
+
+One rule to follow is to stop all the App nodes and switch Active MaxScale to Passive mode whenever any activity is done on the Master node in the cluster. For all the Slave nodes, it does no matter and business as usual. 
+
+Always shutdown MariaDB gracefully before rebooting any server.
 
 ### Thank You
