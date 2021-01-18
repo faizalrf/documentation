@@ -27,7 +27,7 @@ The password is your own choice following the password policy set within the org
 
 ### Set `ulimit`
 
-Check the current limits for your current user, **`root`**
+Check the current limits for your current user, **`root`**, in this case.
 
 ```bash
 shell> ulimit -Sn
@@ -41,7 +41,7 @@ This means, there is a soft/hard limit of 1024/4096 files opened at any given ti
 
 Assuming, the MariaDB Backup is going to be execute using the **`mysql`** OS user, for instance.
 
-Using the OS **`root`** user, execute the following statements to set `ulimit` for `mysql` OS user.
+Using the OS **`root`** user, execute the following statements to set `ulimit` for `mysql` OS user, we need to define the soft/hard limits for the `mysql` user in the file `/etc/security/limits.conf`. 
 
 ```bash
 shell> echo "mysql              soft    nofile          65535" >> /etc/security/limits.conf
