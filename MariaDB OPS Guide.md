@@ -1,6 +1,6 @@
 # MariaDB OPS Guide
 
-This document will cover the following topics
+This document will cover the following topics and is intended as a guide for regular MariaDB DBA tasks such as backup, restore, rebuilding slave nodes, setting up new master etc. Assumption is RHEL/CENTOS using MariaDB enterprise server & Backup.
 
 - Prerequisites
 - Full Backup
