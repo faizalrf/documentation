@@ -172,15 +172,17 @@ Important things to take note in this script
 
 - **`/glide_backup/backup/.mysqlbackup_info`**
   - This file contains user name and the password as a hidden file.
-  - The file contents are as follows, the user (INFO1) and password (INFO2) are based on the backup user that has the necessary grants required to run MariaDB Enterprise Backup.
+  - The file contents are as follows, the `user (INFO1)` and `password (INFO2)` are based on the backup user that has the necessary grants required to run MariaDB Enterprise Backup.
     ```
     INFO1=mariabackup
     INFO2=SecretPassword!23
     ```
   - These values are imported at the begining of the script and used by te script when calling MariaBackup commandline.
   - Make sure to keep the file's ownership with very limited and just read only permissions to the OS user doing the backup while the other users, NO permission. 
-    - `chown mysql mysql:mysql /glide_backup/backup/.mysqlbackup_info`
+    - `chown mysql:mysql /glide_backup/backup/.mysqlbackup_info`
+      - File ownership changed to `mysql:mysql` user/group assuming that `mysql` user is being used to run the backup script.
     - `chmod 400 /glide_backup/backup/.mysqlbackup_info`
+      - Just read only permission to `mysql` user while no access to others or group.
 - **`BASE_DIR=/glide_backup/backup`**
   - Is the home directory where all the backups and logs will be stored
 - **`BACKUP_DIR=${BASE_DIR}/MARIABACKUP`**
