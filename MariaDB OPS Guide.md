@@ -178,6 +178,9 @@ Important things to take note in this script
     INFO2=SecretPassword!23
     ```
   - These values are imported at the begining of the script and used by te script when calling MariaBackup commandline.
+  - Make sure to keep the file's ownership with very limited and just read only permissions to the OS user doing the backup while the other users, NO permission. 
+    - `chown mysql mysql:mysql /glide_backup/backup/.mysqlbackup_info`
+    - `chmod 400 /glide_backup/backup/.mysqlbackup_info`
 - **`BASE_DIR=/glide_backup/backup`**
   - Is the home directory where all the backups and logs will be stored
 - **`BACKUP_DIR=${BASE_DIR}/MARIABACKUP`**
