@@ -106,7 +106,7 @@ MariaDBStatus=$(systemctl status mariadb | grep "active (running)" | wc -l)
 if [ ${MariaDBStatus} -ne 1 ]
 then
   echo "MariaDB not available $(systemctl status mariadb | grep "Active:"), ABORT!" >> ${Log_Location}
-  exit 0
+  exit 1
 fi
 
 # Check if path already exists or not
@@ -115,7 +115,7 @@ then
   mkdir -p ${TARGET_DIR}
 else
   echo "Backup target directory ${TARGET_DIR} already exists, ABORT!" >> ${Log_Location}
-  exit 0
+  exit 1
 fi
 
 # Execute MariaBackup and check the return status
@@ -142,7 +142,7 @@ if [[ ${retStatus} -ne 0 || ${SuccessfulCompletion} -ne 2 ]]; then
         echo "MariaDB Backup FAILED!, Please check ${Log_Location} for details: `date`"
         echo "======================================================================================================"
         echo ""
-        exit 0
+        exit 1
 fi
 echo ""
 echo "MariaDB Backup completed successfully!"
@@ -156,7 +156,7 @@ echo "===============================================================" >> ${Log_
 ls -ltr ${BACKUP_DIR} >> ${Log_Location}
 echo "===============================================================" >> ${Log_Location}
 
-echo "No file(s) deleted `date` : " `find  ${BACKUP_DIR} -type d -mtime +3` >> ${Log_Location}
+echo "Number of file(s) deleted `date` : " `find  ${BACKUP_DIR} -type d -mtime +3` >> ${Log_Location}
 find ${BACKUP_DIR} -type d -mtime +3 -exec rm -rf {} \; >> ${Log_Location}
 echo "">> ${Log_Location}
 echo "========================" >> ${Log_Location}
@@ -166,6 +166,7 @@ echo "===============================================================" >> ${Log_
 ls -ltr ${BACKUP_DIR}>> ${Log_Location}
 echo "===============================================================">> ${Log_Location}
 echo "">> ${Log_Location}
+exit 0
 ```
 
 Important things to take note in this script
@@ -229,7 +230,7 @@ if [ "$#" -ne 1 ]; then
     echo "The above folder '2021-01-01_03-00-00' must exist under ${BACKUP_DIR}"
     echo "Restore logs will be generated under ${Log_Location}"
     echo ""
-    exit 0
+    exit 1
 fi
 
 MariaDBStatus=$(systemctl status mariadb | grep "inactive (dead)" | wc -l)
@@ -237,26 +238,26 @@ MariaDBStatus=$(systemctl status mariadb | grep "inactive (dead)" | wc -l)
 if [ ${MariaDBStatus} -ne 1 ]
 then
   echo "MariaDB service not stopped, Stop the service before restoring, ABORT!"
-  exit 0
+  exit 1
 fi
 
 # Check if target directory does not exists
 if [ ! -d ${TARGET_DIR} ]
 then
   echo "Backup target directory ${TARGET_DIR} does not exists, ABORT!"
-  exit 0
+  exit 1
 fi
 
 if [ ! -d ${DATA_DIR} ]
 then
   echo "Data directory ${DATA_DIR} does not exists, ABORT!"
-  exit 0
+  exit 1
 fi
 
 if [ ! -d ${BINLOG_DIR} ]
 then
   echo "Binlog directory ${BINLOG_DIR} does not exists, ABORT!"
-  exit 0
+  exit 1
 fi
 
 #Initialize the Log File
@@ -300,7 +301,7 @@ if [ ${retStatus} -ne 0 ]; then
     echo "MariaDB Backup FAILED!, Please check ${Log_Location} for details: `date`" >> ${Log_Location}
     echo "===================================================">> ${Log_Location}
     echo ""
-    exit 0
+    exit 1
 fi
 
 echo "Changing Ownership of the Data Directory ${DATA_DIR}" >>  ${Log_Location}
@@ -309,7 +310,7 @@ retStatus=$?
 
 if [ ${retStatus} -ne 0 ]; then
     echo "Failed to change ownership of the Data Directory ${DATA_DIR} using $(whoami)"
-    exit 0
+    exit 1
 fi
 
 echo ""
@@ -321,6 +322,7 @@ echo "MariaDB Backup Restore is sucessfully completed: `date`">> ${Log_Location}
 echo "===================================================">> ${Log_Location}
 echo "" >> ${Log_Location}
 echo ""
+exit 0
 ```
 
 Important points about the restore script
