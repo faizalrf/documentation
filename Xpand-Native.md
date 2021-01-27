@@ -684,4 +684,4 @@ MySQL [(none)]> GRANT SUPER ON *.* TO maxmon@'%';
 
 This concludes our document on how to set up an Xpand cluster with a Star Schema using GTID-based replication!
 
-### Thanks!
+## Thanks!
