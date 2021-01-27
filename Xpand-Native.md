@@ -1,4 +1,4 @@
-# Setting up The Xpand Native Cluster With MariaDB Enterprise
+# Setting up The MariaDB Enterprise Xpand Native Cluster
 
 This guide is to set up an Xpand native cluster on CentOS7/RHEL7 OS
 
