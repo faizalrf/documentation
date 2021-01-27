@@ -117,7 +117,7 @@ user=maxmon
 password=secretpassword
 
 monitor_interval=2500
-failcount=15
+failcount=7
 failover_timeout=120s
 switchover_timeout=120s
 verify_master_failure=true
@@ -141,6 +141,7 @@ master_reconnection=true
 master_failure_mode=error_on_write
 transaction_replay=true
 slave_selection_criteria=ADAPTIVE_ROUTING
+master_accept_reads=true
 
 ## The following needs to be tested but it's a nice feature to automatically retry a transaction failed due to deadlock, uncomment to enable.
 # transaction_replay_retry_on_deadlock=true
