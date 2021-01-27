@@ -607,6 +607,81 @@ MySQL [(none)]> RESTORE * FROM 'ftp://storage01/uploads/johndoe.kibbles.jun01' R
 
 Refer to <https://docs.clustrix.com/display/SAG91/ClustrixDB+Fast+Backup+and+Restore> for details on the syntax and various options.
 
+## Setting Up MaxScale
+
+For MaxScale, the latest version 2.5 or higher (if available) is needed as this verion contains the `xpandmon` Monitor service. 
+
+Standard `/etc/maxscale.cnf` configuration as follows
+
+```txt
+[MaxScale]
+threads=auto
+
+[BootStrapNode-1]
+type=server
+address=172.31.16.29
+port=5001
+
+[Xpand]
+type=monitor
+module=xpandmon
+servers=BootStrapNode-1
+user=maxmon
+password=password
+cluster_monitor_interval=100000ms
+health_check_threshold=3
+dynamic_node_detection=true
+
+[Xpand-Service]
+type=service
+router=readwritesplit
+user=maxuser
+password=password
+cluster=Xpand
+transaction_replay=true
+slave_selection_criteria=LEAST_GLOBAL_CONNECTIONS
+
+[Read-Write-Listener]
+type=listener
+service=Xpand-Service
+protocol=MariaDBClient
+port=5009
+```
+
+The `servers` section only mentions the first node of the cluster, we can define more than one node as bootstrap as `BootStrapNode-2`, etc. But one is enough, the `xpandmon` will go ahead and identify all the nodes in the cluster automatically. 
+
+We can see, in the ReadWriteSplit service, the Servers are not listed instead we have `cluster=Xpand` This points back to the `xpandmon` section and all the list of nodes is automatically retrieved. This way, we can add nodes to the backend and MaxScale will automatically handle all of them! We don't need to define or change anything within the MaxScale config.
+
+Looking at the `maxctrl list servers` we can see the automatically identified nodes. The list includes the BootStrap node and the same node is again listed as automatically idengtified node, this is the expected behaviour.
+
+```
+[root@mx1 ~]# maxctrl list servers
+┌────────────────┬──────────────┬──────┬─────────────┬─────────────────┬──────┐
+│ Server         │ Address      │ Port │ Connections │ State           │ GTID │
+├────────────────┼──────────────┼──────┼─────────────┼─────────────────┼──────┤
+│ @@Xpand:node-3 │ 172.31.25.90 │ 5001 │ 0           │ Master, Running │      │
+├────────────────┼──────────────┼──────┼─────────────┼─────────────────┼──────┤
+│ @@Xpand:node-2 │ 172.31.19.93 │ 5001 │ 0           │ Master, Running │      │
+├────────────────┼──────────────┼──────┼─────────────┼─────────────────┼──────┤
+│ @@Xpand:node-1 │ 172.31.16.29 │ 5001 │ 0           │ Master, Running │      │
+├────────────────┼──────────────┼──────┼─────────────┼─────────────────┼──────┤
+│ BootStrapNode  │ 172.31.16.29 │ 5001 │ 0           │ Master, Running │      │
+└────────────────┴──────────────┴──────┴─────────────┴─────────────────┴──────┘
+```
+
+When the user connects to the `Read-Write-Listener` port `5009`, MaxScale will auto distribute the connections across all the Xpand nodes while still making use of transaction replay features of this router.
+
+### MaxScale User Setup
+
+The `maxmon` and `maxuser` users needs the following grants.
+
+```sql
+MySQL [(none)]> GRANT SELECT ON system.* TO maxuser@'%';
+MySQL [(none)]> GRANT SELECT ON system.* TO maxmon@'%';
+MySQL [(none)]> GRANT SHOW DATABASES ON *.* to maxmon@'%';
+MySQL [(none)]> GRANT SUPER ON *.* TO maxmon@'%';
+```
+
 This concludes our document on how to set up an Xpand cluster with a Star Schema using GTID-based replication!
 
 ### Thanks!
