@@ -469,7 +469,7 @@ Copyright (c) 2000, 2018, Oracle, MariaDB Corporation Ab and others.
 
 Type 'help;' or '\h' for help. Type '\c' to clear the current input statement.
 
-MySQL [(none)]> ALTER CLUSTER ADD '172.31.1.151', '172.31.0.17';
+MySQL [(none)]> ALTER CLUSTER ADD '172.31.23.146', '172.31.31.10';
 Query OK, 0 rows affected (0.008 sec)
 ```
 
@@ -619,7 +619,7 @@ threads=auto
 
 [BootStrapNode-1]
 type=server
-address=172.31.16.29
+address=172.31.19.210
 port=5001
 
 [Xpand]
@@ -648,7 +648,7 @@ protocol=MariaDBClient
 port=5009
 ```
 
-The `servers` section only mentions the first node of the cluster, we can define more than one node as bootstrap as `BootStrapNode-2`, etc. But one is enough, the `xpandmon` will go ahead and identify all the nodes in the cluster automatically. 
+The `servers` section only mentions the **first node** of the cluster, we can define more than one node as bootstrap as `BootStrapNode-2`, etc. But one is enough, the `xpandmon` will go ahead and identify all the nodes in the cluster automatically. 
 
 We can see, in the ReadWriteSplit service, the Servers are not listed instead we have `cluster=Xpand` This points back to the `xpandmon` section and all the list of nodes is automatically retrieved. This way, we can add nodes to the backend and MaxScale will automatically handle all of them! We don't need to define or change anything within the MaxScale config.
 
@@ -656,17 +656,17 @@ Looking at the `maxctrl list servers` we can see the automatically identified no
 
 ```
 [root@mx1 ~]# maxctrl list servers
-┌────────────────┬──────────────┬──────┬─────────────┬─────────────────┬──────┐
-│ Server         │ Address      │ Port │ Connections │ State           │ GTID │
-├────────────────┼──────────────┼──────┼─────────────┼─────────────────┼──────┤
-│ @@Xpand:node-3 │ 172.31.25.90 │ 5001 │ 0           │ Master, Running │      │
-├────────────────┼──────────────┼──────┼─────────────┼─────────────────┼──────┤
-│ @@Xpand:node-2 │ 172.31.19.93 │ 5001 │ 0           │ Master, Running │      │
-├────────────────┼──────────────┼──────┼─────────────┼─────────────────┼──────┤
-│ @@Xpand:node-1 │ 172.31.16.29 │ 5001 │ 0           │ Master, Running │      │
-├────────────────┼──────────────┼──────┼─────────────┼─────────────────┼──────┤
-│ BootStrapNode  │ 172.31.16.29 │ 5001 │ 0           │ Master, Running │      │
-└────────────────┴──────────────┴──────┴─────────────┴─────────────────┴──────┘
+┌─────────────────┬────────────────┬──────┬─────────────┬─────────────────┬──────┐
+│ Server          │ Address        │ Port │ Connections │ State           │ GTID │
+├─────────────────┼────────────────┼──────┼─────────────┼─────────────────┼──────┤
+│ @@Xpand:node-3  │ 172.31.31.10   │ 5001 │ 0           │ Master, Running │      │
+├─────────────────┼────────────────┼──────┼─────────────┼─────────────────┼──────┤
+│ @@Xpand:node-2  │ 172.31.23.146  │ 5001 │ 0           │ Master, Running │      │
+├─────────────────┼────────────────┼──────┼─────────────┼─────────────────┼──────┤
+│ @@Xpand:node-1  │ 172.31.19.210  │ 5001 │ 0           │ Master, Running │      │
+├─────────────────┼────────────────┼──────┼─────────────┼─────────────────┼──────┤
+│ BootStrapNode   │ 172.31.19.210  │ 5001 │ 0           │ Master, Running │      │
+└─────────────────┴────────────────┴──────┴─────────────┴─────────────────┴──────┘
 ```
 
 When the user connects to the `Read-Write-Listener` port `5009`, MaxScale will auto distribute the connections across all the Xpand nodes while still making use of transaction replay features of this router.
