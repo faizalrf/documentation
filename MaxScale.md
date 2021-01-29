@@ -14,7 +14,7 @@ log_slave_updates = 1
 bind_address = 0.0.0.0
 log_error
 
-# MariaDB Replication Durability
+# MariaDB Replication Durability but may slow down the replication on very heavy write environments
 sync_binlog = 1
 sync_master_info = 1
 sync_relay_log = 1
@@ -127,9 +127,9 @@ transaction_replay=true
 slave_selection_criteria=ADAPTIVE_ROUTING
 
 # For Read Consistency, test this with the value "local" and "global" to always use Slaves for reading 
-# fast, means, if no slaves have the data, the query will be straight away routed to Master.
-# local, means, Server will wait up to `causal_reads_timeout=10s` to see if the slaves get that data before running the SELECT query, this can slowdown the application if the slaves are always lagging behind. Applicable to writes done on the user's own connection.
-# global, is the same as "local" but apply to changes done to the data by any user, MaxScale will wait for that data to be synced up on Slaves before routing it to the slave else after the timeout the query will route to Master.
+# fast: means, if no slaves have the data, the query will be straight away routed to Master.
+# local: means, Server will wait up to `causal_reads_timeout=10s` to see if the slaves get that data before running the SELECT query, this can slowdown the application if the slaves are always lagging behind. Applicable to writes done on the user's own connection.
+# global: is the same as "local" but apply to changes done to the data by any user, MaxScale will wait for that data to be synced up on Slaves before routing it to the slave else after the timeout the query will route to Master.
 
 causal_reads=fast
 
