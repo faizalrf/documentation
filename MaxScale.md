@@ -127,10 +127,6 @@ transaction_replay=true
 slave_selection_criteria=ADAPTIVE_ROUTING
 
 # For Read Consistency, test this with the value "local" and "global" to always use Slaves for reading 
-# fast: means, if no slaves have the data, the query will be straight away routed to Master.
-# local: means, Server will wait up to `causal_reads_timeout=10s` to see if the slaves get that data before running the SELECT query, this can slowdown the application if the slaves are always lagging behind. Applicable to writes done on the user's own connection.
-# global: is the same as "local" but apply to changes done to the data by any user, MaxScale will wait for that data to be synced up on Slaves before routing it to the slave else after the timeout the query will route to Master.
-
 causal_reads=fast
 
 ## The following needs to be tested but it's a nice feature to automatically retry a transaction failed due to deadlock, uncomment to enable.
@@ -147,6 +143,19 @@ port=4009
 ```
 
 The `Read-Write-Listener` points to `4009` as the port number, this is the port that the application should connect to.
+
+- **`causal_reads=fast`** 
+  - If the current connection does any data changes, insert, update, delete, MaxScale will check if no slaves have the data replicated, the subsequent SELECT query will be straight away routed to the Master node.
+  - This is the fastest way but in case of the always lagging slaves, master will be constantly pounded by all the reads.
+- **`causal_reads=local`**
+  - If the current connection does any data changes, insert, update, delete, MaxScale will wait up to `causal_reads_timeout=10s` seconds to see if the slaves get that data before running the SELECT query on the slave, 
+  - This can slowdown the application if the slaves are always lagging behind. Applicable to writes done on the user's own connection.
+  - But if the replicaiton is fast enough, this can provided great READ scaling.
+- **`causal_reads=global`**
+  - This behaves exactly the same way as `local` with one major change. Instead of considering on the current user connection, MaxScale will identify changes from all the other users who might do some data change and then decide weather to send the SELECT query to a particular slave or to the master node
+  - Can be good if read scaling is needed and data consistency across the server is important.
+  - But of course, it slows down all the users SELECT tasks even if they are not doing any data changes
+    - `causal_reads_timeout=10s` is still applicable and can be configured within MaxScale as to how long to wait for the replication of that particular transaction to catch up.
 
 Once the configuration is ready, restart trhe MaxScale `systemctl restart maxscale` and execute the command to verify the server's are visible by executing the command: `maxctrl list servers` and `maxctrl list services` to see the running services.
 
