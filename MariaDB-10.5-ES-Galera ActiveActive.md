@@ -443,6 +443,9 @@ Query OK, 0 rows affected (0.054 sec)
 MariaDB [(none)]> GRANT SHOW DATABASES ON *.* TO maxuser@'%';
 Query OK, 0 rows affected (0.054 sec)
 
+MariaDB [(none)]> GRANT SUPER ON *.* TO maxuser@'%';
+Query OK, 0 rows affected (0.050 sec)
+
 MariaDB [(none)]> CREATE USER repl_user@'%' IDENTIFIED BY 'SecretP@ssw0rd';
 Query OK, 0 rows affected (0.051 sec)
 
