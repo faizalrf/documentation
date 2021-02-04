@@ -130,9 +130,9 @@ else
         rm ${TMPFILE}
       fi
 
-      if [[ ${event} = "new_master" ]]
+      if [[ ${event} = "new_master" || ${event} = "master_up" ]]
       then
-        echo "$(date) | NOTIFY SCRIPT: Dectected a new master event, new master list = '${master_list}'" >> ${Log_Path}
+        echo "$(date) | NOTIFY SCRIPT: Dectected a ${event} event, new master list = '${master_list}'" >> ${Log_Path}
         if [[ ${master_list} =~ "," ]];
         then
            echo "$(date) | NOTIFY SCRIPT: ... more than one master in list, using first one." >> ${Log_Path}
