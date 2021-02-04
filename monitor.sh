@@ -8,6 +8,8 @@
 ## October 27th 2020                                     ##
 ## Updated by: Kwangbock Lee <kwangbock.lee@mariadb.com> ##
 ## December 2th 2020                                     ##
+## Update by: Faisal Saeed <faisal@mariadb.com           ##
+## January 5th 2021                                      ##
 ###########################################################
 
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
@@ -15,6 +17,18 @@
 # AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
 # DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+# Create a hidden file /var/lib/maxscale/.maxinfo and add the following 4 variables
+
+	repuser=<Replication User Name>
+	reppwd=<Replication User Password>
+	maxuser=<MaxScale User Name>
+	maxpwd=<MaxScale User Password>
+
+# Set ownership if this file to maxuser:maxuser
+# set permission to be read only for maxuser and no permission for any other user
+	chmod 400 /var/lib/maxscale/.maxinfo
+# End...
 
 process_arguments()
 {
@@ -71,13 +85,13 @@ else
   # Port of the ReadConRoute Listener port, recommended to use instead of Read/WriteSplit Setvice
   Remote_MaxScale_Port="4007"
   # Replication User name use in Setting up the CHANGE MASTER, GRANT REPLICATION SLAVE, REPLICATION SLAVE ADMIN ON *.* TO repl_user@'%';
-  Replication_User_Name="repl_user"
+  Replication_User_Name=${repuser}
   # Password for the Replication User
-  Replication_User_Pwd="<password>"
+  Replication_User_Pwd=${reppwd}
   # MaxScale User name use who is re-configuring replication setup by executing "RESET SLAVE, CHANGE MASTER"
-  MaxScale_User_Name="maxuser"
+  MaxScale_User_Name=${maxuser}
   # Password for the MaxScale User
-  MaxScale_User_Pwd="<password>"
+  MaxScale_User_Pwd=${maxpwd}
   ########################################## -User Config End- #################################################
 
   #Read the arguments passed in by MaxScale
@@ -156,7 +170,7 @@ else
            echo "$(date) | NOTIFY SCRIPT: No master host set for Remote_MaxScale_Host" >> ${Log_Path}
         else
            echo "$(date) | NOTIFY SCRIPT: Running change master on master server ${lv_master_to_use} to ${Remote_MaxScale_Host}" >> ${Log_Path}
-           echo "CHANGE MASTER '${Remote_MaxScale_Name}' TO master_use_gtid=slave_pos, MASTER_HOST='${Remote_MaxScale_Host}', MASTER_USER='${Replication_User_Name}', MASTER_PASSWORD='${Replication_User_Pwd}', MASTER_PORT=${Remote_MaxScale_Port}, MASTER_CONNECT_RETRY=10; " > ${TMPFILE}
+           echo "CHANGE MASTER '${Remote_MaxScale_Name}' TO master_use_gtid=slave_pos, MASTER_HOST='${Remote_MaxScale_Host}', MASTER_USER='{Replication_User_Name}', MASTER_PASSWORD='***************', MASTER_PORT=${Remote_MaxScale_Port}, MASTER_CONNECT_RETRY=10; " > ${TMPFILE}
            echo "$(date) | CHANGE MASTER '${Remote_MaxScale_Name}' TO master_use_gtid=slave_pos, MASTER_HOST='${Remote_MaxScale_Host}', MASTER_USER='${Replication_User_Name}', MASTER_PASSWORD='${Replication_User_Pwd}', MASTER_PORT=${Remote_MaxScale_Port}, MASTER_CONNECT_RETRY=10; "  >> ${Log_Path}
            mariadb -u${MaxScale_User_Name} -p${MaxScale_User_Pwd} -h${lv_master_host} -P${lv_master_port} < ${TMPFILE}
            RetStatus=$?
