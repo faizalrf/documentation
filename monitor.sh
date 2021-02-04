@@ -56,6 +56,9 @@ process_arguments()
    done
 }
 
+#Import info
+. /var/lib/maxscale/.maxinfo
+
 # Log output file, this path must be owned by maxscale OS user
 Log_Path=/var/lib/maxscale/monitor.log
 
