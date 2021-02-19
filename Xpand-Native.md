@@ -77,18 +77,28 @@ Now we can directly execute the `yum install` without worrying about the depende
 
 Dependencies Resolved
 
-==========================================================================================================================================================================================
-  Package                                    Arch                       Version                                    Repository                                                         Size
-==========================================================================================================================================================================================
+=====================================================================================================================================
+ Package                                 Arch                    Version                              Repository                Size
+=====================================================================================================================================
 Installing:
- MariaDB-client                              x86_64                     10.5.x-1.el7                               mariadb-es-main                                                   7.0 M
- MariaDB-compat                              x86_64                     10.5.x-1.el7                               mariadb-es-main                                                   2.2 M
+ MariaDB-client                          x86_64                  10.5.8_5-1.el7                       local                    7.0 M
+ MariaDB-compat                          x86_64                  10.5.8_5-1.el7                       local                    2.2 M
      replacing  mariadb-libs.x86_64 1:5.5.64-1.el7
 Installing for dependencies:
+ MariaDB-common                          x86_64                  10.5.8_5-1.el7                       local                     82 k
 ..
 ..
 ..
 Complete!
+```
+
+Verify the current MariaDB binaries installed, it should consist of `MariaDB-common`, `MariaDB-compact` and `MariaDB-client`. Finally it will also replace the default Linux `mariadb-libs.x86_64 1:5.5***` binaries.
+
+```shell
+[shell]$ rpm -qa | grep -i mariadb
+MariaDB-common-10.5.8_5-1.el7.x86_64
+MariaDB-compat-10.5.8_5-1.el7.x86_64
+MariaDB-client-10.5.8_5-1.el7.x86_64
 ```
 
 This needs to be done on all the Xpand nodes. Once done, we can proceed with Xpand server setup.
@@ -97,11 +107,61 @@ This needs to be done on all the Xpand nodes. Once done, we can proceed with Xpa
 
 - All the following steps are to be done on all the nodes unless otherwise specified
 - The filesystem on all the nodes must be `ext4`
-- Filesystem creation example
-  - `[shell]$ lsblk`
-  - `[shell]$ mkfs -t ext4 /dev/nvme0n1`
-  - `[shell]$ mount /dev/nvme0n1 /data`
+- Filesystem creation example:
+  ```
+  [shell]$ lsblk
+  NAME    MAJ:MIN RM   SIZE RO TYPE MOUNTPOINT
+  xvda    202:0    0     8G  0 disk
+  nvme0n1 259:0    0 442.4G  0 disk
+
+  [shell]$ mkfs -t ext4 /dev/nvme0n1
+    mke2fs 1.42.9 (28-Dec-2013)
+    Discarding device blocks: done
+    Filesystem label=
+    OS type: Linux
+    Block size=4096 (log=2)
+    Fragment size=4096 (log=2)
+    Stride=0 blocks, Stripe width=0 blocks
+    28999680 inodes, 115966796 blocks
+    5798339 blocks (5.00%) reserved for the super user
+    First data block=0
+    Maximum filesystem blocks=2264924160
+    3540 block groups
+    32768 blocks per group, 32768 fragments per group
+    8192 inodes per group
+    Superblock backups stored on blocks:
+            32768, 98304, 163840, 229376, 294912, 819200, 884736, 1605632, 2654208,
+            4096000, 7962624, 11239424, 20480000, 23887872, 71663616, 78675968,
+            102400000
+
+    Allocating group tables: done
+    Writing inode tables: done
+    Creating journal (32768 blocks): done
+    Writing superblocks and filesystem accounting information: done
+
+  [shell]$ mkdir /data
+  [shell]$ mount /dev/nvme0n1 /data
+  ```
+
+The above will create a dedicated mount `/data` with the type of `ext4`, the output of the `df -h --print-type` should report the following
+
+```txt
+[shell]$ df -h --print-type
+[centos@ip-172-31-9-216 ~]$ df -h --print-type 
+Filesystem     Type      Size  Used Avail Use% Mounted on
+devtmpfs       devtmpfs  7.4G     0  7.4G   0% /dev
+tmpfs          tmpfs     7.4G     0  7.4G   0% /dev/shm
+tmpfs          tmpfs     7.4G   17M  7.4G   1% /run
+tmpfs          tmpfs     7.4G     0  7.4G   0% /sys/fs/cgroup
+/dev/xvda1     xfs       8.0G  1.4G  6.7G  17% /
+tmpfs          tmpfs     1.5G     0  1.5G   0% /run/user/1000
+/dev/nvme0n1   ext4      436G   73M  414G   1% /data
+/dev/nvme0n2   ext4       50G   10M   50G   1% /data/log
+```
+
 - Recommended to create a separate munt for **Xpand logs** as well
+
+_**Note:** If the mount is not available with the type of `ext4` the installation of Xpand will fail. Also make sure the /data mount is owned by `root` user, installation process will automatically convert it to `xpand` user_
 
 ### Install Xpand Dependencies
 
@@ -174,26 +234,6 @@ Complete!
 ```txt
 [shell]$ systemctl start ntpd && systemctl enable ntpd
 ```
-
-### Preparing Filesystem
-
-A dedicated mount `/data` with the type of `ext4` should be available, the output of the `df -h --print-type` should report a dedicated mount for `/data` with sufficient storage as follows
-
-```txt
-[shell]$ df -h --print-type
-[centos@ip-172-31-9-216 ~]$ df -h --print-type 
-Filesystem     Type      Size  Used Avail Use% Mounted on
-devtmpfs       devtmpfs  7.4G     0  7.4G   0% /dev
-tmpfs          tmpfs     7.4G     0  7.4G   0% /dev/shm
-tmpfs          tmpfs     7.4G   17M  7.4G   1% /run
-tmpfs          tmpfs     7.4G     0  7.4G   0% /sys/fs/cgroup
-/dev/xvda1     xfs       8.0G  1.4G  6.7G  17% /
-tmpfs          tmpfs     1.5G     0  1.5G   0% /run/user/1000
-/dev/nvme0n1   ext4      436G   73M  414G   1% /data
-/dev/nvme0n2   ext4       50G   10M   50G   1% /data/log
-```
-
-_**Note:** If the mount is not available with the type of `ext4` the installation of Xpand will fail._
 
 ### Download the Xpand binaries
 
@@ -573,6 +613,31 @@ nid |      Hostname     |  Status |   IP Address   | Zone | TPS |      Used     
 ----+-------------------+---------+----------------+------+-----+----------------+--------
                                                               0 |  57.9M (0.01%) |  649.8G
 ```
+
+### Xpand GUI
+
+Xpand comes with a GUI to monitor and manage the cluster. This GUI lets one monitor the running queries, manage nodes and much more. 
+
+To access the GUI, login through a browser and use one of the Xpand node's IP address with 8080 as the port
+
+- `http://\<Any-XpandNode-IP>:8080`
+
+The UI will prompt for the following:
+
+![image info](./Images/Xpand-Login.png)
+
+- Email: `noreply@mariadb.com`
+- Password: `mariadb`
+- HostName: `localhost` *(leave it as is)*
+
+Once logged in, it is highly recommended to add a new user as the admin and delete the default `noreply@mariadb.com`
+
+#### GUI Documentation
+- Details on the GUI
+  - <https://docs.clustrix.com/display/CLXDOC/ClustrixGUI+Administration+UI>
+- User Management
+  - https://docs.clustrix.com/display/CLXDOC/Managing+ClustrixGUI+Users
+
 
 ### Backup & Restore
 
