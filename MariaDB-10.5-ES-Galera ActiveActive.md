@@ -414,18 +414,31 @@ This needs to be done on all the MaxScale nodes on both data centers.
 ➜  chmod 500 /var/lib/maxscale/monitor.sh
 ```
 
-Within the script, the following variables needs to be changed
+An additional hidden file needs to be created owned by `maxscale:maxscale` and `chown 400` limited privileges, the file contains the following parameters 
 
-- `Remote_MaxScale_Host="<IP of the Remote MaxScale Node>"`
-  - This will point to the VIP or the physical IP of the MaxScale on the other **data center**
-- `Remote_MaxScale_Name="<MaxScale Name>"`
+```
+remoteMaxScale=<DR MaxScale IP Address>
+remoteMaxScaleName=DR-MaxScale
+remoteMaxScaleReplicationPort=4007
+repuser=repl_user
+reppwd=SecretP@ssw0rd
+maxuser=maxuser
+maxpwd=SecretP@ssw0rd
+```
+
+- `remoteMaxScale=<IP of the Remote MaxScale Node>`
+  - This will point to the VIP or the physical IP of the MaxScale on the **DR data center**
+- `remoteMaxScaleName=<MaxScale Name>`
   - This is the name that you want to give to the Replication connection, generally we can use "DR-MaxScale" or "DC-MaxScale"
-- `Remote_MaxScale_Port="<MaxScale ReadConnRoute Port>"`
-  - The port of the ReadConRoute listener service that we configured, e.g `4007`
-- `Replication_User_Name="repl_user"`
-  - The replication user name that we created earlier with permission to replicate and replication slave admin.
-- `Replication_User_Pwd="<Password as per the Setup>"`
-  - The password for the replication user. This is the only password that will be open text but because of the limited access it's quite safe.
+- `remoteMaxScaleReplicationPort=<MaxScale ReadConnRoute Port>`
+  - The port of the **`ReadConRoute`** listener service that we configured, e.g `4007`
+- `repuser=<Replication User Name>` & `reppwd=<Replication User Password>`
+  - This is the replication user defined `repl_user@'%'`, the value should be without the hostname as in the example above block.
+  - The password is the replication user's password for the database account
+- `maxuser=<MaxScale Monitor User>` & `maxpwd=<MaxScale User Password>`
+  - These are the user and password for the MaxScale user. 
+
+This file will be owned by `maxscale` user and permission of `r-- -- ---` so that only maxsclae user can read it no other user will have access to this file.
 
 This setup gives us the basic read/write split, standard monitoring and a connection router used for replication across DC.
 
@@ -433,27 +446,14 @@ This setup gives us the basic read/write split, standard monitoring and a connec
 
 We need to create the **`maxuser`** & **`repl_user`** accounts with a password of `SecretP@ssw0rd` (As defined in the `maxscale.cnf`), we will also grant **`mysql@localhost`** use the MariaDB Backup grants for SST, this needs to be done on both **Primary DC** and **DR DC**.
 
-```
-MariaDB [(none)]> CREATE USER maxuser@'%' IDENTIFIED BY 'SecretP@ssw0rd';
-Query OK, 0 rows affected (0.058 sec)
-
-MariaDB [(none)]> GRANT SELECT ON mysql.* TO maxuser@'%';
-Query OK, 0 rows affected (0.054 sec)
-
-MariaDB [(none)]> GRANT SHOW DATABASES ON *.* TO maxuser@'%';
-Query OK, 0 rows affected (0.054 sec)
-
-MariaDB [(none)]> GRANT SUPER ON *.* TO maxuser@'%';
-Query OK, 0 rows affected (0.050 sec)
-
-MariaDB [(none)]> CREATE USER repl_user@'%' IDENTIFIED BY 'SecretP@ssw0rd';
-Query OK, 0 rows affected (0.051 sec)
-
-MariaDB [(none)]> GRANT REPLICATION SLAVE, REPLICATION SLAVE ADMIN ON *.* TO repl_user@'%';
-Query OK, 0 rows affected (0.051 sec)
-
-MariaDB [(none)]> GRANT RELOAD, PROCESS, LOCK TABLES, REPLICATION CLIENT ON *.* TO mysql@localhost;
-Query OK, 0 rows affected (0.004 sec)
+```sql
+CREATE USER maxuser@'%' IDENTIFIED BY 'SecretP@ssw0rd';
+GRANT SELECT ON mysql.* TO maxuser@'%';
+GRANT SHOW DATABASES ON *.* TO maxuser@'%';
+GRANT SUPER ON *.* TO maxuser@'%';
+CREATE USER repl_user@'%' IDENTIFIED BY 'SecretP@ssw0rd';
+GRANT REPLICATION SLAVE ON *.* TO repl_user@'%';
+GRANT RELOAD, PROCESS, LOCK TABLES, REPLICATION CLIENT ON *.* TO mysql@localhost;
 ```
 
 Now we can start MaxScale node on the **Primary DC** and verify the cluster status.

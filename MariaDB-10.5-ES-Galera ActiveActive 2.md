@@ -383,7 +383,7 @@ address=0.0.0.0
 
 Set the `/var/lib/maxscale/monitor.sh` with the ownership of `maxscale` user / group and change the permission to `500` to ensure minimum permission for users.
 
-This needs to be done on all the MaxScale nodes on both data centers.
+This needs to be done only on the Primary DC MaxScale node.
 
 ```
 ➜  chown maxscale:maxscale /var/lib/maxscale/monitor.sh
