@@ -9,7 +9,7 @@
 ## Updated by: Kwangbock Lee <kwangbock.lee@mariadb.com> ##
 ## December 2th 2020                                     ##
 ## Update by: Faisal Saeed <faisal@mariadb.com           ##
-## January 5th 2021                                      ##
+## March 1st 2021                                        ##
 ###########################################################
 
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
@@ -18,16 +18,19 @@
 # DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-# Create a hidden file /var/lib/maxscale/.maxinfo and add the following 4 variables
+# Create a hidden file /var/lib/maxscale/.maxinfo and add the following 6 variables
 
-	repuser=<Replication User Name>
-	reppwd=<Replication User Password>
-	maxuser=<MaxScale User Name>
-	maxpwd=<MaxScale User Password>
+#  remoteMaxScale=<Remote MaxSclae IP>
+#  remoteMaxScaleName=<User Defined MaxScale Name>
+#	repuser=<Replication User Name>
+#	reppwd=<Replication User Password>
+#	maxuser=<MaxScale User Name>
+#	maxpwd=<MaxScale User Password>
 
 # Set ownership if this file to maxuser:maxuser
+#  chown maxscale:maxscale /var/lib/maxscale/.maxinfo
 # set permission to be read only for maxuser and no permission for any other user
-	chmod 400 /var/lib/maxscale/.maxinfo
+#	chmod 400 /var/lib/maxscale/.maxinfo
 # End...
 
 process_arguments()
@@ -56,7 +59,7 @@ process_arguments()
    done
 }
 
-#Import info
+# Import info file
 . /var/lib/maxscale/.maxinfo
 
 # Log output file, this path must be owned by maxscale OS user
@@ -82,11 +85,11 @@ else
 
   ############################################# -User Config- ##################################################
   #This needs to point to the remove MaxScale on the opposite DC
-  Remote_MaxScale_Host=""
+  Remote_MaxScale_Host=${remoteMaxScale}
   # For Instance: DR-RemoteMaxScale or DC-RemoteMaxScale
-  Remote_MaxScale_Name=""
+  Remote_MaxScale_Name=${remoteMaxScaleName}
   # Port of the ReadConRoute Listener port, recommended to use instead of Read/WriteSplit Setvice
-  Remote_MaxScale_Port="4007"
+  Remote_MaxScale_Port=${remoteMaxScaleReplicationPort}
   # Replication User name use in Setting up the CHANGE MASTER, GRANT REPLICATION SLAVE, REPLICATION SLAVE ADMIN ON *.* TO repl_user@'%';
   Replication_User_Name=${repuser}
   # Password for the Replication User
@@ -102,7 +105,7 @@ else
 
   if [[ ${Remote_MaxScale_Host} = "none" ]]
   then
-     echo "$(date) | NOTIFY SCRIPT: No change master required" >> ${Log_Path}
+     echo "$(date) | NOTIFY SCRIPT: No change master required, Remote MaxScale not defined..." >> ${Log_Path}
   else
     if [[ -z ${master_list} ]]
     then
@@ -152,20 +155,20 @@ else
         mariadb -u${MaxScale_User_Name} -p${MaxScale_User_Pwd} -h${lv_master_host} -P${lv_master_port} < ${TMPFILE}
 
         # Get `gtid_slave_pos` and  `gtid_binlog_pos` (ex. gtid_slave_pos='1-100-11' | gtid_binlog_pos='1-100-13','2-200-6')
-	slave_pos=`mariadb -u${MaxScale_User_Name} -p${MaxScale_User_Pwd} -h${lv_master_host} -P${lv_master_port} -ss -e "select @@gtid_slave_pos"`;
+        slave_pos=`mariadb -u${MaxScale_User_Name} -p${MaxScale_User_Pwd} -h${lv_master_host} -P${lv_master_port} -ss -e "select @@gtid_slave_pos"`;
         binlog_pos=`mariadb -u${MaxScale_User_Name} -p${MaxScale_User_Pwd} -h${lv_master_host} -P${lv_master_port} -ss -e "select @@gtid_binlog_pos"`;
         echo "$(date) | gtid_slave_pos = $slave_pos / gtid_binlog_pos = $binlog_pos" >> ${Log_Path}
 
-	# If current 'gtid_slave_pos' is not empty, assign the most up-to-date gtid_slave_pos before 'CHANGE MASTER ..'
-	if [[ ${slave_pos} = "none" ]]
-	then
-	   echo "$(date) | NOTIFY SCRIPT: gtid_slave_pos is empty" >> ${Log_Path}
-	else
+	     # If current 'gtid_slave_pos' is not empty, assign the most up-to-date gtid_slave_pos before 'CHANGE MASTER ..'
+	     if [[ ${slave_pos} = "none" ]]
+	     then
+           echo "$(date) | NOTIFY SCRIPT: gtid_slave_pos is empty" >> ${Log_Path}
+        else
            # Set the up-to-date gtid_slave_pos as gtid_binlog_pos
            echo "SET GLOBAL gtid_slave_pos = '$binlog_pos';" > ${TMPFILE}
            echo "$(date) | SET GLOBAL gtid_slave_pos = '$binlog_pos';" >> ${Log_Path}
            mariadb -u${MaxScale_User_Name} -p${MaxScale_User_Pwd} -h${lv_master_host} -P${lv_master_port} < ${TMPFILE}
-	fi
+        fi
 
         # If Remote MaxScale Host is defined, then execute CHANGE MASTER to connect to it on the new MASTER selection
         if [[ ${Remote_MaxScale_Host} = "none" ]]
@@ -173,8 +176,8 @@ else
            echo "$(date) | NOTIFY SCRIPT: No master host set for Remote_MaxScale_Host" >> ${Log_Path}
         else
            echo "$(date) | NOTIFY SCRIPT: Running change master on master server ${lv_master_to_use} to ${Remote_MaxScale_Host}" >> ${Log_Path}
-           echo "CHANGE MASTER '${Remote_MaxScale_Name}' TO master_use_gtid=slave_pos, MASTER_HOST='${Remote_MaxScale_Host}', MASTER_USER='{Replication_User_Name}', MASTER_PASSWORD='***************', MASTER_PORT=${Remote_MaxScale_Port}, MASTER_CONNECT_RETRY=10; " > ${TMPFILE}
-           echo "$(date) | CHANGE MASTER '${Remote_MaxScale_Name}' TO master_use_gtid=slave_pos, MASTER_HOST='${Remote_MaxScale_Host}', MASTER_USER='${Replication_User_Name}', MASTER_PASSWORD='${Replication_User_Pwd}', MASTER_PORT=${Remote_MaxScale_Port}, MASTER_CONNECT_RETRY=10; "  >> ${Log_Path}
+           echo "CHANGE MASTER '${Remote_MaxScale_Name}' TO master_use_gtid=slave_pos, MASTER_HOST='${Remote_MaxScale_Host}', MASTER_USER='${Replication_User_Name}', MASTER_PASSWORD='${Replication_User_Pwd}', MASTER_PORT=${Remote_MaxScale_Port}, MASTER_CONNECT_RETRY=10; " > ${TMPFILE}
+           echo "$(date) | CHANGE MASTER '${Remote_MaxScale_Name}' TO master_use_gtid=slave_pos, MASTER_HOST='${Remote_MaxScale_Host}', MASTER_USER='{Replication_User_Name}', MASTER_PASSWORD='******************', MASTER_PORT=${Remote_MaxScale_Port}, MASTER_CONNECT_RETRY=10; "  >> ${Log_Path}
            mariadb -u${MaxScale_User_Name} -p${MaxScale_User_Pwd} -h${lv_master_host} -P${lv_master_port} < ${TMPFILE}
            RetStatus=$?
            echo "$(date) | CHANGE MASTER: return status ${RetStatus}" >> ${Log_Path}
