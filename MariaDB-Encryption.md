@@ -1,6 +1,6 @@
 # MariaDB Encryption (TDE)
 
-Workiong with many of the clients, TDE is one of the most common requirement that comes up frequently. I decided to do write this blog to cover the very same topic.
+Working with many of the clients, TDE is one of the most common requirement that comes up frequently. I decided to do write this blog to cover the very same topic.
 
 MariaDB does indeed supports Transparent Data Encryption, a.k.a, TDE. There are some misconceptions about the TDE that I would like to clear up first before we move forward with implementing this thing. 
 
