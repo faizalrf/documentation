@@ -1,29 +1,29 @@
 # MariaDB Encryption (TDE)
 
-Working with many of the clients, TDE is one of the most common requirement that comes up frequently. I decided to do write this blog to cover the very same topic.
+Working with many of the clients, TDE is one of the most common requirements that come up frequently. I decided to write this blog to cover the very same topic.
 
 MariaDB does indeed supports Transparent Data Encryption, a.k.a, TDE. There are some misconceptions about the TDE that I would like to clear up first before we move forward with implementing this thing. 
 
 ## Misconceptions
 
-The main misconception surrounding databnase encryption, TDE, is that if someone who does not have access to the security Key will get junk/encrypted data and wont be able to read it! 
+The main misconception surrounding database encryption, TDE, is that if someone who does not have access to the security Key will get junk/encrypted data and won’t be able to read it! 
 
-This is not true, It's important to understand what is meant by TDE, it's short for "Transparent Data Encryption", remember the word "Transparent"! This essentially means thjat the database is encryupted at the filesystem level, means the data files containing the actual data are encrypted, encryption and decryption of data is done by MariaDB with the help of a secret key, as long as MariaDB can access the secret key, all the users who have "SELECT" privilege to the tables, can read the data, and same thing goes to other DML privileges, `INSERT, UPDATE and DELETE` none of these operations are impacted by encryption of data at rest or TDE. 
+This is not true, It's important to understand what is meant by TDE, it's short for "Transparent Data Encryption", remember the word "Transparent"! This essentially means that the database is encrypted at the filesystem level, which means the data files containing the actual data are encrypted, encryption and decryption of data are done by MariaDB with the help of a secret key, as long as MariaDB can access the secret key, all the users who have "SELECT" privilege to the tables, can read the data, and the same thing goes to other DML privileges, `INSERT, UPDATE and DELETE` none of these operations are impacted by encryption of data at rest or TDE. 
 
-This pritects the database against physical theft, means, someone tries to copy the entire database filesystem and tries to read those data files on his own MariaDB server, will indeed fail and not able to read those because his MariaDB server don't have the secret key that is required to unlock the data. 
+This protects the database against physical theft, which means, someone who tries to copy the entire database filesystem and tries to read those data files on his own MariaDB server, will indeed fail and not able to read those because his MariaDB server doesn’t have the secret key that is required to unlock the data. 
 
-Similarly if the thief, physically het hold of the HDD storage drive containinig the actual data directory will still not be able to start the server even if he plugs in the HDD on his computer because the HDD does not have the security key that is required to decrypt the database and start the server properly.
+Similarly if the thief, physically gets hold of the HDD storage drive containing the actual data directory will still not be able to start the server even if he plugs in the HDD on his computer because the HDD does not have the security key that is required to decrypt the database and start the server properly.
 
 ## Encryption of Specific Columns
 
-This is another misconmception that I see most of the times, once implemented, TDE is applied to the entire table or the to the entire database, logs etc. It's never on partial tables or specific columns. 
+This is another misconception that I see most of the time, once implemented, TDE is applied to the entire table or the entire database, logs, etc. It's never on partial tables or specific columns. 
 
-However if that is somethign desired for a particular usecase, MariaDB does offer a range of encryption functions to specifically encrypt those columns as long as they are text based. These funnctions ar:
+However, if that is something desired for a particular use case, MariaDB does offer a range of encryption functions to specifically encrypt those columns as long as they are text-based. These functions are:
 
 - `AES_ENCRPT(<Text to Encrypt>, <Secret password>)`
 - `AES_DECRYPT(<Text to Encrypt>, <Secret password>)` 
 
-These func can encrypt the text based on the given password, in this case, the password is stored and maintained by the application instead of the Database unlike the TDE secret key.
+These functions can encrypt the text based on the given password, in this case, the password is stored and maintained by the application instead of the Database, unlike the TDE secret key.
 
 This does increase some complexity within the application code, as the code needs to use these functions to encrypt and decrypt the data each time.
 
@@ -32,9 +32,9 @@ SELECT AES_DECRYPT(customer_name, ?) from customer;
 UPDATE customer SET customer_name = AES_ENCRYPT(?, ?);
 ```
 
-***Note:** Here **`?`** is the binding of the prepare statement within the code*
+***Note:** Here **`?`** is the binding of the prepared statement within the code*
 
-In this case, if the user tries to access the sensitive information without using the above mentioned function and the appropriate passowrd, all they will see is junk when reading those specific columns.
+In this case, if the user tries to access the sensitive information without using the above-mentioned function and the appropriate password, all they will see is junk when reading those specific columns.
 
 Here is an example
 
@@ -51,21 +51,21 @@ Query OK, 1 row affected (0.013 sec)
 
 Three rows are inserted into the `customer` table and customer_name is specifically encrypted using `AES_ENCRYPT()` function and a secret password which is maintained by the application as discussed earlier.
 
-Now if we try to read the table without decrypting the customer_name column with appropriate password, all we will get is junk.
+Now if we try to read the table without decrypting the customer_name column with an appropriate password, all we will get is junk.
 
 ```txt
 MariaDB [testdb]> select * from customer;
 +----+--------------------------+
 | id | customer_name            |
 +----+--------------------------+
-|  1 | vòWÕ­d	q=oÃê}         |
-|  2 | ½EEÖv%˜žõ¦3Z#‰8         |
-|  3 | ÀGVk1íŠ8|>jÉ¦           |
+|  1 | vòWÕ­d	q=oÃê}         |
+|  2 | ½EEÖv%˜žõ¦3Z#‰8         |
+|  3 | ÀGVk1íŠ8|>jÉ¦           |
 +----+--------------------------+
 3 rows in set (0.001 sec)
 ```
 
-We do get three rows, ID colums is as per normal, but no name.
+We do get three rows, ID columns are as per normal, but no name.
 
 Let's try to read it using the proper way how it was meant to be read.
 
@@ -83,45 +83,45 @@ MariaDB [testdb]> select id, AES_DECRYPT(customer_name, 'SecretPassw0rd!') AS cu
 
 There we have it. What we see here is **not** TDE/Encryption of data at rest.
 
-Alright, I hope this clears the misconceptions and also explains how the sencitive columns can be encrypted where the encryption/decryption key is maintained by the app itself.
+Alright, I hope this clears the misconceptions and also explains how the sensitive columns can be encrypted where the encryption/decryption key is maintained by the app itself.
 
 # TDE
 
-As we discussed, TDE is done and managed by MariaDB server and the clients/apps don't have to worry about the key. The purpose of TDE is not protecting the data from un authorised clients running select statements. For that you need to manage security through SELECT, INSERT, UPDATE and DELETE privileges or encrypt specic columns using the two functions we discussed above. 
+As we discussed, TDE is done and managed by the MariaDB server and the clients/apps don't have to worry about the key. The purpose of TDE is not to protect the data from unauthorized clients running select statements. For that, you need to manage security through SELECT, INSERT, UPDATE, and DELETE privileges or encrypt specific columns using the two functions we discussed above. 
 
-TDE, requires a security key which the server uses to encrypt/decrypt the data files. This requires the use of plugins that are built by MariaDB. Currently the following three plugins are availalbe. 
+TDE requires a security key that the server uses to encrypt/decrypt the data files. This requires the use of plugins that are built by MariaDB. Currently, the following three plugins are available. 
 
 - File Key Management Encryption Plugin
   - <https://mariadb.com/kb/en/file-key-management-encryption-plugin/>
-  - The key file is stored within the MariaDB server itself, best to keep it in a separate mount that is not a part of the server but still it's not the most secure way of storing the key file.
+  - The key file is stored within the MariaDB server itself, best to keep it in a separate mount that is not a part of the server but still, it's not the most secure way of storing the key file.
 - AWS Key Management Encryption Plugin
   - <https://mariadb.com/kb/en/aws-key-management-encryption-plugin/>
   - Key file is stored on AWS and managed by AWS
-  - This is very secure but not all the clients can have access to internet from their priduction servers. This is fine, however, if the DB is running on AWS.
+  - This is very secure but not all the clients can have access to the internet from their production servers. This is fine, however, if the DB is running on AWS.
 - HashiCorp Vault Encruption Plugin
   - <https://mariadb.com/kb/en/hashicorp-vault-and-mariadb/>
-  - This is the best way to setup encryptionm keys if internet access is not available
-  - HashiCorp (opensource) Vault can be set up within the customer environment and MariaDB plugin can access it for getting the secure keys.
+  - This is the best way to setup encryption keys if internet access is not available
+  - HashiCorp (opensource) Vault can be set up within the customer environment and the MariaDB plugin can access it for getting the secure keys.
 
-In this blog, we will cover how to implement File Key Management plugin and in Part 2, we will cover the HashiCorp vault.
+In this blog, we will cover how to implement the File Key Management plugin and in Part 2, we will cover the HashiCorp vault.
 
 ## Implementing TDE
 
-Following are the highlevel steps that are required to implement database encruption at rest.
+Following are the high-level steps that are required to implement database encryption at rest.
 
 - Generate Security Key
-- Encrypt the Security key using AES 256, 196 or 128 bits
-- Protect the key file so that no one other than MariaDB process owner (`mysql`) user can access it.
+- Encrypt the Security key using AES 256, 196, or 128 bits
+- Protect the key file so that no one other than the MariaDB process owner (`mysql`) user can access it.
 - Configure the MariaDB config file to implement Encryption parameters
-  - This will start to execute background encryption threads of the entire databsae and other objects that we configure to be encrypted
+  - This will start to execute background encryption threads of the entire database and other objects that we configure to be encrypted
 - Verify the progress of the encryption within the MariaDB using MariaDB CLI
 - Verify the physical data files are actually encrypted and unreadable.
 
 ### Generating Keys
 
-Since we are going to be implementing **File Key Management Encryption plugin** we will be generating the key that sits within the MariaDB server, but as suggested we need to protect the file so that no one other than the MariaDB process user, `mysql:mysql` can read it. Other than that it is highly recommended to mount it to an external storage so that even if someone steals the server itself, he will not be able to start the server because of the missing key. 
+Since we are going to be implementing **File Key Management Encryption plugin** we will be generating the key that sits within the MariaDB server, but as suggested we need to protect the file so that no one other than the MariaDB process user, `mysql:mysql` can read it. Other than that it is highly recommended to mount it to external storage so that even if someone steals the server itself, he will not be able to start the server because of the missing key. 
 
-However for the sake of this, we will just be creating a secure folder within our MariaDB VM and protect it the best we can.
+However, for the sake of this, we will just be creating a secure folder within our MariaDB VM and protect it the best we can.
 
 We are going to create a new folder under `/etc/mysql/encryption` to store our keys.
 
@@ -130,7 +130,7 @@ $ mkdir -p /etc/mysql/encryption
 $ openssl rand -hex 32 >> /etc/mysql/encryption/keyfile
 ```
 
-The above will generate a random 32 byte key to the `/etc/mysql/encryption/keyfile` file. 32 byte key is good for AES 256 bit encryption.
+The above will generate a random 32 byte key to the `/etc/mysql/encryption/keyfile` file. 32 bytes key is good for AES 256 bit encryption.
 
 Let's verify the keys
 
@@ -151,7 +151,7 @@ The key is ready now which will be used for encrypting. But before we can use th
 
 Generate another key, we can either generate the key randomly or key in a password, it's up to us.
 
-Let's generate a random key and then encrypt our original 32 byte `/etc/mysql/encryption/keyfile` with using this new key
+Let's generate a random key and then encrypt our original 32 bytes `/etc/mysql/encryption/keyfile` with using this new key
 
 ```txt
 $ openssl rand -hex 128 > /etc/mysql/encryption/keyfile.key
@@ -171,7 +171,7 @@ total 8
 -rw-r--r--. 1 root root  96 Mar 22 17:43 keyfile.enc
 ```
 
-Finally we need to change the ownership of the /etc/mysql folder and all the files within to be owned by `mysql:mysql` user and group and set permission to read only and no permission for group / global.
+Finally, we need to change the ownership of the /etc/mysql folder and all the files within to be owned by `mysql:mysql` user and group and set permission to read-only and no permission for group / global.
 
 ```txt
 $ chown -R mysql:mysql /etc/mysql
@@ -187,11 +187,11 @@ total 8
 -r-x------. 1 mysql mysql 257 Mar 22 17:43 keyfile.key
 ```
 
-Key files are now secure with proper ownership and permissions. We are ready for Encryption of database at rest.
+Key files are now secure with proper ownership and permissions. We are ready for the Encryption of the database at rest.
 
 ### Enable Encryption within MariaDB
 
-Before we encrypt the database, let's do a few quick tests, simple SELECT statement retrieves the data as per normal
+Before we encrypt the database, let's do a few quick tests, the simple SELECT statement retrieves the data as per normal
 
 ```
 MariaDB [testdb]> select * from employee;
@@ -216,7 +216,7 @@ Peter Pan
 Buggs Bunny
 ```
 
-The data is clearly visible in open text as expected. Now we can proceed to implement the encryption configuration and restart the MariaDB server.
+The data is clearly visible in the open text as expected. Now we can proceed to implement the encryption configuration and restart the MariaDB server.
 
 Edit the **`/etc/my.cnf.d/server.cnf`** file and add the following in the **`[mariadb]`** section as follows
 
@@ -242,19 +242,19 @@ innodb_encryption_rotation_iops = 2000
 innodb_encryption_rotate_key_age = 1024
 ```
 
-The first section of the config loads the `file_key_management` plugin and defines the path to the key and encrypted key file. Followed by the encryption algorith to be used `file_key_management_encryption_algorithm = AES_CTR`
+The first section of the config loads the `file_key_management` plugin and defines the path to the key and encrypted key file. Followed by the encryption algorithm to be used `file_key_management_encryption_algorithm = AES_CTR`
 
 Second part enables forced encrytion of all tables with `innodb_encrypt_tables = FORCE`, Encrypt the redo logs with the help of `innodb_encrypt_log = ON`, Temporary tables encrption `innodb_encrypt_temporary_tables = ON`, Tablespaces encryption `innodb_tablespaces_encryption = ON`, encrypt temporary files `encrypt_tmp_files = ON`, encrypt the binary logs `encrypt_binlog = ON` and finally  encrypt the ARIA tables `aria_encrypt_tables = ON`
 
 Next section sets the number of background threads that will encrypt/decrypt the data `innodb_encryption_threads = 4` and the IOPS setup to speed up the process with the help of `innodb_encryption_rotation_iops = 2000` 
 
-Finally we have a special parameter that will start the background encryption of the existing tables, this is currently set to `1024` which means it's enabled. We need any non-zero value set for this variable to let MariaDB know that we want to start the encryotion of all the existing tables. For a new database, we can keep it at `0` as all the new tables will automatically be encrypted but if we have any existing tables with or without data, we need to set it to a value greater than ZERO.
+Finally, we have a special parameter that will start the background encryption of the existing tables, this is currently set to `1024` which means it's enabled. We need any non-zero value set for this variable to let MariaDB know that we want to start the encryption of all the existing tables. For a new database, we can keep it at `0` as all the new tables will automatically be encrypted but if we have any existing tables with or without data, we need to set it to a value greater than ZERO.
 
-If we restart the server now, we can see the tables encrpting in the background.
+If we restart the server now, we can see the tables encrypting in the background.
 
 Let's restart the MariaDB server using `systemctl restart mariadb`.
 
-***Note:** remember to disable SELinux as this might create problems, this is only for this tutorial's sake, SELinux needs to be configured and set up properly for any produciton environment.*
+***Note:** remember to disable SELinux as this might create problems, this is only for this tutorial's sake, SELinux needs to be configured and set up properly for any production environment.*
 
 We can monitor the progress of the background encryption by executing the following
 
@@ -278,9 +278,9 @@ MariaDB [none]> SELECT CURRENT_TIMESTAMP() AT, A.SPACE, A.NAME, B.ENCRYPTION_SCH
 6 rows in set (6.544 sec)
 ```
 
-The above output shows that the tables / tablespaces are being encrypted. Wait till the output shows no rows, then we can be sure all the objects have been encrypted successfully.
+The above output shows that the tables/tablespaces are being encrypted. Wait till the output shows no rows, then we can be sure all the objects have been encrypted successfully.
 
-The column `ROTATING_OR_FLUSHING` indicates that the table is being encrypted in the background. This is a background process and does not impact the normal usage of the database. At this time, clients can conenct and start using MariaDB.
+The column `ROTATING_OR_FLUSHING` indicates that the table is being encrypted in the background. This is a background process and does not impact the normal usage of the database. At this time, clients can connect and start using MariaDB.
 
 Once completed the above SQL will not return any output, we can now see which of the tables are encrypted 
 
@@ -328,7 +328,7 @@ MariaDB [none]> SELECT A.NAME, B.ENCRYPTION_SCHEME FROM information_schema.INNOD
 
 As long as `ENCRYPTION_SCHEME` is > 0 it's encrypted. All the above tables under `mysql.*` and `sbtest.*` tables have been successfully encrypted.
 
-Let's repeat out test once more
+Let's repeat out the test once more
 
 ```
 MariaDB [testdb]> SELECT * FROM employee;
@@ -342,7 +342,7 @@ MariaDB [testdb]> SELECT * FROM employee;
 3 rows in set (0.002 sec)
 ```
 
-The data is still accessible without any special techinque, as long the user has access grants to the table, the data is accessible. Let's view the data stored inside the raw InnoDB IBD file `/var/lib/mysql/testdb/employee.ibd`
+The data is still accessible without any special technique, as long the user has access grants to the table, the data is accessible. Let's view the data stored inside the raw InnoDB IBD file `/var/lib/mysql/testdb/employee.ibd`
 
 ```
 [root@mariadb-201 testdb]# cat employee.ibd | strings | head -20
@@ -372,7 +372,7 @@ We can see that even though the user can query the table using SELECT, the data 
 
 ### Removing TDE
 
-Easiest way to remove encryption is by simply setting those parameter values to `NO`
+The easiest way to remove encryption is by simply setting those parameter values to `NO`
 
 ```
 innodb_encrypt_tables = NO
@@ -397,6 +397,7 @@ SELECT A.NAME, B.ENCRYPTION_SCHEME FROM information_schema.INNODB_TABLESPACES_EN
 
 Once all the tables report `ENCRYPTION_SCHEME=0` the database has been decrypted, mow remove all the Encryption related configuration from the `server.cnf` file, shutdown the MariaDB service using `systemctl stop mariadb` and remove the redo log files **`ib_logfile0`**, this is usually located under the default data directory unless until defined to a different location. Once done, restart the server `systemctl restart mariadb` and the encryption is gone.
 
-Part two of this blog, we will be looking at implementing this using the Hashicorp Vault for best possible security and protection of the encryption keys.
+In part two of this blog, we will be looking at implementing this using the Hashicorp Vault for the best possible security and protection of the encryption keys.
 
-Thank you!
+### Thank you!
+
