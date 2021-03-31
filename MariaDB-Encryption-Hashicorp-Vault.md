@@ -49,10 +49,8 @@ Following are the high-level steps that are required to implement database encry
 - Generate multiple Security Keys
 - Upload the keys to the vault
 - Configure MariaDB Hashicorp Vault plugin within `/etc/my.cnf.d/server.cnf` file
-- Restart the MariaDB server
 - Verify the progress of the encryption within the MariaDB using MariaDB CLI
 - Verify the physical data files are actually encrypted and unreadable.
-- Hashicorp Vault management
 
 The vault archicture we are trying to achieve will look like this
 
