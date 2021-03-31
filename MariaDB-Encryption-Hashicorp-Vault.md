@@ -338,7 +338,7 @@ Code: 503. Errors:
 * error performing token check: Vault is sealed
 ```
  
-We can see clearly that the vault is sealed currently, let's unseal it by providing three of the unseal keys from the `init.file`
+We can see clearly that the vault is sealed currently, let's unseal it by providing any three of the unseal keys from the `init.file`
  
 ```
 $ vault operator unseal pjGeGw17vdPsk7GQ8Nnv4dYS2MSJIyjpQQTcLJc3RlwY
