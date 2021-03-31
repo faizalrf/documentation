@@ -290,7 +290,7 @@ Storage Type       file
 HA Enabled         false
 ```
  
-Review the `init.file`
+Review the `init.file`, this file needs to be copied to a secure location as a backup.
  
 ```
 $ cat /hashicorp/vault/init.file
