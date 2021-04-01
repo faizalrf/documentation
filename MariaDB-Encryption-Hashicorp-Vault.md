@@ -800,7 +800,8 @@ Unseal Nonce       d41291e2-edee-938d-0535-2b3fd8330cbf
 Version            1.7.0
 Storage Type       file
 HA Enabled         false
-[root@localhost logs]# vault operator unseal oopA7zV7Bn0FQGPnl4znJ1OYKlGRA/xGdxXhu95Q1sQm
+
+$ vault operator unseal oopA7zV7Bn0FQGPnl4znJ1OYKlGRA/xGdxXhu95Q1sQm
 Key             Value
 ---             -----
 Seal Type       shamir
