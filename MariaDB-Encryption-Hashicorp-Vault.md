@@ -66,7 +66,6 @@ Create the following folders on the Vault server in advance
 $ mkdir -p /hashicorp/vault/bin
 $ mkdir -p /hashicorp/data
 $ mkdir -p /hashicorp/config
-$ mkdir -p /hashicorp/logs
 ```
  
 - `/hashicorp/vault/bin` will contain the Vault executable, only one file by the name **`vault`**
@@ -74,7 +73,6 @@ $ mkdir -p /hashicorp/logs
  - The secrets include MariaDB encryption keys, for instance.
 - `/hashicorp/config` will store the configuration file in JSON format
  - Vault supports both JSON & HCL "<https://github.com/hashicorp/hcl>" format, we will use `hcl` for this case
-- `/hashicorp/logs` will store the running logs of the process.
  
 Download the vault zip file for the targeted OS, we will be downloading for Linux of course.
  
@@ -206,8 +204,8 @@ EnvironmentFile=-/etc/sysconfig/vault
 Environment=GOMAXPROCS=2
 Restart=on-failure
  
-# Vault startup command line, all the logs will be redirected to /hashicorp/logs/vault.log
-ExecStart=/bin/sh -c '/hashicorp/vault/bin/vault server -config=/hashicorp/config/vault-config.hcl 2>&1 >> /hashicorp/logs/vault.log'
+# Vault startup command line
+ExecStart=/bin/sh -c '/hashicorp/vault/bin/vault server -config=/hashicorp/config/vault-config.hcl'
  
 LimitMEMLOCK=infinity
 ExecReload=/bin/kill -HUP $MAINPID
@@ -217,7 +215,7 @@ Once the file is saved, we need to reload the systemctld daemon so that the new 
  
 Let's try to start the service properly this time using `systemctl start vault`
  
-Since we defined "Trace" log level, a lot of data will be logged under the `/hashicorp/logs/vault.log` file, this log level needs to be adjusted later to `info` or `warning` based on the logging requirements.
+Since we defined "Trace" log level, a lot of data will be logged, to view the vault logs we can use **`journalctl -b --no-pager -u vault`**. The log level needs to be adjusted later to `info` or `warning` based on the logging requirements.
  
 ```
 $ systemctl start vault
@@ -227,26 +225,20 @@ root      2184  0.0  0.0 115404  1424 ?        Ss   20:28   0:00 /bin/sh -c /has
 root      2185  3.0 12.9 842300 243116 ?       SLl  20:28   0:00 /hashicorp/vault/bin/vault server -config=/hashicorp/config/vault-config.hcl
 ```
  
-We can see the service started without problems. Let's review the logs folder
- 
+We can see the service started without problems. Let's review the vault logs.
+
 ```
-$ cat /hashicorp/logs/vault.log
- 
-==> Vault server configuration:
- 
-            Api Address: http://192.168.56.101:8200
-                    Cgo: disabled
-        Cluster Address: https://192.168.56.101:8201
-             Go Version: go1.15.10
-             Listener 1: tcp (addr: "0.0.0.0:8200", cluster address: "0.0.0.0:8201", max_request_duration: "1m30s", max_request_size: "33554432", tls: "disabled")
-              Log Level: trace
-                  Mlock: supported: true, enabled: true
-          Recovery Mode: false
-                Storage: file
-                Version: Vault v1.7.0
-            Version Sha: 4e222b85c40a810b74400ee3c54449479e32bb9f
- 
-==> Vault server started! Log data will stream in below:
+$ journalctl -b --no-pager -u vault
+
+-- Logs begin at Thu 2021-04-01 12:01:36 +08, end at Thu 2021-04-01 12:02:48 +08. --
+Apr 01 12:01:58 localhost.localdomain systemd[1]: Started Hashicorp Vault Service.
+Apr 01 12:01:58 localhost.localdomain sh[1483]: 2021-04-01T12:01:58.376+0800 [INFO]  proxy environment: http_proxy= https_proxy= no_proxy=
+Apr 01 12:01:58 localhost.localdomain sh[1483]: 2021-04-01T12:01:58.376+0800 [DEBUG] core: set config: sanitized config={"api_addr":"http://192.168.56.101:8200","cache_size":0,"cluster_addr":"","cluster_cipher_suites":"","cluster_name":"","default_lease_ttl":2628000000000000,"default_max_request_duration":0,"disable_cache":false,"disable_clustering":false,"disable_indexing":false,"disable_mlock":false,"disable_performance_standby":false,"disable_printable_check":false,"disable_sealwrap":false,"disable_sentinel_trace":false,"enable_ui":true,"listeners":[{"config":{"address":"0.0.0.0:8200","tls_disable":1},"type":"tcp"}],"log_format":"unspecified","log_level":"Trace","max_lease_ttl":2628000000000000,"pid_file":"","plugin_directory":"","raw_storage_endpoint":false,"seals":[{"disabled":false,"type":"shamir"}],"storage":{"cluster_addr":"","disable_clustering":false,"redirect_addr":"http://192.168.56.101:8200","type":"file"}}
+Apr 01 12:01:58 localhost.localdomain sh[1483]: 2021-04-01T12:01:58.376+0800 [DEBUG] storage.cache: creating LRU cache: size=0
+Apr 01 12:01:58 localhost.localdomain sh[1483]: 2021-04-01T12:01:58.413+0800 [DEBUG] cluster listener addresses synthesized: cluster_addresses=[0.0.0.0:8201]
+...
+...
+...
 ```
  
 Let's check the vault status
@@ -737,7 +729,7 @@ H4f^
  
 We can see that even though the user can query the table using SELECT, the actual data in the data files is indeed encrypted and unreadable. Now if someone wants to use these data files within his own server, he can't use them because these files are now encrypted using a secret key.
  
-The best part is that the encryption keys are secure in a vault sitting in another server, even if someone steals the entire server, he will not be able to start it because of the missing connection to the vault that holds the encryption keys. This makes it the best solution for database encryption at rest.
+The best part is that the encryption keys are secure in a vault sitting in another server, even if someone steals the entire server, he will not be able to start it because of the missing connection to the vault which holds the encryption keys. This makes it the best solution for database encryption at rest.
 
 #### Restarting The Vault
 
@@ -816,7 +808,7 @@ Cluster ID      d1b9aedd-e2b8-9434-a53e-6fb0786f3943
 HA Enabled      false
 ```
 
-The keys are provided and the vault is now unlocked, let's restart MariaDB service.
+The keys are provided and the vault is now unlocked, we can see from the last `vault operator unseal` command `Sealed false`, let's restart MariaDB service.
 
 ```
 $ systemctl restart mariadb
@@ -838,7 +830,7 @@ Apr 01 11:05:18 localhost.localdomain systemd[1]: Started MariaDB 10.5.9-6 datab
 -- Subject: Unit mariadb.service has finished start-up
 ```
 
-After a quick MariaDB restart, the server is up and running without any errors. This shows that withou access to the vault, MariaDB server will not start and all the data files are encrypted and useless.
+After a quick MariaDB restart, the server is up and running without any errors. This shows that without access to the vault, the MariaDB server will not be able to start and all the data files are encrypted and useless.
 
 ### Removing TDE
  
