@@ -33,10 +33,10 @@ TDE requires a security key that the server uses to encrypt/decrypt the data fil
  - This is the best way to setup encryption keys if internet access is not available
  - HashiCorp (opensource) Vault can be set up within the customer environment and the MariaDB plugin can access it for getting the secure keys.
  - Vault Download: <https://www.vaultproject.io/downloads>
-   - A lot of simples to follow step by step tutorials are available on the website
-   - Tutorials on configuring/using Vault: <https://learn.hashicorp.com/tutorials/vault/getting-started-intro?in=vault/getting-started>
+   - A lot of simple step by step tutorials are available on the website
+   - Tutorials: <https://learn.hashicorp.com/tutorials/vault/getting-started-intro?in=vault/getting-started>
  
-***Note:** The scope of this blog is to cover the MariaDB Vault plugin, **not** how vault itself works!*
+***Note:** The scope of this blog is to cover the MariaDB Vault plugin, **not** how the vault internals works!*
  
 ## Implementing TDE
  
