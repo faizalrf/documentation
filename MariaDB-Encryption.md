@@ -96,7 +96,7 @@ TDE requires a security key that the server uses to encrypt/decrypt the data fil
   - The key file is stored within the MariaDB server itself, best to keep it in a separate mount that is not a part of the server but still, it's not the most secure way of storing the key file.
 - AWS Key Management Encryption Plugin
   - <https://mariadb.com/kb/en/aws-key-management-encryption-plugin/>
-  - Key file is stored on AWS and managed by AWS
+  - The key file is stored on AWS and managed by AWS
   - This is very secure but not all the clients can have access to the internet from their production servers. This is fine, however, if the DB is running on AWS.
 - HashiCorp Vault Encruption Plugin
   - <https://mariadb.com/kb/en/hashicorp-vault-and-mariadb/>
