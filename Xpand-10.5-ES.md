@@ -198,7 +198,7 @@ xpand-5.3.11_rc.el7/checksums.md5
 xpand-5.3.11_rc.el7/xpdnode_install.py
 ```
 
-***Note:** The filename `xpand-5.3.11_rc.el7.tar.bz2` is just for reference, you might get a different file name in the downloaded package depending on the version*
+***Note:** The `xpand-5.3.11_rc.el7.tar.bz2` is just the name I have at the time of this documentation, you might get a different file name in the downloaded package depending on the version*
 
 #### Install the Xpand binaries
 
