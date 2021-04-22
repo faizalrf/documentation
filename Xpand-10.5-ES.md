@@ -198,6 +198,8 @@ xpand-5.3.11_rc.el7/checksums.md5
 xpand-5.3.11_rc.el7/xpdnode_install.py
 ```
 
+***Note:** The filename `xpand-5.3.11_rc.el7.tar.bz2` is just for reference, you might get a different file name in the downloaded package depending on the version*
+
 #### Install the Xpand binaries
 
 Installing Xpand binaries on all the nodes as follows, the port `5001` is something that is up to us to decide as we don't want it to conflict with the MariaDB default port `3306`, the `--yes` makes sure that Xpand uses all the defaults and recommended settings.
