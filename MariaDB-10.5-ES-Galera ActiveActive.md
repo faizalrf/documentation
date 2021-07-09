@@ -406,7 +406,7 @@ address=0.0.0.0
 
 **Refer to:** [script=/var/lib/maxscale/monitor.sh](monitor.sh) for the source.
 
-Set the `/var/lib/maxscale/monitor.sh` with the ownership of `maxscale` user / group and change the permission to `500` to ensure minimum permission for users.
+Set the `/var/lib/maxscale/monitor.sh` with the ownership of `maxscale` user / group and change the permission to `chmod 500` to ensure minimum permission for users.
 
 This needs to be done on all the MaxScale nodes on both data centers.
 
@@ -415,7 +415,7 @@ This needs to be done on all the MaxScale nodes on both data centers.
 ➜  chmod 500 /var/lib/maxscale/monitor.sh
 ```
 
-An additional hidden file needs to be created owned by `maxscale:maxscale` and `chown 400` limited privileges, the file contains the following parameters 
+An additional hidden file `/var/lib/maxscale/.maxinfo` needs to be created owned by `maxscale:maxscale` and `chmod 400` limited privileges, the file contains the following parameters 
 
 ```
 remoteMaxScale=<DR MaxScale IP Address>
