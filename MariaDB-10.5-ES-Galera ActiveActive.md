@@ -108,7 +108,7 @@ The following needs to be edited in the `/etc/my.cnf.d/server.cnf` file
 
     ## Data Streaming for large transactions, activate if needed
     wsrep_trx_fragment_unit=rows
-    wsrep_trx_fragment_size=10000
+    wsrep_trx_fragment_size=1000
 
     #Galera Cache setup for performance as 5 GB, default location is on `datadir`
     wsrep_provider_options="gcache.size=5G; gcache.keep_pages_size=5G; gcache.recover=yes; gcs.fc_factor=0.8;"
@@ -125,7 +125,7 @@ The following needs to be edited in the `/etc/my.cnf.d/server.cnf` file
     default_storage_engine=InnoDB
     innodb_autoinc_lock_mode=2
     innodb_lock_schedule_algorithm=FCFS
-    innodb_flush_log_at_trx_commit=2
+    innodb_flush_log_at_trx_commit=0
     innodb_buffer_pool_size=512M
     innodb_log_file_size=512M
 
@@ -157,7 +157,7 @@ The following needs to be edited in the `/etc/my.cnf.d/server.cnf` file
 
     # Data Streaming for large transactions
     wsrep_trx_fragment_unit=rows
-    wsrep_trx_fragment_size=10000
+    wsrep_trx_fragment_size=1000
 
     #Galera Cache setup for performance as 5 GB, default location is on `datadir`
     wsrep_provider_options="gcache.size=5G; gcache.keep_pages_size=5G; gcache.recover=yes; gcs.fc_factor=0.8;"
@@ -174,7 +174,7 @@ The following needs to be edited in the `/etc/my.cnf.d/server.cnf` file
     default_storage_engine=InnoDB
     innodb_autoinc_lock_mode=2
     innodb_lock_schedule_algorithm=FCFS
-    innodb_flush_log_at_trx_commit=2
+    innodb_flush_log_at_trx_commit=0
     innodb_buffer_pool_size=512M
     innodb_log_file_size=512M
 
@@ -195,6 +195,7 @@ Referring to the above two configurations:
 - **`wsrep_cluster_name`** needs to be different on both data centers
   - we will be using **`DC`** for first data center all three nodes
   - we will be using **`DR`** for the second data center all three nodes
+- **`wsrep_node_address` & `wsrep_node_name`** must follow the current node's IP address and a unique node name for each server
 - **`wsrep_gtid_domain_id`** needs to be configured the with same value for each cluster.
   - We will be using **`wsrep_gtid_domain_id=70`** for all three nodes in the first cluster.
   - We will be using **`wsrep_gtid_domain_id=80`** for all three ndoes in the second cluster.
@@ -215,7 +216,7 @@ Referring to the above two configurations:
 - **`innodb_buffer_pool_size`** to be calculated at 60% to 70% of the total memory size on each node. Since our setup here is very small, 1GB RAM for each node, I have calculated InnoDB Buffer Pool as 50% instead.
 - **`innodb_flush_log_at_trx_commit=0`** worth mentioning that setting this to `0` imporoves Galera's TPS while still keeping the cluster ACID compliant thanks to it's replication nature.
 
-***Note:** the **`wsrep_provider`** points to a different path/file for the Community version as `wsrep_provider=/usr/lib64/galera-4/libgalera_smm.so`*
+***Note:** the **`wsrep_provider`** points to a different path/file for the Community version as `wsrep_provider=/usr/lib64/galera-4/libgalera_smm.so`, please verify the path by executing `show global variables like 'plugin_dir';` to ensure the correct path*
 
 The above setup will enable Galera based GTID for each node and because of the `log_slave_upates=ON` we will get a consistent GTID for respective to each galera cluster individually.
 
