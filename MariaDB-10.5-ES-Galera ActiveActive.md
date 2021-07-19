@@ -108,7 +108,7 @@ The following needs to be edited in the `/etc/my.cnf.d/server.cnf` file
 
     ## Data Streaming for large transactions, activate if needed
     wsrep_trx_fragment_unit=rows
-    wsrep_trx_fragment_size=10000
+    wsrep_trx_fragment_size=1000
 
     #Galera Cache setup for performance as 5 GB, default location is on `datadir`
     wsrep_provider_options="gcache.size=5G; gcache.keep_pages_size=5G; gcache.recover=yes; gcs.fc_factor=0.8;"
@@ -125,7 +125,7 @@ The following needs to be edited in the `/etc/my.cnf.d/server.cnf` file
     default_storage_engine=InnoDB
     innodb_autoinc_lock_mode=2
     innodb_lock_schedule_algorithm=FCFS
-    innodb_flush_log_at_trx_commit=2
+    innodb_flush_log_at_trx_commit=0
     innodb_buffer_pool_size=512M
     innodb_log_file_size=512M
 
@@ -157,7 +157,7 @@ The following needs to be edited in the `/etc/my.cnf.d/server.cnf` file
 
     # Data Streaming for large transactions
     wsrep_trx_fragment_unit=rows
-    wsrep_trx_fragment_size=10000
+    wsrep_trx_fragment_size=1000
 
     #Galera Cache setup for performance as 5 GB, default location is on `datadir`
     wsrep_provider_options="gcache.size=5G; gcache.keep_pages_size=5G; gcache.recover=yes; gcs.fc_factor=0.8;"
@@ -174,7 +174,7 @@ The following needs to be edited in the `/etc/my.cnf.d/server.cnf` file
     default_storage_engine=InnoDB
     innodb_autoinc_lock_mode=2
     innodb_lock_schedule_algorithm=FCFS
-    innodb_flush_log_at_trx_commit=2
+    innodb_flush_log_at_trx_commit=0
     innodb_buffer_pool_size=512M
     innodb_log_file_size=512M
 
@@ -195,6 +195,7 @@ Referring to the above two configurations:
 - **`wsrep_cluster_name`** needs to be different on both data centers
   - we will be using **`DC`** for first data center all three nodes
   - we will be using **`DR`** for the second data center all three nodes
+- **`wsrep_node_address` & `wsrep_node_name`** must follow the current node's IP address and a unique node name for each server
 - **`wsrep_gtid_domain_id`** needs to be configured the with same value for each cluster.
   - We will be using **`wsrep_gtid_domain_id=70`** for all three nodes in the first cluster.
   - We will be using **`wsrep_gtid_domain_id=80`** for all three ndoes in the second cluster.
@@ -215,7 +216,7 @@ Referring to the above two configurations:
 - **`innodb_buffer_pool_size`** to be calculated at 60% to 70% of the total memory size on each node. Since our setup here is very small, 1GB RAM for each node, I have calculated InnoDB Buffer Pool as 50% instead.
 - **`innodb_flush_log_at_trx_commit=0`** worth mentioning that setting this to `0` imporoves Galera's TPS while still keeping the cluster ACID compliant thanks to it's replication nature.
 
-***Note:** the **`wsrep_provider`** points to a different path/file for the Community version as `wsrep_provider=/usr/lib64/galera-4/libgalera_smm.so`*
+***Note:** the **`wsrep_provider`** points to a different path/file for the Community version as `wsrep_provider=/usr/lib64/galera-4/libgalera_smm.so`, please verify the path by executing `show global variables like 'plugin_dir';` to ensure the correct path*
 
 The above setup will enable Galera based GTID for each node and because of the `log_slave_upates=ON` we will get a consistent GTID for respective to each galera cluster individually.
 
@@ -405,7 +406,7 @@ address=0.0.0.0
 
 **Refer to:** [script=/var/lib/maxscale/monitor.sh](monitor.sh) for the source.
 
-Set the `/var/lib/maxscale/monitor.sh` with the ownership of `maxscale` user / group and change the permission to `500` to ensure minimum permission for users.
+Set the `/var/lib/maxscale/monitor.sh` with the ownership of `maxscale` user / group and change the permission to `chmod 500` to ensure minimum permission for users.
 
 This needs to be done on all the MaxScale nodes on both data centers.
 
@@ -414,7 +415,7 @@ This needs to be done on all the MaxScale nodes on both data centers.
 ➜  chmod 500 /var/lib/maxscale/monitor.sh
 ```
 
-An additional hidden file needs to be created owned by `maxscale:maxscale` and `chown 400` limited privileges, the file contains the following parameters 
+An additional hidden file `/var/lib/maxscale/.maxinfo` needs to be created owned by `maxscale:maxscale` and `chmod 400` limited privileges, the file contains the following parameters 
 
 ```
 remoteMaxScale=<DR MaxScale IP Address>
@@ -464,15 +465,15 @@ Now we can start MaxScale node on the **Primary DC** and verify the cluster stat
 ┌───────────┬───────────────┬──────┬─────────────┬─────────────────────────┬───────────┐
 │ Server    │ Address       │ Port │ Connections │ State                   │ GTID      │
 ├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼───────────┤
-│ Galera-71 │ 192.168.56.71 │ 3306 │ 0           │ Master, Synced, Running │ 70-7000-6 │
+│ Galera-71 │ 192.168.56.71 │ 3306 │ 0           │ Master, Synced, Running │ 70-7000-7 │
 ├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼───────────┤
-│ Galera-72 │ 192.168.56.72 │ 3306 │ 0           │ Slave, Synced, Running  │ 70-7000-6 │
+│ Galera-72 │ 192.168.56.72 │ 3306 │ 0           │ Slave, Synced, Running  │ 70-7000-7 │
 ├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼───────────┤
-│ Galera-73 │ 192.168.56.73 │ 3306 │ 0           │ Slave, Synced, Running  │ 70-7000-6 │
+│ Galera-73 │ 192.168.56.73 │ 3306 │ 0           │ Slave, Synced, Running  │ 70-7000-7 │
 └───────────┴───────────────┴──────┴─────────────┴─────────────────────────┴───────────┘
 ```
 
-We can see the clust is healthy with GTID / Domain & Server IDs showing up as per our configuration. At this point the GTID should be `70-7000-6` since we have only performed 5 transactions on this cluster, the DR DC should also be at the same state `80-8000-6`
+We can see the clust is healthy with GTID / Domain & Server IDs showing up as per our configuration. At this point the GTID should be `70-7000-7` since we have only performed 5 transactions on this cluster, the DR DC should also be at the same state `80-8000-7`
 
 Let's verify if the service has already started or not
 
@@ -503,7 +504,7 @@ This will tell MariaDB Galera to use MariaDB Backup for SST, this will improve t
 Take note of the GTID from the **DR Cluster**, we will need to set this `GTID_SLAVE_POS` on all the **Primary DC** Galera nodes.
 
 ```
-MariaDB [(none)]> SET GLOBAL GTID_SLAVE_POS='80-8000-6';
+MariaDB [(none)]> SET GLOBAL GTID_SLAVE_POS='80-8000-7';
 Query OK, 0 rows affected (0.048 sec)
 ```
 
@@ -513,11 +514,11 @@ At this time, the **Primary MaxScale** will show the following status since we h
 ┌───────────┬───────────────┬──────┬─────────────┬─────────────────────────┬─────────────────────┐
 │ Server    │ Address       │ Port │ Connections │ State                   │ GTID                │
 ├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼─────────────────────┤
-│ Galera-71 │ 192.168.56.71 │ 3306 │ 0           │ Master, Synced, Running │ 70-7000-6,80-8000-6 │
+│ Galera-71 │ 192.168.56.71 │ 3306 │ 0           │ Master, Synced, Running │ 70-7000-7,80-8000-7 │
 ├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼─────────────────────┤
-│ Galera-72 │ 192.168.56.71 │ 3306 │ 0           │ Slave, Synced, Running  │ 70-7000-6,80-8000-6 │
+│ Galera-72 │ 192.168.56.71 │ 3306 │ 0           │ Slave, Synced, Running  │ 70-7000-7,80-8000-7 │
 ├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼─────────────────────┤
-│ Galera-73 │ 192.168.56.71 │ 3306 │ 0           │ Slave, Synced, Running  │ 70-7000-6,80-8000-6 │
+│ Galera-73 │ 192.168.56.71 │ 3306 │ 0           │ Slave, Synced, Running  │ 70-7000-7,80-8000-7 │
 └───────────┴───────────────┴──────┴─────────────┴─────────────────────────┴─────────────────────┘
 ```
 
@@ -534,11 +535,11 @@ At this time, the **DR MaxScale** will show the following status since we have a
 ┌───────────┬───────────────┬──────┬─────────────┬─────────────────────────┬─────────────────────┐
 │ Server    │ Address       │ Port │ Connections │ State                   │ GTID                │
 ├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼─────────────────────┤
-│ Galera-81 │ 192.168.56.81 │ 3306 │ 0           │ Master, Synced, Running │ 70-7000-6,80-8000-6 │
+│ Galera-81 │ 192.168.56.81 │ 3306 │ 0           │ Master, Synced, Running │ 70-7000-7,80-8000-7 │
 ├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼─────────────────────┤
-│ Galera-82 │ 192.168.56.82 │ 3306 │ 0           │ Slave, Synced, Running  │ 70-7000-6,80-8000-6 │
+│ Galera-82 │ 192.168.56.82 │ 3306 │ 0           │ Slave, Synced, Running  │ 70-7000-7,80-8000-7 │
 ├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼─────────────────────┤
-│ Galera-83 │ 192.168.56.83 │ 3306 │ 0           │ Slave, Synced, Running  │ 70-7000-6,80-8000-6 │
+│ Galera-83 │ 192.168.56.83 │ 3306 │ 0           │ Slave, Synced, Running  │ 70-7000-7,80-8000-7 │
 └───────────┴───────────────┴──────┴─────────────┴─────────────────────────┴─────────────────────┘
 ```
 
@@ -554,9 +555,9 @@ Use `systemctl stop mariadb` on both Master Nodes on DC Clusters
 ├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼─────────────────────┤
 │ Galera-71 │ 192.168.56.71 │ 3306 │ 0           │ Down                    │                     │
 ├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼─────────────────────┤
-│ Galera-72 │ 192.168.56.72 │ 3306 │ 1           │ Master, Synced, Running │ 70-7000-6,80-8000-6 │
+│ Galera-72 │ 192.168.56.72 │ 3306 │ 1           │ Master, Synced, Running │ 70-7000-7,80-8000-7 │
 ├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼─────────────────────┤
-│ Galera-73 │ 192.168.56.73 │ 3306 │ 1           │ Slave, Synced, Running  │ 70-7000-6,80-8000-6 │
+│ Galera-73 │ 192.168.56.73 │ 3306 │ 1           │ Slave, Synced, Running  │ 70-7000-7,80-8000-7 │
 └───────────┴───────────────┴──────┴─────────────┴─────────────────────────┴─────────────────────┘
 ```
 
@@ -610,7 +611,7 @@ MariaDB [(none)]> show all slaves status\G
                 Master_SSL_Crl: 
             Master_SSL_Crlpath: 
                     Using_Gtid: Slave_Pos
-                   Gtid_IO_Pos: 70-7000-6,80-8000-6
+                   Gtid_IO_Pos: 70-7000-7,80-8000-7
        Replicate_Do_Domain_Ids: 
    Replicate_Ignore_Domain_Ids: 
                  Parallel_Mode: optimistic
@@ -625,7 +626,7 @@ Slave_Non_Transactional_Groups: 0
           Executed_log_entries: 57
      Slave_received_heartbeats: 0
         Slave_heartbeat_period: 30.000
-                Gtid_Slave_Pos: 70-7000-6,80-8000-6
+                Gtid_Slave_Pos: 70-7000-7,80-8000-7
 1 row in set (0.000 sec)
 ```
 
@@ -637,9 +638,9 @@ Similarly, once the Master Galera node is down, the monitor script will automati
 ├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼─────────────────────┤
 │ Galera-81 │ 192.168.56.81 │ 3306 │ 0           │ Down                    │                     │
 ├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼─────────────────────┤
-│ Galera-82 │ 192.168.56.82 │ 3306 │ 1           │ Master, Synced, Running │ 70-7000-6,80-8000-6 │
+│ Galera-82 │ 192.168.56.82 │ 3306 │ 1           │ Master, Synced, Running │ 70-7000-7,80-8000-7 │
 ├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼─────────────────────┤
-│ Galera-83 │ 192.168.56.83 │ 3306 │ 1           │ Slave, Synced, Running  │ 70-7000-6,80-8000-6 │
+│ Galera-83 │ 192.168.56.83 │ 3306 │ 1           │ Slave, Synced, Running  │ 70-7000-7,80-8000-7 │
 └───────────┴───────────────┴──────┴─────────────┴─────────────────────────┴─────────────────────┘
 ```
 
@@ -693,7 +694,7 @@ MariaDB [(none)]> show all slaves status\G
                 Master_SSL_Crl: 
             Master_SSL_Crlpath: 
                     Using_Gtid: Slave_Pos
-                   Gtid_IO_Pos: 80-8000-6,70-7000-6
+                   Gtid_IO_Pos: 80-8000-7,70-7000-7
        Replicate_Do_Domain_Ids: 
    Replicate_Ignore_Domain_Ids: 
                  Parallel_Mode: optimistic
@@ -708,7 +709,7 @@ Slave_Non_Transactional_Groups: 0
           Executed_log_entries: 57
      Slave_received_heartbeats: 0
         Slave_heartbeat_period: 30.000
-                Gtid_Slave_Pos: 80-8000-6,70-7000-6
+                Gtid_Slave_Pos: 80-8000-7,70-7000-7
 1 row in set (0.000 sec)
 ```
 

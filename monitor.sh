@@ -10,6 +10,8 @@
 ## December 2th 2020                                     ##
 ## Update by: Faisal Saeed <faisal@mariadb.com           ##
 ## March 1st 2021                                        ##
+## Update by: Faisal Saeed <faisal@mariadb.com           ##
+## July 09th 2021                                        ##
 ###########################################################
 
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
@@ -165,8 +167,11 @@ else
            echo "$(date) | NOTIFY SCRIPT: gtid_slave_pos is empty" >> ${Log_Path}
         else
            # Set the up-to-date gtid_slave_pos as gtid_binlog_pos
-           echo "SET GLOBAL gtid_slave_pos = '$binlog_pos';" > ${TMPFILE}
-           echo "$(date) | SET GLOBAL gtid_slave_pos = '$binlog_pos';" >> ${Log_Path}
+           # echo "SET GLOBAL gtid_slave_pos = '$binlog_pos';" > ${TMPFILE}
+           # echo "$(date) | SET GLOBAL gtid_slave_pos = '$binlog_pos';" >> ${Log_Path}
+	   ## Commented the above two lines and replace the binlog_pos with slave_pos variable, 09-Jul-2021, Faisal
+           echo "SET GLOBAL gtid_slave_pos = '${slave_pos}';" > ${TMPFILE}
+           echo "$(date) | SET GLOBAL gtid_slave_pos = '${slave_pos}';" >> ${Log_Path}
            mariadb -u${MaxScale_User_Name} -p${MaxScale_User_Pwd} -h${lv_master_host} -P${lv_master_port} < ${TMPFILE}
         fi
 
