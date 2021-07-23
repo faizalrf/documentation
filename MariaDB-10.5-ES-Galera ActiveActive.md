@@ -19,7 +19,7 @@ A stretched Galera cluster can be setup but if the latency numbers are bad betwe
 
 ## Servers
 
-We will setup the following servers in this workbook.
+We will setup the following servers using this workbook.
 
 - MaxScale-70 (192.168.56.70) **(2.5)**
   - Galear-71 (192.168.56.71) **(10.5)**
@@ -30,9 +30,17 @@ We will setup the following servers in this workbook.
   - Galear-82 (192.168.56.82) **(10.5)**
   - Galear-83 (192.168.56.83) **(10.5)**
 
+***Note:** The exact versions are MaxScale `2.5.14` and MariaDB Enterprise `10.5.10-7` as of 23rd July 2021*
+
 ## Galera Cluster
 
 ### Install MariaDB 10.5 Enterprise Server
+
+Download and Install the latest Enterprise MariaDB as per normal from <https://mariadb.com/downloads/#mariadb_platform-enterprise_server> and MaxScale from <https://mariadb.com/downloads/#mariadb_platform-mariadb_maxscale> for your desired OS, we are setting this up on CentOS/RHEL.
+
+Once Downloaded, setup local repositories and proceed with the installation.
+
+Refer to <https://github.com/mariadb-faisalsaeed/documentation/blob/master/Galera%20Cluster%20Setup.md> for help with the detailed download and install instruction if needed.
 
 ```
 ➜  yum -y install MariaDB-server MariaDB-backup pigz
@@ -100,14 +108,12 @@ The following needs to be edited in the `/etc/my.cnf.d/server.cnf` file, add the
     wsrep_provider=/usr/lib64/galera/libgalera_enterprise_smm.so
     wsrep_cluster_address=gcomm://192.168.56.71,192.168.56.72,192.168.56.73
     wsrep_cluster_name=DC
+    wsrep_sst_method=mariabackup
+    wsrep_sst_auth=mysql:
 
     # Local node setup
     wsrep_node_address=192.168.56.71
     wsrep_node_name=galera-71
-
-    ## Data Streaming for large transactions, activate if needed
-    wsrep_trx_fragment_unit=rows
-    wsrep_trx_fragment_size=1000
 
     #Galera Cache setup for performance as 5 GB, default location is on `datadir`
     wsrep_provider_options="gcache.size=5G; gcache.keep_pages_size=5G; gcache.recover=yes; gcs.fc_factor=0.8;"
@@ -157,14 +163,12 @@ The following needs to be edited in the `/etc/my.cnf.d/server.cnf` file, add the
     wsrep_provider=/usr/lib64/galera/libgalera_enterprise_smm.so
     wsrep_cluster_address=gcomm://192.168.56.81,192.168.56.82,192.168.56.83
     wsrep_cluster_name=DR
+    wsrep_sst_method=mariabackup
+    wsrep_sst_auth=mysql:
 
     # Local node setup
     wsrep_node_address=192.168.56.81
     wsrep_node_name=galera-81
-
-    # Data Streaming for large transactions
-    wsrep_trx_fragment_unit=rows
-    wsrep_trx_fragment_size=1000
 
     #Galera Cache setup for performance as 5 GB, default location is on `datadir`
     wsrep_provider_options="gcache.size=5G; gcache.keep_pages_size=5G; gcache.recover=yes; gcs.fc_factor=0.8;"
@@ -221,7 +225,7 @@ Referring to the above two configurations:
   - We will be using **`gtid_domain_id=71`**, **`gtid_domain_id=72`** & **`gtid_domain_id=73`** for all three nodes of the first cluster.
   - We will be using **`gtid_domain_id=81`**, **`gtid_domain_id=82`** & **`gtid_domain_id=83`** for all three nodes of the second cluster.
 - **`auto_increment_increment=6`** for all nodes
-- `auto_increment_offset` for each node will be a `+ 1`
+- **`auto_increment_offset`** for each node will be a `+ 1`
   - DC Node 1 = **`auto_increment_offset=1`**
   - DC Node 2 = **`auto_increment_offset=2`**
   - DC Node 3 = **`auto_increment_offset=3`**
@@ -238,7 +242,7 @@ Referring to the above two configurations:
 
 The above setup will enable Galera based GTID for each node and because of the `log_slave_upates=ON` we will get a consistent GTID for respective to each galera cluster individually.
 
-Once all the nodes have been configured correctly using the `/etc/my.cnf.d/server/cnf` file, bootstrap the Galera cluster using `galera_new_cluster` from the first node on each data center
+Once all the nodes have been configured correctly using the `/etc/my.cnf.d/server/cnf` file, bootstrap the Galera cluster using `galera_new_cluster` from the first node on each data center and grant the SST backup user with necessary grants on both of the DC and DR primary bootstrap Galera nodes before starting the other nodes.  
 
 ```
 ➜  galera_new_cluster
@@ -266,6 +270,9 @@ MariaDB [(none)]> show global status like 'wsrep_cluster_size';
 | wsrep_cluster_size | 1     |
 +--------------------+-------+
 1 row in set (0.002 sec)
+
+MariaDB [(none)]> GRANT RELOAD, PROCESS, LOCK TABLES, REPLICATION CLIENT ON *.* TO mysql@localhost;
+Query OK, 0 rows affected (0.008 sec)
 ```
 
 We can see bootstrap is successful and cluster size is currently 1 for the first data center. Let's start other 2 nodes normally using `systemctl start mariadb` on the primary data center.
@@ -715,6 +722,64 @@ Slave_Non_Transactional_Groups: 0
         Slave_heartbeat_period: 30.000
                 Gtid_Slave_Pos: 80-8000-7,70-7000-7
 1 row in set (0.000 sec)
+```
+
+## Test Replication
+
+### Test Data
+
+Using the client installed in the DC MaxScale, we will create a test database, a table and insert some data from DC followed by some data insertion from the DR MaxScale.
+
+```sql
+CREATE DATABASE testdb;
+USE testdb;
+CREATE TABLE `tab` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(20) COLLATE utf8_unicode_ci DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+```
+
+Once the database and the new table have beem created, insert the following data from DC MaxScale and DR MaxScale while monitoring the GTID in the MaxScale `maxctrl list servers` on both sides.
+
+- MaxScale on DC and DR output as follows
+
+DC MaxScale
+
+```
+```
+
+DR MaxScale
+
+```
+```
+
+#### Data Creation
+
+- DC
+
+```sql
+INSERT INTO tab(name) VALUES ('tokyo');
+INSERT INTO tab(name) VALUES ('hongkong');
+INSERT INTO tab(name) VALUES ('delhi');
+INSERT INTO tab(name) VALUES ('mummbai');
+```
+
+- DR
+
+```sql
+INSERT INTO tab(name) VALUES ('singapore');
+INSERT INTO tab(name) VALUES ('capetown');
+INSERT INTO tab(name) VALUES ('bengaluru');
+```
+
+- DC
+
+```sql
+INSERT INTO tab(name) VALUES ('california');
+INSERT INTO tab(name) VALUES ('toronto');
+INSERT INTO tab(name) VALUES ('dublin');
+INSERT INTO tab(name) VALUES ('london');
 ```
 
 We can now start the stopped Galera nodes using `systemctl start mariadb`
