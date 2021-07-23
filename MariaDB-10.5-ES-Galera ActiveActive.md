@@ -35,7 +35,7 @@ We will setup the following servers in this workbook.
 ### Install MariaDB 10.5 Enterprise Server
 
 ```
-➜  yum -y install MariaDB-server MariaDB-backup galera-enterprise-4         
+➜  yum -y install MariaDB-server MariaDB-backup pigz
 
 Dependencies Resolved
 
@@ -58,6 +58,7 @@ Installing for dependencies:
  perl-Net-Daemon                                       noarch                               0.48-5.el7                                    base                                           51 k
  perl-PlRPC                                            noarch                               0.2020-14.el7                                 base                                           36 k
  socat                                                 x86_64                               1.7.3.2-2.el7                                 base                                          290 k
+ pigz                                                  x86_64                               2.3.3-1.el7.centos                            extras                                         68 k
 
 Transaction Summary
 ==============================================================================================================================================================================================
@@ -86,9 +87,7 @@ All the required binaries are insalled on all the 6 galera nodes.
 
 Now that Galera Cluster has been installed on all 6 nodes, we can now configure those as 2 separate Galera clusters, here is a reference configuration for both clusters
 
-The following needs to be edited in the `/etc/my.cnf.d/server.cnf` file
-
-***Note:*** Don't forget to add **`log_error=/var/lib/mysql/server.log`** under the **`[mariadb]`** section for all MariaDB nodes. 
+The following needs to be edited in the `/etc/my.cnf.d/server.cnf` file, add the content under `[galera]`, `[sst]` and `[mariadb]` sections. Do take note, the `[sst]` is a new section specially for Galera SST performance.
 
 - Primary Data Center
 
@@ -98,7 +97,7 @@ The following needs to be edited in the `/etc/my.cnf.d/server.cnf` file
     wsrep_gtid_mode=ON
     wsrep_gtid_domain_id=70
     wsrep_auto_increment_control=0
-    wsrep_provider=/usr/lib64/galera-enterprise-4/libgalera_enterprise_smm.so
+    wsrep_provider=/usr/lib64/galera/libgalera_enterprise_smm.so
     wsrep_cluster_address=gcomm://192.168.56.71,192.168.56.72,192.168.56.73
     wsrep_cluster_name=DC
 
@@ -113,6 +112,14 @@ The following needs to be edited in the `/etc/my.cnf.d/server.cnf` file
     #Galera Cache setup for performance as 5 GB, default location is on `datadir`
     wsrep_provider_options="gcache.size=5G; gcache.keep_pages_size=5G; gcache.recover=yes; gcs.fc_factor=0.8;"
 
+    [sst]
+    inno-backup-opts="--parallel=4"
+    inno-apply-opts="--use-memory=8192M"
+    compressor="pigz"
+    decompressor="pigz -d"
+
+    [mariadb]
+    log_error=server.log
     binlog_format=row
     log_slave_updates=ON
 
@@ -147,7 +154,7 @@ The following needs to be edited in the `/etc/my.cnf.d/server.cnf` file
     wsrep_gtid_mode=ON
     wsrep_gtid_domain_id=80
     wsrep_auto_increment_control=0
-    wsrep_provider=/usr/lib64/galera-enterprise-4/libgalera_enterprise_smm.so
+    wsrep_provider=/usr/lib64/galera/libgalera_enterprise_smm.so
     wsrep_cluster_address=gcomm://192.168.56.81,192.168.56.82,192.168.56.83
     wsrep_cluster_name=DR
 
@@ -162,6 +169,14 @@ The following needs to be edited in the `/etc/my.cnf.d/server.cnf` file
     #Galera Cache setup for performance as 5 GB, default location is on `datadir`
     wsrep_provider_options="gcache.size=5G; gcache.keep_pages_size=5G; gcache.recover=yes; gcs.fc_factor=0.8;"
 
+    [sst]
+    inno-backup-opts="--parallel=4"
+    inno-apply-opts="--use-memory=8192M"
+    compressor="pigz"
+    decompressor="pigz -d"
+
+    [mariadb]
+    log_error=server.log
     binlog_format=row
     log_slave_updates=ON
 
@@ -215,8 +230,11 @@ Referring to the above two configurations:
   - DR Node 3 = **`auto_increment_offset=6`**
 - **`innodb_buffer_pool_size`** to be calculated at 60% to 70% of the total memory size on each node. Since our setup here is very small, 1GB RAM for each node, I have calculated InnoDB Buffer Pool as 50% instead.
 - **`innodb_flush_log_at_trx_commit=0`** worth mentioning that setting this to `0` imporoves Galera's TPS while still keeping the cluster ACID compliant thanks to it's replication nature.
+- **`[sst]`**
+  - This section will help with the Galera's SST performance when needed, we need to install `pigz` on all the Galera nodes for this to work.
+  - Take note of the CPU and Memory, tune this section based on the amount of RAM and CPU you have in your Galera servers.
 
-***Note:** the **`wsrep_provider`** points to a different path/file for the Community version as `wsrep_provider=/usr/lib64/galera-4/libgalera_smm.so`, please verify the path by executing `show global variables like 'plugin_dir';` to ensure the correct path*
+***Note:** the **`wsrep_provider`** points to a different path/file for the Community version as, please verify the path by executing `show global variables like 'plugin_dir';` to ensure the correct path*
 
 The above setup will enable Galera based GTID for each node and because of the `log_slave_upates=ON` we will get a consistent GTID for respective to each galera cluster individually.
 
@@ -450,42 +468,11 @@ We need to create the **`maxuser`** & **`repl_user`** accounts with a password o
 ```sql
 CREATE USER maxuser@'%' IDENTIFIED BY 'SecretP@ssw0rd';
 GRANT SELECT ON mysql.* TO maxuser@'%';
-GRANT SHOW DATABASES ON *.* TO maxuser@'%';
+GRANT SHOW DATABASES, REPLICATION CLIENT ON *.* TO maxuser@'%';
 GRANT SUPER ON *.* TO maxuser@'%';
 CREATE USER repl_user@'%' IDENTIFIED BY 'SecretP@ssw0rd';
 GRANT REPLICATION SLAVE ON *.* TO repl_user@'%';
 GRANT RELOAD, PROCESS, LOCK TABLES, REPLICATION CLIENT ON *.* TO mysql@localhost;
-```
-
-Now we can start MaxScale node on the **Primary DC** and verify the cluster status.
-
-```
-➜  systemctl start maxscale
-➜  maxctrl list servers 
-┌───────────┬───────────────┬──────┬─────────────┬─────────────────────────┬───────────┐
-│ Server    │ Address       │ Port │ Connections │ State                   │ GTID      │
-├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼───────────┤
-│ Galera-71 │ 192.168.56.71 │ 3306 │ 0           │ Master, Synced, Running │ 70-7000-7 │
-├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼───────────┤
-│ Galera-72 │ 192.168.56.72 │ 3306 │ 0           │ Slave, Synced, Running  │ 70-7000-7 │
-├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼───────────┤
-│ Galera-73 │ 192.168.56.73 │ 3306 │ 0           │ Slave, Synced, Running  │ 70-7000-7 │
-└───────────┴───────────────┴──────┴─────────────┴─────────────────────────┴───────────┘
-```
-
-We can see the clust is healthy with GTID / Domain & Server IDs showing up as per our configuration. At this point the GTID should be `70-7000-7` since we have only performed 5 transactions on this cluster, the DR DC should also be at the same state `80-8000-7`
-
-Let's verify if the service has already started or not
-
-```
-➜  maxctrl list services 
-┌─────────────────────┬────────────────┬─────────────┬───────────────────┬─────────────────────────────────┐
-│ Service             │ Router         │ Connections │ Total Connections │ Servers                         │
-├─────────────────────┼────────────────┼─────────────┼───────────────────┼─────────────────────────────────┤
-│ Replication-Service │ readconnroute  │ 0           │ 0                 │ Galera-71, Galera-72, Galera-73 │
-├─────────────────────┼────────────────┼─────────────┼───────────────────┼─────────────────────────────────┤
-│ Galera-RW-Service   │ readwritesplit │ 0           │ 0                 │ Galera-71, Galera-72, Galera-73 │
-└─────────────────────┴────────────────┴─────────────┴───────────────────┴─────────────────────────────────┘
 ```
 
 #### Setup SST for Galera Nodes
@@ -508,9 +495,18 @@ MariaDB [(none)]> SET GLOBAL GTID_SLAVE_POS='80-8000-7';
 Query OK, 0 rows affected (0.048 sec)
 ```
 
-At this time, the **Primary MaxScale** will show the following status since we have already set gtid_slave_pos on all the nodes:
+Similarly, set up the the `GTID_SLAVE_POS` on all the **DR Cluster** Galera nodes, based on the GTID from Primary Cluster
 
 ```
+MariaDB [(none)]> SET GLOBAL GTID_SLAVE_POS='70-7000-6';
+Query OK, 0 rows affected (0.048 sec)
+```
+
+Now we can start MaxScale all the MaxScale nodes and verify the cluster status.
+
+```
+➜  systemctl start maxscale
+➜  maxctrl list servers 
 ┌───────────┬───────────────┬──────┬─────────────┬─────────────────────────┬─────────────────────┐
 │ Server    │ Address       │ Port │ Connections │ State                   │ GTID                │
 ├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼─────────────────────┤
@@ -522,11 +518,19 @@ At this time, the **Primary MaxScale** will show the following status since we h
 └───────────┴───────────────┴──────┴─────────────┴─────────────────────────┴─────────────────────┘
 ```
 
-Similarly, set up the the `GTID_SLAVE_POS` on all the **DR Cluster** Galera nodes, based on the GTID from Primary Cluster
+We can see the clust is healthy with GTID / Domain & Server IDs showing up as per our configuration. At this point the GTID should be `70-7000-7` since we have only performed 5 transactions on this cluster, the DR DC should also be at the same state `80-8000-7`
+
+Let's verify if the service has already started or not
 
 ```
-MariaDB [(none)]> SET GLOBAL GTID_SLAVE_POS='70-7000-6';
-Query OK, 0 rows affected (0.048 sec)
+➜  maxctrl list services 
+┌─────────────────────┬────────────────┬─────────────┬───────────────────┬─────────────────────────────────┐
+│ Service             │ Router         │ Connections │ Total Connections │ Servers                         │
+├─────────────────────┼────────────────┼─────────────┼───────────────────┼─────────────────────────────────┤
+│ Replication-Service │ readconnroute  │ 0           │ 0                 │ Galera-71, Galera-72, Galera-73 │
+├─────────────────────┼────────────────┼─────────────┼───────────────────┼─────────────────────────────────┤
+│ Galera-RW-Service   │ readwritesplit │ 0           │ 0                 │ Galera-71, Galera-72, Galera-73 │
+└─────────────────────┴────────────────┴─────────────┴───────────────────┴─────────────────────────────────┘
 ```
 
 At this time, the **DR MaxScale** will show the following status since we have already set gtid_slave_pos on all the nodes:
