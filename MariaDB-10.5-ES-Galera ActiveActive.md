@@ -490,6 +490,7 @@ GRANT SELECT ON mysql.* TO maxuser@'%';
 GRANT SHOW DATABASES, REPLICATION CLIENT ON *.* TO maxuser@'%';
 GRANT SUPER ON *.* TO maxuser@'%';
 CREATE USER repl_user@'%' IDENTIFIED BY 'SecretP@ssw0rd';
+GRANT SUPER ON *.* TO repl_user@'%';
 GRANT REPLICATION SLAVE ON *.* TO repl_user@'%';
 ```
 
@@ -733,110 +734,6 @@ Slave_Non_Transactional_Groups: 0
         Slave_heartbeat_period: 30.000
                 Gtid_Slave_Pos: 80-8000-7,70-7000-7
 1 row in set (0.000 sec)
-```
-
-## Test Replication
-
-### Test Data
-
-Using the client installed in the DC MaxScale, we will create a test database, a table and insert some data from DC followed by some data insertion from the DR MaxScale.
-
-```sql
-CREATE DATABASE testdb;
-USE testdb;
-CREATE TABLE `tab` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `name` varchar(20) COLLATE utf8_unicode_ci DEFAULT NULL,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
-```
-
-Once the database and the new table have beem created, insert the following data from DC MaxScale and DR MaxScale while monitoring the GTID in the MaxScale `maxctrl list servers` on both sides.
-
-- MaxScale on DC and DR output as follows
-
-DC MaxScale
-
-```
-┌───────────┬───────────────┬──────┬─────────────┬─────────────────────────┬──────────────────────┐
-│ Server    │ Address       │ Port │ Connections │ State                   │ GTID                 │
-├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼──────────────────────┤
-│ Galera-71 │ 172.31.24.36  │ 3306 │ 2           │ Master, Synced, Running │ 70-7000-12,80-8000-7 │
-├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼──────────────────────┤
-│ Galera-72 │ 172.31.20.247 │ 3306 │ 1           │ Slave, Synced, Running  │ 70-7000-12,80-8000-7 │
-├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼──────────────────────┤
-│ Galera-73 │ 172.31.28.81  │ 3306 │ 1           │ Slave, Synced, Running  │ 70-7000-12,80-8000-7 │
-└───────────┴───────────────┴──────┴─────────────┴─────────────────────────┴──────────────────────┘
-```
-
-DR MaxScale
-
-```
-┌───────────┬───────────────┬──────┬─────────────┬─────────────────────────┬──────────────────────┐
-│ Server    │ Address       │ Port │ Connections │ State                   │ GTID                 │
-├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼──────────────────────┤
-│ Galera-81 │ 172.31.36.27  │ 3306 │ 1           │ Master, Synced, Running │ 70-7000-12,80-8000-7 │
-├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼──────────────────────┤
-│ Galera-82 │ 172.31.34.243 │ 3306 │ 0           │ Slave, Synced, Running  │ 70-7000-7,80-8000-7  │
-├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼──────────────────────┤
-│ Galera-83 │ 172.31.43.195 │ 3306 │ 0           │ Slave, Synced, Running  │ 70-7000-7,80-8000-7  │
-└───────────┴───────────────┴──────┴─────────────┴─────────────────────────┴──────────────────────┘
-```
-
-#### Data Creation
-
-- DC
-
-```sql
-INSERT INTO tab(name) VALUES ('tokyo');
-INSERT INTO tab(name) VALUES ('hongkong');
-INSERT INTO tab(name) VALUES ('delhi');
-INSERT INTO tab(name) VALUES ('mummbai');
-```
-
-DC MaxScale
-
-```
-┌───────────┬───────────────┬──────┬─────────────┬─────────────────────────┬──────────────────────┐
-│ Server    │ Address       │ Port │ Connections │ State                   │ GTID                 │
-├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼──────────────────────┤
-│ Galera-71 │ 172.31.24.36  │ 3306 │ 2           │ Master, Synced, Running │ 70-7000-16,80-8000-7 │
-├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼──────────────────────┤
-│ Galera-72 │ 172.31.20.247 │ 3306 │ 1           │ Slave, Synced, Running  │ 70-7000-16,80-8000-7 │
-├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼──────────────────────┤
-│ Galera-73 │ 172.31.28.81  │ 3306 │ 1           │ Slave, Synced, Running  │ 70-7000-16,80-8000-7 │
-└───────────┴───────────────┴──────┴─────────────┴─────────────────────────┴──────────────────────┘
-```
-
-DR MaxScale
-
-```
-┌───────────┬───────────────┬──────┬─────────────┬─────────────────────────┬──────────────────────┐
-│ Server    │ Address       │ Port │ Connections │ State                   │ GTID                 │
-├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼──────────────────────┤
-│ Galera-81 │ 172.31.36.27  │ 3306 │ 1           │ Master, Synced, Running │ 70-7000-16,80-8000-7 │
-├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼──────────────────────┤
-│ Galera-82 │ 172.31.34.243 │ 3306 │ 0           │ Slave, Synced, Running  │ 70-7000-7,80-8000-7  │
-├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼──────────────────────┤
-│ Galera-83 │ 172.31.43.195 │ 3306 │ 0           │ Slave, Synced, Running  │ 70-7000-7,80-8000-7  │
-└───────────┴───────────────┴──────┴─────────────┴─────────────────────────┴──────────────────────┘
-```
-
-- DR
-
-```sql
-INSERT INTO tab(name) VALUES ('singapore');
-INSERT INTO tab(name) VALUES ('capetown');
-INSERT INTO tab(name) VALUES ('bengaluru');
-```
-
-- DC
-
-```sql
-INSERT INTO tab(name) VALUES ('california');
-INSERT INTO tab(name) VALUES ('toronto');
-INSERT INTO tab(name) VALUES ('dublin');
-INSERT INTO tab(name) VALUES ('london');
 ```
 
 We can now start the stopped Galera nodes using `systemctl start mariadb`

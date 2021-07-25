@@ -68,6 +68,12 @@ process_arguments()
 # Log output file, this path must be owned by maxscale OS user
 Log_Path=/var/lib/maxscale/monitor.log
 
+# Create the missing log file! 
+if [ ! -f ${Log_Path} ]; then
+   touch ${Log_Path}
+   echo "$(date) | Start monitoring" > ${Log_Path}
+fi
+
 if [[ ${MAX_PASSIVE} = "true" ]];
 then
    echo "$(date) | NOTIFY SCRIPT: Server is Passive, exiting" >> ${Log_Path}
@@ -108,7 +114,7 @@ else
 
   if [[ ${Remote_MaxScale_Host} = "none" ]]
   then
-     echo "$(date) | NOTIFY SCRIPT: No change master required, Remote MaxScale not defined..." >> ${Log_Path}
+     echo "$(date) | NOTIFY SCRIPT: No change master required" >> ${Log_Path}
   else
     if [[ -z ${master_list} ]]
     then
@@ -132,11 +138,12 @@ else
         TMPFILE=`mktemp`
         echo "STOP ALL SLAVES; RESET SLAVE '${Remote_MaxScale_Name}' ALL;" > ${TMPFILE}
         echo "$(date) | STOP ALL SLAVES; RESET SLAVE '${Remote_MaxScale_Name}' ALL;" >> ${Log_Path}
-        mariadb -u${MaxScale_User_Name} -p${MaxScale_User_Pwd} -h${lv_master_host} -P${lv_master_port} < ${TMPFILE}
+        mariadb -u${Replication_User_Name} -p${Replication_User_Pwd} -h${lv_master_host} -P${lv_master_port} < ${TMPFILE}
         rm ${TMPFILE}
       fi
 
-      if [[ ${event} = "new_master" || ${event} = "master_up" ]]
+      # When a new Master is selected, That new master will be used as a slave to the remote MaxScale 
+      if [[ ${event} = "new_master" ]]
       then
         echo "$(date) | NOTIFY SCRIPT: Dectected a ${event} event, new master list = '${master_list}'" >> ${Log_Path}
         if [[ ${master_list} =~ "," ]];
@@ -155,24 +162,31 @@ else
         # Ensure all slaves are stopped first
         echo "STOP ALL SLAVES; RESET SLAVE '${Remote_MaxScale_Name}' ALL;" > ${TMPFILE}
         echo "$(date) | STOP ALL SLAVES; RESET SLAVE '${Remote_MaxScale_Name}' ALL;" >> ${Log_Path}
-        mariadb -u${MaxScale_User_Name} -p${MaxScale_User_Pwd} -h${lv_master_host} -P${lv_master_port} < ${TMPFILE}
+        mariadb -u${Replication_User_Name} -p${Replication_User_Pwd} -h${lv_master_host} -P${lv_master_port} < ${TMPFILE}
 
         # Get `gtid_slave_pos` and  `gtid_binlog_pos` (ex. gtid_slave_pos='1-100-11' | gtid_binlog_pos='1-100-13','2-200-6')
-        slave_pos=`mariadb -u${MaxScale_User_Name} -p${MaxScale_User_Pwd} -h${lv_master_host} -P${lv_master_port} -ss -e "select @@gtid_slave_pos"`;
-        binlog_pos=`mariadb -u${MaxScale_User_Name} -p${MaxScale_User_Pwd} -h${lv_master_host} -P${lv_master_port} -ss -e "select @@gtid_binlog_pos"`;
-        echo "$(date) | gtid_slave_pos = $slave_pos / gtid_binlog_pos = $binlog_pos" >> ${Log_Path}
+        slave_pos=`mariadb -u${Replication_User_Name} -p${Replication_User_Pwd} -h${lv_master_host} -P${lv_master_port} -ss -e "select @@gtid_slave_pos"`;
+        binlog_pos=`mariadb -u${Replication_User_Name} -p${Replication_User_Pwd} -h${lv_master_host} -P${lv_master_port} -ss -e "select @@gtid_binlog_pos"`;
+        echo "$(date) | gtid_slave_pos = $slave_pos / gtid_binlog_pos = ${binlog_pos}" >> ${Log_Path}
 
-	     # If current 'gtid_slave_pos' is not empty, assign the most up-to-date gtid_slave_pos before 'CHANGE MASTER ..'
-	     if [[ ${slave_pos} = "none" ]]
-	     then
-           echo "$(date) | NOTIFY SCRIPT: gtid_slave_pos is empty" >> ${Log_Path}
-        else
-           # Set the up-to-date gtid_slave_pos as gtid_binlog_pos
-           echo "SET GLOBAL gtid_slave_pos = '${binlog_pos}';" > ${TMPFILE}
-           echo "$(date) | SET GLOBAL gtid_slave_pos = '${binlog_pos}';" >> ${Log_Path}
-           mariadb -u${MaxScale_User_Name} -p${MaxScale_User_Pwd} -h${lv_master_host} -P${lv_master_port} < ${TMPFILE}
-        fi
+	# If current 'gtid_slave_pos' is not empty, assign the most up-to-date gtid_slave_pos before 'CHANGE MASTER ..'
+	if [[ ${slave_pos} = "none" ]]
+	then
+	   echo "$(date) | NOTIFY SCRIPT: gtid_slave_pos is empty" >> ${Log_Path}
+	else
+	   # Get 'Domain_id'-'server_id' from gtid_slave_pos (ex. '1-100-11' -> '1-100')
+	   slave_pos_noseq=${slave_pos%-*}
+	   echo "$(date) | slave_pos_noseq = $slave_pos_noseq" >> ${Log_Path}
 
+	   # Get the up-to-date SEQ of slave_pos from gtid_slave_pos ("1-100-13,2-200-6" -> 13)
+	   gtid_seq=`echo ${binlog_pos} | sed "s/.*${slave_pos_noseq}-//" | sed "s/\,.*//"`
+	   echo "$(date) | gtid_seq = ${gtid_seq}" >> ${Log_Path}
+
+	   # Set the up-to-date gtid_slave_pos by combining slave_pos_noseq + gtid_seq ("1-100" + "-" + "13")
+           echo "SET GLOBAL gtid_slave_pos = '${slave_pos_noseq}-${gtid_seq}';" > ${TMPFILE}
+           echo "$(date) | SET GLOBAL gtid_slave_pos = '${slave_pos_noseq}-${gtid_seq}';" >> ${Log_Path}
+           mariadb -u${Replication_User_Name} -p${Replication_User_Pwd} -h${lv_master_host} -P${lv_master_port} < ${TMPFILE}
+	fi
         # If Remote MaxScale Host is defined, then execute CHANGE MASTER to connect to it on the new MASTER selection
         if [[ ${Remote_MaxScale_Host} = "none" ]]
         then
@@ -180,8 +194,8 @@ else
         else
            echo "$(date) | NOTIFY SCRIPT: Running change master on master server ${lv_master_to_use} to ${Remote_MaxScale_Host}" >> ${Log_Path}
            echo "CHANGE MASTER '${Remote_MaxScale_Name}' TO master_use_gtid=slave_pos, MASTER_HOST='${Remote_MaxScale_Host}', MASTER_USER='${Replication_User_Name}', MASTER_PASSWORD='${Replication_User_Pwd}', MASTER_PORT=${Remote_MaxScale_Port}, MASTER_CONNECT_RETRY=10; " > ${TMPFILE}
-           echo "$(date) | CHANGE MASTER '${Remote_MaxScale_Name}' TO master_use_gtid=slave_pos, MASTER_HOST='${Remote_MaxScale_Host}', MASTER_USER='${Replication_User_Name}', MASTER_PASSWORD='******************', MASTER_PORT=${Remote_MaxScale_Port}, MASTER_CONNECT_RETRY=10; "  >> ${Log_Path}
-           mariadb -u${MaxScale_User_Name} -p${MaxScale_User_Pwd} -h${lv_master_host} -P${lv_master_port} < ${TMPFILE}
+           echo "$(date) | CHANGE MASTER '${Remote_MaxScale_Name}' TO master_use_gtid=slave_pos, MASTER_HOST='${Remote_MaxScale_Host}', MASTER_USER='${Replication_User_Name}', MASTER_PASSWORD='*********************', MASTER_PORT=${Remote_MaxScale_Port}, MASTER_CONNECT_RETRY=10; "  >> ${Log_Path}
+           mariadb -u${Replication_User_Name} -p${Replication_User_Pwd} -h${lv_master_host} -P${lv_master_port} < ${TMPFILE}
            RetStatus=$?
            echo "$(date) | CHANGE MASTER: return status ${RetStatus}" >> ${Log_Path}
            # Execute START SLAVE only when CHANGE MASTER is successful
@@ -189,7 +203,7 @@ else
            then
               echo "START SLAVE '${Remote_MaxScale_Name}';" > ${TMPFILE}
               echo "$(date) | START SLAVE '${Remote_MaxScale_Name}';" >> ${Log_Path}
-              mariadb -u${MaxScale_User_Name} -p${MaxScale_User_Pwd} -h${lv_master_host} -P${lv_master_port} < ${TMPFILE}
+              mariadb -u${Replication_User_Name} -p${Replication_User_Pwd} -h${lv_master_host} -P${lv_master_port} < ${TMPFILE}
            else
               echo "$(date) | Failed to execute CHANGE MASTER on Host: ${lv_master_host} Port: ${lv_master_port}" >> ${Log_Path}
            fi
