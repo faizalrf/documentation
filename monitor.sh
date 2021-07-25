@@ -69,7 +69,7 @@ process_arguments()
 # Log output file, this path must be owned by maxscale OS user
 Log_Path=/var/lib/maxscale/monitor.log
 
-# Create the missing log file! 
+# Create the missing log file! Faisal 25th July 2021
 if [ ! -f ${Log_Path} ]; then
    touch ${Log_Path}
    echo "$(date) | Start monitoring" > ${Log_Path}
