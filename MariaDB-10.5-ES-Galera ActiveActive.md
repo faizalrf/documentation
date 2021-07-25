@@ -95,7 +95,7 @@ All the required binaries are insalled on all the 6 galera nodes.
 
 Now that Galera Cluster has been installed on all 6 nodes, we can now configure those as 2 separate Galera clusters, here is a reference configuration for both clusters
 
-The following needs to be edited in the `/etc/my.cnf.d/server.cnf` file, add the content under `[galera]`, `[sst]` and `[mariadb]` sections. Do take note, the `[sst]` is a new section specially for Galera SST performance.
+The following needs to be edited in the `/etc/my.cnf.d/server.cnf` file, add the content under `[galera]` and `[mariadb]` sections.
 
 - Primary Data Center
 
@@ -108,8 +108,6 @@ The following needs to be edited in the `/etc/my.cnf.d/server.cnf` file, add the
     wsrep_provider=/usr/lib64/galera/libgalera_enterprise_smm.so
     wsrep_cluster_address=gcomm://192.168.56.71,192.168.56.72,192.168.56.73
     wsrep_cluster_name=DC
-    wsrep_sst_method=mariabackup
-    wsrep_sst_auth=mysql:
 
     # Local node setup
     wsrep_node_address=192.168.56.71
@@ -117,12 +115,6 @@ The following needs to be edited in the `/etc/my.cnf.d/server.cnf` file, add the
 
     #Galera Cache setup for performance as 5 GB, default location is on `datadir`
     wsrep_provider_options="gcache.size=5G; gcache.keep_pages_size=5G; gcache.recover=yes; gcs.fc_factor=0.8;"
-
-    [sst]
-    inno-backup-opts="--parallel=4"
-    inno-apply-opts="--use-memory=8192M"
-    compressor="pigz"
-    decompressor="pigz -d"
 
     [mariadb]
     log_error=server.log
@@ -163,8 +155,6 @@ The following needs to be edited in the `/etc/my.cnf.d/server.cnf` file, add the
     wsrep_provider=/usr/lib64/galera/libgalera_enterprise_smm.so
     wsrep_cluster_address=gcomm://192.168.56.81,192.168.56.82,192.168.56.83
     wsrep_cluster_name=DR
-    wsrep_sst_method=mariabackup
-    wsrep_sst_auth=mysql:
 
     # Local node setup
     wsrep_node_address=192.168.56.81
@@ -172,12 +162,6 @@ The following needs to be edited in the `/etc/my.cnf.d/server.cnf` file, add the
 
     #Galera Cache setup for performance as 5 GB, default location is on `datadir`
     wsrep_provider_options="gcache.size=5G; gcache.keep_pages_size=5G; gcache.recover=yes; gcs.fc_factor=0.8;"
-
-    [sst]
-    inno-backup-opts="--parallel=4"
-    inno-apply-opts="--use-memory=8192M"
-    compressor="pigz"
-    decompressor="pigz -d"
 
     [mariadb]
     log_error=server.log
@@ -270,9 +254,6 @@ MariaDB [(none)]> show global status like 'wsrep_cluster_size';
 | wsrep_cluster_size | 1     |
 +--------------------+-------+
 1 row in set (0.002 sec)
-
-MariaDB [(none)]> GRANT RELOAD, PROCESS, LOCK TABLES, REPLICATION CLIENT ON *.* TO mysql@localhost;
-Query OK, 0 rows affected (0.008 sec)
 ```
 
 We can see bootstrap is successful and cluster size is currently 1 for the first data center. Let's start other 2 nodes normally using `systemctl start mariadb` on the primary data center.
@@ -302,6 +283,37 @@ Now we can see all the three nodes are in the cluster on the primary data center
 - Verify the cluster size using `show global status like 'wsrep_cluster_size';` to ensure it's 3
 
 The two independent clusters are ready!
+
+#### Setup Galera SST User
+
+We now have two indpendent clusters running in two data centers. We can now GRANT the existing `musql@localhost` user with MariaDB Backup capabiities. This is because this user will be used as the SST user, since this is also already created as an OS user during the installation, this will be perfect as we don't need to specify its password in the MariaDB config files `[galera]` section.
+
+Connect to one of the nodes in the cluster and execute the following GRANT. This will set the `mysql@localhost` user as `mariabackp` user. Since we have a working cluster this grant will be replicated to all the nodes.
+
+```sql
+GRANT RELOAD, PROCESS, LOCK TABLES, REPLICATION CLIENT ON *.* TO mysql@localhost;
+```
+
+Repeat the above on both data centers.
+
+Add the following two lines to the `[galera]` secton of your server configration on all the Galera nodes.
+
+```txt
+wsrep_sst_method=mariabackup
+wsrep_sst_auth=mysql:
+```
+
+Finally, add the `[sst]` section in the `server.cnf` file on all the Galera nodes, add this before the `[mariadb]` section.
+
+```txt
+[sst]
+inno-backup-opts="--parallel=4"
+inno-apply-opts="--use-memory=8192M"
+compressor="pigz"
+decompressor="pigz -d"
+```
+
+Once the above config changes have been done on all the nodes in both of the data centers, restart all the nodes in both of the clsuters so that the changes take effect. 
 
 ## Setup MaxScale 2.5
 
@@ -442,7 +454,7 @@ This needs to be done on all the MaxScale nodes on both data centers.
 
 An additional hidden file `/var/lib/maxscale/.maxinfo` needs to be created owned by `maxscale:maxscale` and `chmod 400` limited privileges, the file contains the following parameters 
 
-```
+```txt
 remoteMaxScale=<DR MaxScale IP Address>
 remoteMaxScaleName=DR-MaxScale
 remoteMaxScaleReplicationPort=4007
@@ -479,7 +491,6 @@ GRANT SHOW DATABASES, REPLICATION CLIENT ON *.* TO maxuser@'%';
 GRANT SUPER ON *.* TO maxuser@'%';
 CREATE USER repl_user@'%' IDENTIFIED BY 'SecretP@ssw0rd';
 GRANT REPLICATION SLAVE ON *.* TO repl_user@'%';
-GRANT RELOAD, PROCESS, LOCK TABLES, REPLICATION CLIENT ON *.* TO mysql@localhost;
 ```
 
 #### Setup SST for Galera Nodes
@@ -505,7 +516,7 @@ Query OK, 0 rows affected (0.048 sec)
 Similarly, set up the the `GTID_SLAVE_POS` on all the **DR Cluster** Galera nodes, based on the GTID from Primary Cluster
 
 ```
-MariaDB [(none)]> SET GLOBAL GTID_SLAVE_POS='70-7000-6';
+MariaDB [(none)]> SET GLOBAL GTID_SLAVE_POS='70-7000-7';
 Query OK, 0 rows affected (0.048 sec)
 ```
 
@@ -747,11 +758,29 @@ Once the database and the new table have beem created, insert the following data
 DC MaxScale
 
 ```
+┌───────────┬───────────────┬──────┬─────────────┬─────────────────────────┬──────────────────────┐
+│ Server    │ Address       │ Port │ Connections │ State                   │ GTID                 │
+├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼──────────────────────┤
+│ Galera-71 │ 172.31.24.36  │ 3306 │ 2           │ Master, Synced, Running │ 70-7000-12,80-8000-7 │
+├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼──────────────────────┤
+│ Galera-72 │ 172.31.20.247 │ 3306 │ 1           │ Slave, Synced, Running  │ 70-7000-12,80-8000-7 │
+├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼──────────────────────┤
+│ Galera-73 │ 172.31.28.81  │ 3306 │ 1           │ Slave, Synced, Running  │ 70-7000-12,80-8000-7 │
+└───────────┴───────────────┴──────┴─────────────┴─────────────────────────┴──────────────────────┘
 ```
 
 DR MaxScale
 
 ```
+┌───────────┬───────────────┬──────┬─────────────┬─────────────────────────┬──────────────────────┐
+│ Server    │ Address       │ Port │ Connections │ State                   │ GTID                 │
+├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼──────────────────────┤
+│ Galera-81 │ 172.31.36.27  │ 3306 │ 1           │ Master, Synced, Running │ 70-7000-12,80-8000-7 │
+├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼──────────────────────┤
+│ Galera-82 │ 172.31.34.243 │ 3306 │ 0           │ Slave, Synced, Running  │ 70-7000-7,80-8000-7  │
+├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼──────────────────────┤
+│ Galera-83 │ 172.31.43.195 │ 3306 │ 0           │ Slave, Synced, Running  │ 70-7000-7,80-8000-7  │
+└───────────┴───────────────┴──────┴─────────────┴─────────────────────────┴──────────────────────┘
 ```
 
 #### Data Creation
@@ -763,6 +792,34 @@ INSERT INTO tab(name) VALUES ('tokyo');
 INSERT INTO tab(name) VALUES ('hongkong');
 INSERT INTO tab(name) VALUES ('delhi');
 INSERT INTO tab(name) VALUES ('mummbai');
+```
+
+DC MaxScale
+
+```
+┌───────────┬───────────────┬──────┬─────────────┬─────────────────────────┬──────────────────────┐
+│ Server    │ Address       │ Port │ Connections │ State                   │ GTID                 │
+├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼──────────────────────┤
+│ Galera-71 │ 172.31.24.36  │ 3306 │ 2           │ Master, Synced, Running │ 70-7000-16,80-8000-7 │
+├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼──────────────────────┤
+│ Galera-72 │ 172.31.20.247 │ 3306 │ 1           │ Slave, Synced, Running  │ 70-7000-16,80-8000-7 │
+├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼──────────────────────┤
+│ Galera-73 │ 172.31.28.81  │ 3306 │ 1           │ Slave, Synced, Running  │ 70-7000-16,80-8000-7 │
+└───────────┴───────────────┴──────┴─────────────┴─────────────────────────┴──────────────────────┘
+```
+
+DR MaxScale
+
+```
+┌───────────┬───────────────┬──────┬─────────────┬─────────────────────────┬──────────────────────┐
+│ Server    │ Address       │ Port │ Connections │ State                   │ GTID                 │
+├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼──────────────────────┤
+│ Galera-81 │ 172.31.36.27  │ 3306 │ 1           │ Master, Synced, Running │ 70-7000-16,80-8000-7 │
+├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼──────────────────────┤
+│ Galera-82 │ 172.31.34.243 │ 3306 │ 0           │ Slave, Synced, Running  │ 70-7000-7,80-8000-7  │
+├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼──────────────────────┤
+│ Galera-83 │ 172.31.43.195 │ 3306 │ 0           │ Slave, Synced, Running  │ 70-7000-7,80-8000-7  │
+└───────────┴───────────────┴──────┴─────────────┴─────────────────────────┴──────────────────────┘
 ```
 
 - DR

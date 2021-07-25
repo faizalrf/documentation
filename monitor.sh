@@ -22,17 +22,18 @@
 
 # Create a hidden file /var/lib/maxscale/.maxinfo and add the following 6 variables
 
-#  remoteMaxScale=<Remote MaxSclae IP>
-#  remoteMaxScaleName=<User Defined MaxScale Name>
-#	repuser=<Replication User Name>
-#	reppwd=<Replication User Password>
-#	maxuser=<MaxScale User Name>
-#	maxpwd=<MaxScale User Password>
+# remoteMaxScale=<Remote MaxSclae IP>
+# remoteMaxScaleName=<User Defined MaxScale Name>
+# repuser=<Replication User Name>
+# reppwd=<Replication User Password>
+# remoteMaxScaleReplicationPort=<MaxScale Replicaton Port>
+# maxuser=<MaxScale User Name>
+# maxpwd=<MaxScale User Password>
 
 # Set ownership if this file to maxuser:maxuser
 #  chown maxscale:maxscale /var/lib/maxscale/.maxinfo
 # set permission to be read only for maxuser and no permission for any other user
-#	chmod 400 /var/lib/maxscale/.maxinfo
+#  chmod 400 /var/lib/maxscale/.maxinfo
 # End...
 
 process_arguments()
@@ -167,11 +168,8 @@ else
            echo "$(date) | NOTIFY SCRIPT: gtid_slave_pos is empty" >> ${Log_Path}
         else
            # Set the up-to-date gtid_slave_pos as gtid_binlog_pos
-           # echo "SET GLOBAL gtid_slave_pos = '$binlog_pos';" > ${TMPFILE}
-           # echo "$(date) | SET GLOBAL gtid_slave_pos = '$binlog_pos';" >> ${Log_Path}
-	   ## Commented the above two lines and replace the binlog_pos with slave_pos variable, 09-Jul-2021, Faisal
-           echo "SET GLOBAL gtid_slave_pos = '${slave_pos}';" > ${TMPFILE}
-           echo "$(date) | SET GLOBAL gtid_slave_pos = '${slave_pos}';" >> ${Log_Path}
+           echo "SET GLOBAL gtid_slave_pos = '${binlog_pos}';" > ${TMPFILE}
+           echo "$(date) | SET GLOBAL gtid_slave_pos = '${binlog_pos}';" >> ${Log_Path}
            mariadb -u${MaxScale_User_Name} -p${MaxScale_User_Pwd} -h${lv_master_host} -P${lv_master_port} < ${TMPFILE}
         fi
 
