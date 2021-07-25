@@ -12,6 +12,7 @@
 ## March 1st 2021                                        ##
 ## Update by: Faisal Saeed <faisal@mariadb.com           ##
 ## July 09th 2021                                        ##
+## July 25th 2021                                        ##
 ###########################################################
 
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
@@ -174,7 +175,7 @@ else
 	then
 	   echo "$(date) | NOTIFY SCRIPT: gtid_slave_pos is empty" >> ${Log_Path}
 	else
-	   # Get 'Domain_id'-'server_id' from gtid_slave_pos (ex. '1-100-11' -> '1-100')
+	   # Get 'Domain_id'-'server_id' from gtid_slave_pos (ex. '1-100-11' -> '1-100') 25th Jul 2021
 	   slave_pos_noseq=${slave_pos%-*}
 	   echo "$(date) | slave_pos_noseq = $slave_pos_noseq" >> ${Log_Path}
 
