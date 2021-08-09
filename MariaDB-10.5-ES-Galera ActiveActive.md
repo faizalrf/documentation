@@ -358,8 +358,6 @@ log_info=off
 log_notice=on
 # Enable or disable the logging of messages whose syslog priority is warning
 log_warning=off
-# Enable or disable the logging of messages whose syslog priority is debug
-log_debug=off
  
 # List of servers in the Cluster
 [Galera-71]
@@ -437,11 +435,12 @@ address=0.0.0.0
 type=service
 router=binlogrouter
 cluster=Galera-Monitor
+select_master=true
 server_id=7001
 datadir=/var/lib/maxscale/binlogs
 expire_log_duration=24h
 expire_log_minimum_files=3
-user=repl_user
+user=maxuser
 password=SecretP@ssw0rd
  
 [Replication-Listener]
@@ -457,7 +456,7 @@ address=0.0.0.0
  
 **Refer to:** [script=/var/lib/maxscale/monitor.sh](monitor.sh) for the source.
  
-**`[Replication-Service-Binlog-Router]`** Service defines the binlog router behaviour, take note of the `datadir` variable and `server_id` variable, set these accordingly for all the MaxScale nodes. As expected, `server_id` should be unique for all the MaxScale nodes.
+**`[Replication-Service-Binlog-Router]`** Service defines the binlog router behaviour, take note of the `datadir` variable and `server_id` variable, set these accordingly for all the MaxScale nodes. As expected, `server_id` should be unique for all the MaxScale nodes. Binlog router needs to be configured with **`maxuser@'%'`** user.
  
 Set the `/var/lib/maxscale/monitor.sh` with the ownership of `maxscale` user / group and change the permission to `chmod 500` to ensure minimum permission for users.
  
@@ -505,7 +504,7 @@ We need to create the **`maxuser`** & **`repl_user`** accounts with a password o
 ```sql
 CREATE USER maxuser@'%' IDENTIFIED BY 'SecretP@ssw0rd';
 GRANT SELECT ON mysql.* TO maxuser@'%';
-GRANT SUPER, RELOAD, SHOW DATABASES, REPLICATION CLIENT ON *.* TO maxuser@'%';
+GRANT SUPER, RELOAD, SHOW DATABASES, REPLICATION SLAVE, REPLICATION CLIENT ON *.* TO maxuser@'%';
 CREATE USER repl_user@'%' IDENTIFIED BY 'SecretP@ssw0rd';
 GRANT SUPER, RELOAD, REPLICATION SLAVE ON *.* TO repl_user@'%';
 ```
