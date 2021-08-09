@@ -1,26 +1,26 @@
 # MariaDB 10.5 Enterprise - Galera Architecture
-
+ 
 ## Assumptions
-
-This guide is meant to be used with MariaDB 10.5 Enterprise Server on RHEL/CentOS 7 operating systems, however the setup on RHEL/CentOS 8 should not be much different. 
-
+ 
+Use this guide to set up the MariaDB 10.5 Enterprise Server on RHEL/CentOS 7 operating systems. However, the setup on RHEL/CentOS 8 should not be any different. 
+ 
 ## Architecture
-
-The requirement is simple, setup 2 Galera clusters (3 nodes each) on two data centers. Setup MaxScale 2.5 binlog router to replicate data from Galera cluster on the primary data cetner to the the other Galera cluster on the secondary data center. 
-
-Same way, a reverse replication is is to be set up from the Secondary data center to the primary data cetners using MaxScale binlog router.
-
+ 
+The requirement is simple, set up two independent Galera clusters (3 nodes each) on two data centers. Setup MaxScale 2.5 binlog router to replicate data from Galera cluster on the primary data center to the other Galera cluster on the secondary data center. 
+ 
+In the same way, a reverse replication is set up from the Secondary data center to the primary data centers using the MaxScale binlog router.
+ 
 ref: **Image-1**
 ![image info](./Images/GaleraArchitecture-3.png)
-
+ 
 Reference Architecture using MaxScale's new Binlog router to replicate a 10.5 Galera cluster using asynchronous replication for maximum performance.
-
-A stretched Galera cluster can be setup but if the latency numbers are bad between the two DC, galera cluster's performance will drop. It is recommended to set up two clusters instead using asyhcnronous replication for an **Active/Passive** site setup.
-
+ 
+We can, however, set up a stretched Galera cluster across two datacenters,  however, if the latency numbers are slow between the two DC, this will lead to slow Write performance on the Galera cluster. Setting up two Galera clusters is recommended using asynchronous replication is recommended.
+ 
 ## Servers
-
-We will setup the following servers using this workbook.
-
+ 
+We will set up the following servers using this workbook.
+ 
 - MaxScale-70 (192.168.56.70) **(2.5)**
   - Galear-71 (192.168.56.71) **(10.5)**
   - Galear-72 (192.168.56.72) **(10.5)**
@@ -29,24 +29,24 @@ We will setup the following servers using this workbook.
   - Galear-81 (192.168.56.81) **(10.5)**
   - Galear-82 (192.168.56.82) **(10.5)**
   - Galear-83 (192.168.56.83) **(10.5)**
-
+ 
 ***Note:** The exact versions are MaxScale `2.5.14` and MariaDB Enterprise `10.5.10-7` as of 23rd July 2021*
-
+ 
 ## Galera Cluster
-
+ 
 ### Install MariaDB 10.5 Enterprise Server
-
-Download and Install the latest Enterprise MariaDB as per normal from <https://mariadb.com/downloads/#mariadb_platform-enterprise_server> and MaxScale from <https://mariadb.com/downloads/#mariadb_platform-mariadb_maxscale> for your desired OS, we are setting this up on CentOS/RHEL.
-
-Once Downloaded, setup local repositories and proceed with the installation.
-
+ 
+Download and Install the latest Enterprise MariaDB as per usual from <https://mariadb.com/downloads/#mariadb_platform-enterprise_server> and MaxScale from <https://mariadb.com/downloads/#mariadb_platform-mariadb_maxscale> for your desired OS. We are setting this up on CentOS/RHEL.
+ 
+Once Downloaded, set up local repositories and proceed with the installation.
+ 
 Refer to <https://github.com/mariadb-faisalsaeed/documentation/blob/master/Galera%20Cluster%20Setup.md> for help with the detailed download and install instruction if needed.
-
+ 
 ```
 ➜  yum -y install MariaDB-server MariaDB-backup pigz
-
+ 
 Dependencies Resolved
-
+ 
 ==============================================================================================================================================================================================
  Package                                               Arch                                 Version                                       Repository                                     Size
 ==============================================================================================================================================================================================
@@ -67,16 +67,16 @@ Installing for dependencies:
  perl-PlRPC                                            noarch                               0.2020-14.el7                                 base                                           36 k
  socat                                                 x86_64                               1.7.3.2-2.el7                                 base                                          290 k
  pigz                                                  x86_64                               2.3.3-1.el7.centos                            extras                                         68 k
-
+ 
 Transaction Summary
 ==============================================================================================================================================================================================
 ..
 ..
 Complete!
 ```
-
+ 
 Verify the installation on all 6 nodes
-
+ 
 ```
 ➜  rpm -qa | grep -i mariadb
 MariaDB-common-10.5.5_3-1.el7.x86_64
@@ -84,21 +84,21 @@ MariaDB-compat-10.5.5_3-1.el7.x86_64
 MariaDB-client-10.5.5_3-1.el7.x86_64
 MariaDB-server-10.5.5_3-1.el7.x86_64
 MariaDB-backup-10.5.5_3-1.el7.x86_64
-
+ 
 ➜  rpm -qa | grep -i galera 
 galera-enterprise-4-26.4.5-1.el7.8.x86_64
 ```
-
+ 
 All the required binaries are insalled on all the 6 galera nodes. 
-
+ 
 #### Galera Configuration
-
+ 
 Now that Galera Cluster has been installed on all 6 nodes, we can now configure those as 2 separate Galera clusters, here is a reference configuration for both clusters
-
+ 
 The following needs to be edited in the `/etc/my.cnf.d/server.cnf` file, add the content under `[galera]` and `[mariadb]` sections.
-
+ 
 - Primary Data Center
-
+ 
     ```
     [galera]
     wsrep_on=ON
@@ -108,22 +108,22 @@ The following needs to be edited in the `/etc/my.cnf.d/server.cnf` file, add the
     wsrep_provider=/usr/lib64/galera/libgalera_enterprise_smm.so
     wsrep_cluster_address=gcomm://192.168.56.71,192.168.56.72,192.168.56.73
     wsrep_cluster_name=DC
-
+ 
     # Local node setup
     wsrep_node_address=192.168.56.71
     wsrep_node_name=galera-71
-
+ 
     #Galera Cache setup for performance as 5 GB, default location is on `datadir`
     wsrep_provider_options="gcache.size=5G; gcache.keep_pages_size=5G; gcache.recover=yes; gcs.fc_factor=0.8;"
-
+ 
     [mariadb]
     log_error=server.log
     binlog_format=row
     log_slave_updates=ON
-
+ 
     log_bin
     skip-slave-start=ON
-
+ 
     gtid_domain_id=71
     gtid-ignore-duplicates=ON
     server_id=7000
@@ -133,19 +133,19 @@ The following needs to be edited in the `/etc/my.cnf.d/server.cnf` file, add the
     innodb_flush_log_at_trx_commit=0
     innodb_buffer_pool_size=512M
     innodb_log_file_size=512M
-
+ 
     auto_increment_offset=1
     auto_increment_increment=6
-
+ 
     character-set-server = utf8
     collation-server = utf8_unicode_ci
-
+ 
     ## Allow server to accept connections on all interfaces.
     bind-address=0.0.0.0
     ```
-
+ 
 - DR Data Center
-
+ 
     ```
     [galera]
     wsrep_on=ON
@@ -155,22 +155,22 @@ The following needs to be edited in the `/etc/my.cnf.d/server.cnf` file, add the
     wsrep_provider=/usr/lib64/galera/libgalera_enterprise_smm.so
     wsrep_cluster_address=gcomm://192.168.56.81,192.168.56.82,192.168.56.83
     wsrep_cluster_name=DR
-
+ 
     # Local node setup
     wsrep_node_address=192.168.56.81
     wsrep_node_name=galera-81
-
+ 
     #Galera Cache setup for performance as 5 GB, default location is on `datadir`
     wsrep_provider_options="gcache.size=5G; gcache.keep_pages_size=5G; gcache.recover=yes; gcs.fc_factor=0.8;"
-
+ 
     [mariadb]
     log_error=server.log
     binlog_format=row
     log_slave_updates=ON
-
+ 
     log_bin
     skip-slave-start=ON
-
+ 
     gtid_domain_id=81
     gtid-ignore-duplicates=ON
     server_id=8000
@@ -180,26 +180,26 @@ The following needs to be edited in the `/etc/my.cnf.d/server.cnf` file, add the
     innodb_flush_log_at_trx_commit=0
     innodb_buffer_pool_size=512M
     innodb_log_file_size=512M
-
+ 
     auto_increment_offset=4
     auto_increment_increment=6
-
+ 
     character-set-server = utf8
     collation-server = utf8_unicode_ci
-
+ 
     ## Allow server to accept connections on all interfaces.
     bind-address=0.0.0.0
     ```
-
+ 
 ***Note:** `wsrep_cluster_address` should not have any white spaces between the IP addresses!*
-
+ 
 Referring to the above two configurations:
-
+ 
 - **`wsrep_cluster_name`** needs to be different on both data centers
   - we will be using **`DC`** for first data center all three nodes
   - we will be using **`DR`** for the second data center all three nodes
 - **`wsrep_node_address` & `wsrep_node_name`** must follow the current node's IP address and a unique node name for each server
-- **`wsrep_gtid_domain_id`** needs to be configured the with same value for each cluster.
+- **`wsrep_gtid_domain_id`** needs to be configured the with same value for all the nodes within each cluster.
   - We will be using **`wsrep_gtid_domain_id=70`** for all three nodes in the first cluster.
   - We will be using **`wsrep_gtid_domain_id=80`** for all three ndoes in the second cluster.
 - **`server_id`** needs to be configured the with same value for each cluster.
@@ -221,24 +221,24 @@ Referring to the above two configurations:
 - **`[sst]`**
   - This section will help with the Galera's SST performance when needed, we need to install `pigz` on all the Galera nodes for this to work.
   - Take note of the CPU and Memory, tune this section based on the amount of RAM and CPU you have in your Galera servers.
-
+ 
 ***Note:** the **`wsrep_provider`** points to a different path/file for the Community version as, please verify the path by executing `show global variables like 'plugin_dir';` to ensure the correct path*
-
+ 
 The above setup will enable Galera based GTID for each node and because of the `log_slave_upates=ON` we will get a consistent GTID for respective to each galera cluster individually.
-
+ 
 Once all the nodes have been configured correctly using the `/etc/my.cnf.d/server/cnf` file, bootstrap the Galera cluster using `galera_new_cluster` from the first node on each data center and grant the SST backup user with necessary grants on both of the DC and DR primary bootstrap Galera nodes before starting the other nodes.  
-
+ 
 ```
 ➜  galera_new_cluster
 ➜  mariadb -uroot
 Welcome to the MariaDB monitor.  Commands end with ; or \g.
 Your MariaDB connection id is 8
 Server version: 10.5.5-3-MariaDB-enterprise-log MariaDB Enterprise Server
-
+ 
 Copyright (c) 2000, 2018, Oracle, MariaDB Corporation Ab and others.
-
+ 
 Type 'help;' or '\h' for help. Type '\c' to clear the current input statement.
-
+ 
 MariaDB [(none)]> select version();
 +---------------------------------+
 | version()                       |
@@ -246,7 +246,7 @@ MariaDB [(none)]> select version();
 | 10.5.5-3-MariaDB-enterprise-log |
 +---------------------------------+
 1 row in set (0.000 sec)
-
+ 
 MariaDB [(none)]> show global status like 'wsrep_cluster_size';
 +--------------------+-------+
 | Variable_name      | Value |
@@ -255,9 +255,9 @@ MariaDB [(none)]> show global status like 'wsrep_cluster_size';
 +--------------------+-------+
 1 row in set (0.002 sec)
 ```
-
+ 
 We can see bootstrap is successful and cluster size is currently 1 for the first data center. Let's start other 2 nodes normally using `systemctl start mariadb` on the primary data center.
-
+ 
 ```
 MariaDB [(none)]> select @@hostname;
 +------------+
@@ -266,7 +266,7 @@ MariaDB [(none)]> select @@hostname;
 | galera-71  |
 +------------+
 1 row in set (0.000 sec)
-
+ 
 MariaDB [(none)]> show global status like 'wsrep_cluster_size';
 +--------------------+-------+
 | Variable_name      | Value |
@@ -275,36 +275,36 @@ MariaDB [(none)]> show global status like 'wsrep_cluster_size';
 +--------------------+-------+
 1 row in set (0.003 sec)
 ```
-
+ 
 Now we can see all the three nodes are in the cluster on the primary data center. Repeat the same on the **second data center**. 
-
+ 
 - Bootstrap Galera using `galera_new_cluster` from node 1 (Galera-81)
 - Start the other two nodes using `systemctl start mariadb`
 - Verify the cluster size using `show global status like 'wsrep_cluster_size';` to ensure it's 3
-
+ 
 The two independent clusters are ready!
-
+ 
 #### Setup Galera SST User
-
+ 
 We now have two indpendent clusters running in two data centers. We can now GRANT the existing `musql@localhost` user with MariaDB Backup capabiities. This is because this user will be used as the SST user, since this is also already created as an OS user during the installation, this will be perfect as we don't need to specify its password in the MariaDB config files `[galera]` section.
-
+ 
 Connect to one of the nodes in the cluster and execute the following GRANT. This will set the `mysql@localhost` user as `mariabackp` user. Since we have a working cluster this grant will be replicated to all the nodes.
-
+ 
 ```sql
 GRANT RELOAD, PROCESS, LOCK TABLES, REPLICATION CLIENT ON *.* TO mysql@localhost;
 ```
-
+ 
 Repeat the above on both data centers.
-
+ 
 Add the following two lines to the `[galera]` secton of your server configration on all the Galera nodes.
-
+ 
 ```txt
 wsrep_sst_method=mariabackup
 wsrep_sst_auth=mysql:
 ```
-
+ 
 Finally, add the `[sst]` section in the `server.cnf` file on all the Galera nodes, add this before the `[mariadb]` section.
-
+ 
 ```txt
 [sst]
 inno-backup-opts="--parallel=4"
@@ -312,20 +312,20 @@ inno-apply-opts="--use-memory=8192M"
 compressor="pigz"
 decompressor="pigz -d"
 ```
-
+ 
 Once the above config changes have been done on all the nodes in both of the data centers, restart all the nodes in both of the clsuters so that the changes take effect. 
-
+ 
 ## Setup MaxScale 2.5
-
+ 
 Install **MaxScale + MariaDB-client** on both MaxScale nodes
-
+ 
 **Note:** _Make Sure MariaDB-client is installed on all the MaxScale nodes!_
-
+ 
 ```txt
 ➜  yum -y install maxscale MariaDB-client
-
+ 
 Dependencies Resolved
-
+ 
 ==============================================================================================================================================================================================
  Package                                Arch                                Version                                        Repository                                                    Size
 ==============================================================================================================================================================================================
@@ -334,16 +334,16 @@ Updating:
  maxscale                               x86_64                              2.5.3-2.rhel.7                                 /maxscale-2.5.3-2.rhel.7.x86_64                              168 M
 Installing for dependencies:
  libatomic                              x86_64                              4.8.5-39.el7                                   base                                                          50 k
-
+ 
 Transaction Summary
 ==============================================================================================================================================================================================
 ..
 ..                                                                                                                                                            
 Complete!
 ```
-
+ 
 Edit the `/etc/maxscale.cnf` file on **both data centers** and define the respective Galera clusters, take note of the IP addresses and Node names need to be defined accordingly, the following is for the **Primary** data center, similarly just duplicate it and edit the respective IP / node names for the **DR** data center.
-
+ 
 ```txt
 [maxscale]
 # The number of worker threads that are handling the events coming from the kernel.
@@ -358,9 +358,7 @@ log_info=off
 log_notice=on
 # Enable or disable the logging of messages whose syslog priority is warning
 log_warning=off
-# Enable or disable the logging of messages whose syslog priority is debug
-log_debug=off
-
+ 
 # List of servers in the Cluster
 [Galera-71]
 type=server
@@ -368,21 +366,21 @@ address=192.168.56.71
 port=3306
 protocol=MariaDBBackend
 priority=1
-
+ 
 [Galera-72]
 type=server
 address=192.168.56.72
 port=3306
 protocol=MariaDBBackend
 priority=2
-
+ 
 [Galera-73]
 type=server
 address=192.168.56.73
 port=3306
 protocol=MariaDBBackend
 priority=3
-
+ 
 # Monitoring for the Galera server nodes
 [Galera-Monitor]
 type=monitor
@@ -393,16 +391,16 @@ password=SecretP@ssw0rd
 monitor_interval=2000
 use_priority=true
 available_when_donor=true
-
+ 
 # This will ensure that the current master remains the master as long as it's up and dunning
 disable_master_failback=true
 backend_connect_timeout=3s
 backend_write_timeout=3s
 backend_read_timeout=3s
-
+ 
 # Failver script for setting up dynamic slaves to a remove MaxScale node
 script=/var/lib/maxscale/monitor.sh --initiator=$INITIATOR --parent=$PARENT --children=$CHILDREN --event=$EVENT --node_list=$NODELIST --list=$LIST --master_list=$MASTERLIST --slave_list=$SLAVELIST --synced_list=$SYNCEDLIST
-
+ 
 # Galera Read/Write Splitter service
 [Galera-RW-Service]
 type=service
@@ -415,7 +413,7 @@ transaction_replay=true
 transaction_replay_retry_on_deadlock=true
 master_failure_mode=error_on_write
 slave_selection_criteria=ADAPTIVE_ROUTING
-
+ 
 # Galera cluster listener
 [Galera-Listener]
 type=listener
@@ -423,37 +421,56 @@ service=Galera-RW-Service
 protocol=MariaDBClient
 port=4006
 address=0.0.0.0
-
-[Replication-Service]
+ 
+## Enable this section if not using Binlog-Router for replication
+#[Replication-Service]
+#type=service
+#router=readconnroute
+#router_options=master
+#servers=Galera-71,Galera-72,Galera-73
+#user=repl_user
+#password=SecretP@ssw0rd
+ 
+[Replication-Service-Binlog-Router]
 type=service
-router=readconnroute
-router_options=master
-servers=Galera-71,Galera-72,Galera-73
+router=binlogrouter
+cluster=Galera-Monitor
+select_master=true
+server_id=7001
+datadir=/var/lib/maxscale/binlogs
+expire_log_duration=24h
+expire_log_minimum_files=3
 user=maxuser
 password=SecretP@ssw0rd
-
+ 
 [Replication-Listener]
 type=listener
-service=Replication-Service
+## Change the servie to use [Replication-Service] or [Replication-Service-Binlog-Router] depending on the usage
+service=Replication-Service-Binlog-Router
 protocol=MariaDBClient
 port=4007
 address=0.0.0.0
 ```
+ 
 ***Note:** Best to encrypt the Passwords in the `maxscale.cnf` file, but we are keeping it simple here.*
-
+ 
 **Refer to:** [script=/var/lib/maxscale/monitor.sh](monitor.sh) for the source.
-
+ 
+**`[Replication-Service-Binlog-Router]`** Service defines the binlog router behaviour, take note of the `datadir` variable and `server_id` variable, set these accordingly for all the MaxScale nodes. As expected, `server_id` should be unique for all the MaxScale nodes. Binlog router needs to be configured with **`maxuser@'%'`** user.
+ 
 Set the `/var/lib/maxscale/monitor.sh` with the ownership of `maxscale` user / group and change the permission to `chmod 500` to ensure minimum permission for users.
-
+ 
 This needs to be done on all the MaxScale nodes on both data centers.
-
+ 
 ```
 ➜  chown maxscale:maxscale /var/lib/maxscale/monitor.sh
 ➜  chmod 500 /var/lib/maxscale/monitor.sh
+➜  mkdir /var/lib/maxscale/binlogs
+➜  chown maxscale:maxscale /var/lib/maxscale/binlogs
 ```
-
+ 
 An additional hidden file `/var/lib/maxscale/.maxinfo` needs to be created owned by `maxscale:maxscale` and `chmod 400` limited privileges, the file contains the following parameters 
-
+ 
 ```txt
 remoteMaxScale=<DR MaxScale IP Address>
 remoteMaxScaleName=DR-MaxScale
@@ -463,7 +480,7 @@ reppwd=SecretP@ssw0rd
 maxuser=maxuser
 maxpwd=SecretP@ssw0rd
 ```
-
+ 
 - `remoteMaxScale=<IP of the Remote MaxScale Node>`
   - This will point to the VIP or the physical IP of the MaxScale on the **DR data center**
 - `remoteMaxScaleName=<MaxScale Name>`
@@ -475,54 +492,52 @@ maxpwd=SecretP@ssw0rd
   - The password is the replication user's password for the database account
 - `maxuser=<MaxScale Monitor User>` & `maxpwd=<MaxScale User Password>`
   - These are the user and password for the MaxScale user. 
-
+ 
 This file will be owned by `maxscale` user and permission of `r-- -- ---` so that only maxsclae user can read it no other user will have access to this file.
-
+ 
 This setup gives us the basic read/write split, standard monitoring and a connection router used for replication across DC.
-
+ 
 ### Configure MaxScale & Replication Users
-
+ 
 We need to create the **`maxuser`** & **`repl_user`** accounts with a password of `SecretP@ssw0rd` (As defined in the `maxscale.cnf`), we will also grant **`mysql@localhost`** use the MariaDB Backup grants for SST, this needs to be done on both **Primary DC** and **DR DC**.
-
+ 
 ```sql
 CREATE USER maxuser@'%' IDENTIFIED BY 'SecretP@ssw0rd';
 GRANT SELECT ON mysql.* TO maxuser@'%';
-GRANT SHOW DATABASES, REPLICATION CLIENT ON *.* TO maxuser@'%';
-GRANT SUPER ON *.* TO maxuser@'%';
+GRANT SUPER, RELOAD, SHOW DATABASES, REPLICATION SLAVE, REPLICATION CLIENT ON *.* TO maxuser@'%';
 CREATE USER repl_user@'%' IDENTIFIED BY 'SecretP@ssw0rd';
-GRANT SUPER ON *.* TO repl_user@'%';
-GRANT REPLICATION SLAVE ON *.* TO repl_user@'%';
+GRANT SUPER, RELOAD, REPLICATION SLAVE ON *.* TO repl_user@'%';
 ```
-
+ 
 #### Setup SST for Galera Nodes
-
+ 
 Edit the `/etc/my.cnf.d/server.cnf` file on **all Galera nodes** and add the following to the **`[galera]`** section
-
+ 
 ```
 wsrep_sst_method=mariabackup
 wsrep_sst_auth=mysql:
 ```
-
+ 
 This will tell MariaDB Galera to use MariaDB Backup for SST, this will improve the cluster availability and stability. Once defined, restart all the nodes `systemctl restart mariadb` on **both data centers** one by one.
-
+ 
 ### Setting up GTID_SLAVE_POS
-
+ 
 Take note of the GTID from the **DR Cluster**, we will need to set this `GTID_SLAVE_POS` on all the **Primary DC** Galera nodes.
-
+ 
 ```
 MariaDB [(none)]> SET GLOBAL GTID_SLAVE_POS='80-8000-7';
 Query OK, 0 rows affected (0.048 sec)
 ```
-
+ 
 Similarly, set up the the `GTID_SLAVE_POS` on all the **DR Cluster** Galera nodes, based on the GTID from Primary Cluster
-
+ 
 ```
 MariaDB [(none)]> SET GLOBAL GTID_SLAVE_POS='70-7000-7';
 Query OK, 0 rows affected (0.048 sec)
 ```
-
+ 
 Now we can start MaxScale all the MaxScale nodes and verify the cluster status.
-
+ 
 ```
 ➜  systemctl start maxscale
 ➜  maxctrl list servers 
@@ -536,11 +551,11 @@ Now we can start MaxScale all the MaxScale nodes and verify the cluster status.
 │ Galera-73 │ 192.168.56.71 │ 3306 │ 0           │ Slave, Synced, Running  │ 70-7000-7,80-8000-7 │
 └───────────┴───────────────┴──────┴─────────────┴─────────────────────────┴─────────────────────┘
 ```
-
+ 
 We can see the clust is healthy with GTID / Domain & Server IDs showing up as per our configuration. At this point the GTID should be `70-7000-7` since we have only performed 5 transactions on this cluster, the DR DC should also be at the same state `80-8000-7`
-
+ 
 Let's verify if the service has already started or not
-
+ 
 ```
 ➜  maxctrl list services 
 ┌─────────────────────┬────────────────┬─────────────┬───────────────────┬─────────────────────────────────┐
@@ -551,9 +566,9 @@ Let's verify if the service has already started or not
 │ Galera-RW-Service   │ readwritesplit │ 0           │ 0                 │ Galera-71, Galera-72, Galera-73 │
 └─────────────────────┴────────────────┴─────────────┴───────────────────┴─────────────────────────────────┘
 ```
-
+ 
 At this time, the **DR MaxScale** will show the following status since we have already set gtid_slave_pos on all the nodes:
-
+ 
 ```
 ┌───────────┬───────────────┬──────┬─────────────┬─────────────────────────┬─────────────────────┐
 │ Server    │ Address       │ Port │ Connections │ State                   │ GTID                │
@@ -565,13 +580,13 @@ At this time, the **DR MaxScale** will show the following status since we have a
 │ Galera-83 │ 192.168.56.83 │ 3306 │ 0           │ Slave, Synced, Running  │ 70-7000-7,80-8000-7 │
 └───────────┴───────────────┴──────┴─────────────┴─────────────────────────┴─────────────────────┘
 ```
-
+ 
 ### Setting up Replication
-
+ 
 Since we have the monitor script already in place which is triggered as soon as there is an even trigger on MaxScale, we just need to Stop the "Master" nodes on both **data centers** and that Monitoring script will automatically set up replication between the two clusters.
-
+ 
 Use `systemctl stop mariadb` on both Master Nodes on DC Clusters
-
+ 
 ```
 ┌───────────┬───────────────┬──────┬─────────────┬─────────────────────────┬─────────────────────┐
 │ Server    │ Address       │ Port │ Connections │ State                   │ GTID                │
@@ -583,9 +598,9 @@ Use `systemctl stop mariadb` on both Master Nodes on DC Clusters
 │ Galera-73 │ 192.168.56.73 │ 3306 │ 1           │ Slave, Synced, Running  │ 70-7000-7,80-8000-7 │
 └───────────┴───────────────┴──────┴─────────────┴─────────────────────────┴─────────────────────┘
 ```
-
+ 
 The New selected Master on the Primary DC cluster will show the following
-
+ 
 ```
 MariaDB [(none)]> show all slaves status\G
 *************************** 1. row ***************************
@@ -652,9 +667,9 @@ Slave_Non_Transactional_Groups: 0
                 Gtid_Slave_Pos: 70-7000-7,80-8000-7
 1 row in set (0.000 sec)
 ```
-
+ 
 Similarly, once the Master Galera node is down, the monitor script will automatically set the 2nd Galera node as a Slave to the **Primary DC** MaxScale slave.
-
+ 
 ```
 ┌───────────┬───────────────┬──────┬─────────────┬─────────────────────────┬─────────────────────┐
 │ Server    │ Address       │ Port │ Connections │ State                   │ GTID                │
@@ -666,9 +681,9 @@ Similarly, once the Master Galera node is down, the monitor script will automati
 │ Galera-83 │ 192.168.56.83 │ 3306 │ 1           │ Slave, Synced, Running  │ 70-7000-7,80-8000-7 │
 └───────────┴───────────────┴──────┴─────────────┴─────────────────────────┴─────────────────────┘
 ```
-
+ 
 The New selected Master on the Primary DC cluster will show the following, The Galera-82 is now the Master node in this cluster and also a SLAVE to **Primary DC** MaxScale R/W Service.
-
+ 
 ```
 MariaDB [(none)]> show all slaves status\G
 *************************** 1. row ***************************
@@ -735,11 +750,11 @@ Slave_Non_Transactional_Groups: 0
                 Gtid_Slave_Pos: 80-8000-7,70-7000-7
 1 row in set (0.000 sec)
 ```
-
+ 
 We can now start the stopped Galera nodes using `systemctl start mariadb`
-
+ 
 From this point onwards the replication is confirmed between both data centers and also provide HA no matter which node is available / down the monitor script will automatically handle the cluster to cluster replicaiton.
-
+ 
 The positive of this setup is that both sides provide an Active environment and can be used for reads and writes. 
-
+ 
 ## Thank You!
