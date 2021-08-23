@@ -114,6 +114,15 @@ On the browser enter the external-ip value and see if it's coming as V2.0.0
 
 Or you can do `curl 104.197.10.135` that should also give you the output on the GCS cloud shell prompt!
 
+You should get something like this
+
+```
+Echo Test
+Version: 2.0.0
+Hostname: echo-web-7f978f856d-rjb2j
+Host ip-address(es): 10.0.1.8
+```
+
 Enjoy :)
 
 ### Thank you
