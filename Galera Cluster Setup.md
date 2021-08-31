@@ -1,19 +1,19 @@
-# Setting up Galera Cluster 10.4 with MaxScale 2.4
+# Setting up MariaDB Enterprise Galera Cluster 10.5 with MaxScale 2.5
 
 ## Environment Setup
 
 Our environment consists of 3 node Galera cluster and One MaxScale running CentOS 7 / RHEL 7
 
-At the time of this documentation, the latest version of **MariaDB is 10.4.13** and **MaxScale 2.4.10**
+At the time of this documentation, the latest version of **MariaDB is 10.5.10** and **MaxScale 2.5.13**
 
-- MaxScale-70 (192.168.56.70)
-  - Galera-71 (192.168.56.71)
-  - Galera-72 (192.168.56.72)
-  - Galera-73 (192.168.56.73)
+- MaxScale-70 (172.31.38.197)
+  - Galera-71 (172.31.32.37)
+  - Galera-72 (172.31.41.102)
+  - Galera-73 (172.31.34.254)
 
 ### Disable SELinux
 
-Disable SELinux on the RHEL 7 / CentOS 7 VMs, to do this we will have to edit the SELinux configuration, in the file `/etc/selinux/config`, make sure to change SELINUX=disabled, after the edit is done, the config file should look like this:
+We will be disabling SELinux for the RHEL/CentOS VMs, to do this we will have to edit the SELinux configuration, in the file `/etc/selinux/config`, make sure to change SELINUX=disabled, after the edit is done, the config file should look like this:
 
 ```txt
 # This file controls the state of SELinux on the system.
@@ -68,403 +68,245 @@ Once the above are done, reboot the VM, this has to be done on all the 3 Galera 
 
 ## Install MariaDB Server
 
-If internet access is available on the servers, we can directly setup MariaDB repositories on the server and install. Else we will need to download the MariaDB 10.3 rpm files from <https://mariadb.com/downloads/> we will assume the later as this is the case for almost all the secure environments.
+Download the `tar` package from <https://mariadb.com/downloads/#mariadb_platform-enterprise_server> and transfer this tar file to all the three nodes where Galera is to be installed. For this test, the latest version is `mariadb-enterprise-10.5.10-7-centos-7-x86_64-rpms.tar` and will be using the same. 
 
 ### Download MariaDB Server
 
-Go to <https://mariadb.com/downloads/> and select the desired OS / Release. We are going to select CentOS 7 MariaDB 10.4.13 as its the latest GA version available as of now 11-June-2020.
+Select the latest Release for CentOS/RHEL from the above mentioned download portal. We are going to select CentOS 7 MariaDB Enterprise 10.5.10-7 as its the latest GA version available as of now 19-Jul-2021.
 
-Once the version and OS has been selected, click the _Download_ button and download the tar file in a desired folder. Once, downloaded, we can transfer the file to all the Galera VM under /tmp folder. 
+Once the version and OS has been selected, click the _Download_ button and download the tar file in a desired folder. Once, downloaded, we can now transfer the `tar` file to all the Galera VM under /tmp folder. 
 
-Alternatively we can browse the `https://downloads.mariadb.com/MariaDB` folder, this lists all the MariaDB builds since the dawn of time! Can be a confusing place, unless you know what you are doing, I would recommend just using the <https://mariadb.com> and download the version that is needed.
-
-Once downloaded, untar the file to get all the required RPM files for installation.
+Untar the package under `/tmp` on all **three Galera nodes**, this is what it will look like.
 
 ```txt
-[root@galera-71 ~]# ls -rlt
-total 538672
--rw-r--r-- 1 root root 551598080 Jun 11 10:41 mariadb-10.4.13-rhel-7-x86_64-rpms.tar
+[root@galera1 ~]# cd /tmp
 
-[root@galera-71 ~]# tar -xvf mariadb-10.4.13-rhel-7-x86_64-rpms.tar 
-mariadb-10.4.13-rhel-7-x86_64-rpms/
-mariadb-10.4.13-rhel-7-x86_64-rpms/MariaDB-backup-10.4.13-1.el7.centos.x86_64.rpm
-mariadb-10.4.13-rhel-7-x86_64-rpms/MariaDB-backup-debuginfo-10.4.13-1.el7.centos.x86_64.rpm
-mariadb-10.4.13-rhel-7-x86_64-rpms/setup_repository
-mariadb-10.4.13-rhel-7-x86_64-rpms/MariaDB-cassandra-engine-10.4.13-1.el7.centos.x86_64.rpm
-mariadb-10.4.13-rhel-7-x86_64-rpms/MariaDB-cassandra-engine-debuginfo-10.4.13-1.el7.centos.x86_64.rpm
-mariadb-10.4.13-rhel-7-x86_64-rpms/MariaDB-client-10.4.13-1.el7.centos.x86_64.rpm
-mariadb-10.4.13-rhel-7-x86_64-rpms/MariaDB-client-debuginfo-10.4.13-1.el7.centos.x86_64.rpm
-mariadb-10.4.13-rhel-7-x86_64-rpms/MariaDB-common-10.4.13-1.el7.centos.x86_64.rpm
-mariadb-10.4.13-rhel-7-x86_64-rpms/MariaDB-common-debuginfo-10.4.13-1.el7.centos.x86_64.rpm
-mariadb-10.4.13-rhel-7-x86_64-rpms/MariaDB-compat-10.4.13-1.el7.centos.x86_64.rpm
-mariadb-10.4.13-rhel-7-x86_64-rpms/MariaDB-connect-engine-10.4.13-1.el7.centos.x86_64.rpm
-mariadb-10.4.13-rhel-7-x86_64-rpms/MariaDB-connect-engine-debuginfo-10.4.13-1.el7.centos.x86_64.rpm
-mariadb-10.4.13-rhel-7-x86_64-rpms/MariaDB-cracklib-password-check-10.4.13-1.el7.centos.x86_64.rpm
-mariadb-10.4.13-rhel-7-x86_64-rpms/MariaDB-cracklib-password-check-debuginfo-10.4.13-1.el7.centos.x86_64.rpm
-mariadb-10.4.13-rhel-7-x86_64-rpms/MariaDB-devel-10.4.13-1.el7.centos.x86_64.rpm
-mariadb-10.4.13-rhel-7-x86_64-rpms/MariaDB-devel-debuginfo-10.4.13-1.el7.centos.x86_64.rpm
-mariadb-10.4.13-rhel-7-x86_64-rpms/MariaDB-gssapi-server-10.4.13-1.el7.centos.x86_64.rpm
-mariadb-10.4.13-rhel-7-x86_64-rpms/MariaDB-gssapi-server-debuginfo-10.4.13-1.el7.centos.x86_64.rpm
-mariadb-10.4.13-rhel-7-x86_64-rpms/MariaDB-oqgraph-engine-10.4.13-1.el7.centos.x86_64.rpm
-mariadb-10.4.13-rhel-7-x86_64-rpms/MariaDB-oqgraph-engine-debuginfo-10.4.13-1.el7.centos.x86_64.rpm
-mariadb-10.4.13-rhel-7-x86_64-rpms/MariaDB-rocksdb-engine-10.4.13-1.el7.centos.x86_64.rpm
-mariadb-10.4.13-rhel-7-x86_64-rpms/MariaDB-rocksdb-engine-debuginfo-10.4.13-1.el7.centos.x86_64.rpm
-mariadb-10.4.13-rhel-7-x86_64-rpms/MariaDB-server-10.4.13-1.el7.centos.x86_64.rpm
-mariadb-10.4.13-rhel-7-x86_64-rpms/MariaDB-server-debuginfo-10.4.13-1.el7.centos.x86_64.rpm
-mariadb-10.4.13-rhel-7-x86_64-rpms/MariaDB-shared-10.4.13-1.el7.centos.x86_64.rpm
-mariadb-10.4.13-rhel-7-x86_64-rpms/MariaDB-shared-debuginfo-10.4.13-1.el7.centos.x86_64.rpm
-mariadb-10.4.13-rhel-7-x86_64-rpms/MariaDB-test-10.4.13-1.el7.centos.x86_64.rpm
-mariadb-10.4.13-rhel-7-x86_64-rpms/MariaDB-test-debuginfo-10.4.13-1.el7.centos.x86_64.rpm
-mariadb-10.4.13-rhel-7-x86_64-rpms/MariaDB-tokudb-engine-10.4.13-1.el7.centos.x86_64.rpm
-mariadb-10.4.13-rhel-7-x86_64-rpms/MariaDB-tokudb-engine-debuginfo-10.4.13-1.el7.centos.x86_64.rpm
-mariadb-10.4.13-rhel-7-x86_64-rpms/galera-4-26.4.4-1.rhel7.el7.centos.x86_64.rpm
-mariadb-10.4.13-rhel-7-x86_64-rpms/jemalloc-3.6.0-1.el7.x86_64.rpm
-mariadb-10.4.13-rhel-7-x86_64-rpms/jemalloc-devel-3.6.0-1.el7.x86_64.rpm        
-mariadb-10.4.13-rhel-7-x86_64-rpms/libzstd-1.3.4-1.el7.x86_64.rpm
-mariadb-10.4.13-rhel-7-x86_64-rpms/MariaDB-10.4.13-1.el7.centos.src.rpm
-mariadb-10.4.13-rhel-7-x86_64-rpms/repodata/
-mariadb-10.4.13-rhel-7-x86_64-rpms/repodata/267da71a9b198ba71e88c6eb7bb12cc9da29b4784034f2886c7ad2e1890a0ee9-primary.xml.gz      
-mariadb-10.4.13-rhel-7-x86_64-rpms/repodata/368a5f44b987986b67ce45a531ebce26421c731525f3a2ecac8f872056c8892e-filelists.xml.gz    
-mariadb-10.4.13-rhel-7-x86_64-rpms/repodata/b70c8077011f248f520c1401731d1640ca87e54e500b0bf2914f746f555c5b0a-other.xml.gz        
-mariadb-10.4.13-rhel-7-x86_64-rpms/repodata/repomd.xml
-mariadb-10.4.13-rhel-7-x86_64-rpms/repodata/efff565f147f88b3b5b4bd88a331a0a93f71417fb203f08ee1869c03d1ae110a-other.sqlite.bz2    
-mariadb-10.4.13-rhel-7-x86_64-rpms/repodata/a4b310d5ff7eafab4eda4d09730873588e73230cd5341479170c82efcbd6def1-filelists.sqlite.bz2
-mariadb-10.4.13-rhel-7-x86_64-rpms/repodata/7e9fa847e3dd7bd8b958ce6c164ddedd85dc814cc695cc91c0b82c8491b071ca-primary.sqlite.bz2  
-mariadb-10.4.13-rhel-7-x86_64-rpms/README
+[root@galera1 tmp]# ls -rlt
+total 110620
+-rw-r--r--. 1 root root 113274880 Jul 19 12:35 mariadb-enterprise-10.5.10-7-centos-7-x86_64-rpms.tar
+
+[root@s1 tmp]# tar -xvf mariadb-enterprise-10.5.10-7-centos-7-x86_64-rpms.tar
+mariadb-enterprise-10.5.10-7-centos-7-x86_64-rpms/
+mariadb-enterprise-10.5.10-7-centos-7-x86_64-rpms/galera-enterprise-4-26.4.8-1.el7_9.x86_64.rpm
+mariadb-enterprise-10.5.10-7-centos-7-x86_64-rpms/mariadb-columnstore-cmapi-1.4.rpm
+mariadb-enterprise-10.5.10-7-centos-7-x86_64-rpms/jemalloc-3.6.0-1.el7.x86_64.rpm
+mariadb-enterprise-10.5.10-7-centos-7-x86_64-rpms/jemalloc-devel-3.6.0-1.el7.x86_64.rpm
+mariadb-enterprise-10.5.10-7-centos-7-x86_64-rpms/MariaDB-backup-10.5.10_7-1.el7_9.x86_64.rpm
+mariadb-enterprise-10.5.10-7-centos-7-x86_64-rpms/MariaDB-client-10.5.10_7-1.el7_9.x86_64.rpm
+mariadb-enterprise-10.5.10-7-centos-7-x86_64-rpms/MariaDB-common-10.5.10_7-1.el7_9.x86_64.rpm
+mariadb-enterprise-10.5.10-7-centos-7-x86_64-rpms/MariaDB-compat-10.5.10_7-1.el7_9.x86_64.rpm
+mariadb-enterprise-10.5.10-7-centos-7-x86_64-rpms/MariaDB-cracklib-password-check-10.5.10_7-1.el7_9.x86_64.rpm
+mariadb-enterprise-10.5.10-7-centos-7-x86_64-rpms/MariaDB-devel-10.5.10_7-1.el7_9.x86_64.rpm
+mariadb-enterprise-10.5.10-7-centos-7-x86_64-rpms/MariaDB-gssapi-server-10.5.10_7-1.el7_9.x86_64.rpm
+mariadb-enterprise-10.5.10-7-centos-7-x86_64-rpms/MariaDB-hashicorp-key-management-10.5.10_7-1.el7_9.x86_64.rpm
+mariadb-enterprise-10.5.10-7-centos-7-x86_64-rpms/MariaDB-rocksdb-engine-10.5.10_7-1.el7_9.x86_64.rpm
+mariadb-enterprise-10.5.10-7-centos-7-x86_64-rpms/MariaDB-s3-engine-10.5.10_7-1.el7_9.x86_64.rpm
+mariadb-enterprise-10.5.10-7-centos-7-x86_64-rpms/MariaDB-server-10.5.10_7-1.el7_9.x86_64.rpm
+mariadb-enterprise-10.5.10-7-centos-7-x86_64-rpms/MariaDB-shared-10.5.10_7-1.el7_9.x86_64.rpm
+mariadb-enterprise-10.5.10-7-centos-7-x86_64-rpms/MariaDB-spider-engine-10.5.10_7-1.el7_9.x86_64.rpm
+mariadb-enterprise-10.5.10-7-centos-7-x86_64-rpms/MariaDB-xpand-engine-10.5.10_7-1.el7_9.x86_64.rpm
+mariadb-enterprise-10.5.10-7-centos-7-x86_64-rpms/MariaDB-columnstore-engine-10.5.10_7_5.6.2-1.el7_9.x86_64.rpm
+mariadb-enterprise-10.5.10-7-centos-7-x86_64-rpms/MariaDB-columnstore-cmapi-1.5.x86_64.rpm
+mariadb-enterprise-10.5.10-7-centos-7-x86_64-rpms/setup_repository
 ```
 
-A bunch of RPM files will be extracted. We are going to install a specific set of RPMs and keep the others for later if needed, such as `cracklib password check`, `rocksdb engine` etc.
-
-### Check for Old MariaDB Libraries
-
-Use rpm -qa to check if the old 5.x libraries are present, these must be removed before we proceed with the installation. Copy the output from the rpm -q command and use it in the next command to remove the old libraries using rpm -e --nodeps
-
-```txt
-[root@galera-71 ~]# rpm -qa | grep -i mariadb
-mariadb-libs-5.5.70-1.el7_5.x86_64
-
-[root@galera-71 ~]# rpm -qa | grep -i mariadb | xargs rpm -e --nodeps
-```
+A bunch of RPM files will be extracted including the `galera-enterprise-4-26.4.8-1.el7_9.x86_64.rpm`. We are going to install a specific set of RPMs and keep the others for later if needed, such as `cracklib password check`, `rocksdb engine` etc.
 
 ### Install The MariaDB Server
 
-Follow the sequence, use RPM commandline to install `compact and common` RPM files with a single command
+Under the extracted folder, an ececutable script is also available `setup_repository` This is used for creating a local repository based on the extracted binaries. First step is to execute this script and the remainig installation will be a breeze.
 
-Change directory to the extaracted folder and install the common & compact RPM files with the single `rpm -ivh` command
-
-```txt
-[root@galera-71 mariadb-10.4.13-rhel-7-x86_64-rpms]# rpm -ivh MariaDB-common-10.4.13-1.el7.centos.x86_64.rpm MariaDB-compat-10.4.13-1.el7.centos.x86_64.rpm
-warning: MariaDB-common-10.4.13-1.el7.centos.x86_64.rpm: Header V4 DSA/SHA1 Signature, key ID 1bb943db: NOKEY
-Preparing...                          ################################# [100%]
-Updating / installing...
-   1:MariaDB-compat-10.4.13-1.el7.cent################################# [ 50%]
-   2:MariaDB-common-10.4.13-1.el7.cent################################# [100%]
-[root@galera-71 mariadb-10.4.13-rhel-7-x86_64-rpms]#
-```
-
-Install the remaining using `yum -y install`
-
-- yum -y install MariaDB-client-10.4.13-1.el7.centos.x86_64.rpm
-- yum -y install MariaDB-backup-10.4.13-1.el7.centos.x86_64.rpm
-- yum -y install MariaDB-shared-10.4.13-1.el7.centos.x86_64.rpm
-- yum -y install galera-4-26.4.4-1.rhel7.el7.centos.x86_64.rpm
-- yum -y install MariaDB-server-10.4.13-1.el7.centos.x86_64.rpm
-- yum -y install socat
-
-*Note: `socat` is a component that is needed by Galera when the SST method is set to MariaBackup.*
-
-Once all have been installed, we can validate using `rpm -qa` query tool.
+Execute the `setup_repository` script on all three Galera nodes.
 
 ```txt
-[root@galera-71 mariadb-10.4.13-rhel-7-x86_64-rpms]# rpm -qa | grep -i mariadb
-MariaDB-shared-10.4.13-1.el7.centos.x86_64
-MariaDB-server-10.4.13-1.el7.centos.x86_64
-MariaDB-compat-10.4.13-1.el7.centos.x86_64
-MariaDB-backup-10.4.13-1.el7.centos.x86_64
-MariaDB-common-10.4.13-1.el7.centos.x86_64
-MariaDB-client-10.4.13-1.el7.centos.x86_64
+[root@galera1 mariadb-enterprise-10.5.10-7-centos-7-x86_64-rpms]# ./setup_repository
+Repository file successfully created! Please install MariaDB Server with this command:
 
-[root@galera-71 mariadb-10.4.13-rhel-7-x86_64-rpms]# rpm -qa | grep -i galera
-galera-4-26.4.4-1.rhel7.el7.centos.x86_64
+   yum install MariaDB-server
 ```
 
-We now have The latest MariaDB server + Galera installed on one node. Repeat the same steps on the other two MariaDB servers so that `rpm -qa | grep -i mariadb` & `rpm -qa | grep -i galera` shows the same output on all three nodes.
+Now we can simply install MariaDB Enterprise Server, Enterprise Backup, There is no need to specifically install Galera as it's already installed for us we will just need to enable it in the configuration. 
 
-### Start MariaDB server and Secure its Installation
+Keep in mind, the Enterprise subscription price does not include Galera even though it is included in the package, but to use Galera, it's subscription must be purchased. 
 
-Lets start MariaDB server normally and verify its status through `systemctl status` 
+To install the Enterprise server, we just need to do the following on all three nodes. The current directory can be anything now since we have alraedy 
 
 ```txt
-[root@galera-71 ~]# systemctl status mariadb
-● mariadb.service - MariaDB 10.4.13 database server
-   Loaded: loaded (/usr/lib/systemd/system/mariadb.service; disabled; vendor preset: disabled)
-  Drop-In: /etc/systemd/system/mariadb.service.d
-           └─migrated-from-my.cnf-settings.conf
-   Active: active (running) since Thu 2020-06-11 13:28:00 EDT; 31min ago
-     Docs: man:mysqld(8)
-           https://mariadb.com/kb/en/library/systemd/
-  Process: 30747 ExecStartPost=/bin/sh -c systemctl unset-environment _WSREP_START_POSITION (code=exited, status=0/SUCCESS)
-  Process: 30608 ExecStartPre=/bin/sh -c [ ! -e /usr/bin/galera_recovery ] && VAR= ||   VAR=`cd /usr/bin/..; /usr/bin/galera_recovery`; [ $? -eq 0 ]   && systemctl set-environment _WSREP_START_POSITION=$VAR || exit 1 (code=exited, status=0/SUCCESS)
-  Process: 30606 ExecStartPre=/bin/sh -c systemctl unset-environment _WSREP_START_POSITION (code=exited, status=0/SUCCESS)
- Main PID: 30710 (mysqld)
-   Status: "Taking your SQL requests now..."
-   CGroup: /system.slice/mariadb.service
-           └─30710 /usr/sbin/mysqld --wsrep-new-cluster --wsrep_start_position=81187002-ac00-11ea-aed2-e722922ab6a4:261
+[root@galera1 ~]# yum -y install MariaDB-server MariaDB-backup pigz
 
-Jun 11 13:27:57 galera-71 systemd[1]: Starting MariaDB 10.4.13 database server...
-Jun 11 13:27:59 galera-71 sh[30608]: WSREP: Recovered position 81187002-ac00-11ea-aed2-e722922ab6a4:261
-Jun 11 13:27:59 galera-71 mysqld[30710]: 2020-06-11 13:27:59 0 [Note] /usr/sbin/mysqld (mysqld 10.4.13-MariaDB) starting as process 30710 ...
-Jun 11 13:27:59 galera-71 mysqld[30710]: 2020-06-11 13:27:59 0 [Warning] Could not increase number of max_open_files to more than 16364 (request: 32183)
-Jun 11 13:28:00 galera-71 systemd[1]: Started MariaDB 10.4.13 database server.
+Dependencies Resolved
+
+============================================================================================================================================================================================================================================================================================
+ Package                                                                     Arch                                                           Version                                                                   Repository                                                       Size
+============================================================================================================================================================================================================================================================================================
+Installing:
+ MariaDB-backup                                                              x86_64                                                         10.5.10_7-1.el7_9                                                         MariaDB                                                         7.0 M
+ MariaDB-server                                                              x86_64                                                         10.5.10_7-1.el7_9                                                         MariaDB                                                          21 M
+Installing for dependencies:
+ MariaDB-client                                                              x86_64                                                         10.5.10_7-1.el7_9                                                         MariaDB                                                         7.0 M
+ MariaDB-common                                                              x86_64                                                         10.5.10_7-1.el7_9                                                         MariaDB                                                          82 k
+ MariaDB-compat                                                              x86_64                                                         10.5.10_7-1.el7_9                                                         MariaDB                                                         2.2 M
+ galera-enterprise-4                                                         x86_64                                                         26.4.8-1.el7_9                                                            MariaDB                                                         1.2 M
+ pigz                                                                        x86_64                                                         2.3.3-1.el7.centos                                                        extras                                                           68 k
+
+Transaction Summary
+============================================================================================================================================================================================================================================================================================
+Install  2 Packages (+4 Dependent packages)
+
+Total download size: 38 M
+Installed size: 193 M
+Downloading packages:
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Total                                                                                                                                                                                                                                                       319 MB/s |  38 MB  00:00:00
+Running transaction check
+Running transaction test
+Transaction test succeeded
+Running transaction
+  Installing : MariaDB-common-10.5.10_7-1.el7_9.x86_64                                                                                                                                                                                                                                  1/6
+  Installing : MariaDB-compat-10.5.10_7-1.el7_9.x86_64                                                                                                                                                                                                                                  2/6
+  Installing : MariaDB-client-10.5.10_7-1.el7_9.x86_64                                                                                                                                                                                                                                  3/6
+  Installing : galera-enterprise-4-26.4.8-1.el7_9.x86_64                                                                                                                                                                                                                                4/6
+  Installing : MariaDB-server-10.5.10_7-1.el7_9.x86_64                                                                                                                                                                                                                                  5/6
+  Installing : MariaDB-backup-10.5.10_7-1.el7_9.x86_64                                                                                                                                                                                                                                  6/6
+  Verifying  : MariaDB-compat-10.5.10_7-1.el7_9.x86_64                                                                                                                                                                                                                                  1/6
+  Verifying  : MariaDB-backup-10.5.10_7-1.el7_9.x86_64                                                                                                                                                                                                                                  2/6
+  Verifying  : galera-enterprise-4-26.4.8-1.el7_9.x86_64                                                                                                                                                                                                                                3/6
+  Verifying  : MariaDB-client-10.5.10_7-1.el7_9.x86_64                                                                                                                                                                                                                                  4/6
+  Verifying  : MariaDB-common-10.5.10_7-1.el7_9.x86_64                                                                                                                                                                                                                                  5/6
+  Verifying  : MariaDB-server-10.5.10_7-1.el7_9.x86_64                                                                                                                                                                                                                                  6/6
+
+Installed:
+  MariaDB-backup.x86_64 0:10.5.10_7-1.el7_9                                                                                                    MariaDB-server.x86_64 0:10.5.10_7-1.el7_9
+
+Dependency Installed:
+  MariaDB-client.x86_64 0:10.5.10_7-1.el7_9                             MariaDB-common.x86_64 0:10.5.10_7-1.el7_9                             MariaDB-compat.x86_64 0:10.5.10_7-1.el7_9                             galera-enterprise-4.x86_64 0:26.4.8-1.el7_9
+
+Complete!
 ```
 
-MariaDB server has been successfully started, it's time to connect to the MariaDB server using the `mariadb` CLI
+We now have The latest MariaDB Enterprise server + Galera installed on one node. Repeat the same steps on the other two MariaDB servers so that `rpm -qa | grep -i mariadb` & `rpm -qa | grep -i galera` shows the same output on all three nodes.
 
-```txt
-[root@galera-71 ~]# mariadb
-Welcome to the MariaDB monitor.  Commands end with ; or \g.
-Your MariaDB connection id is 8
-Server version: 10.4.13-MariaDB MariaDB Server
+### Setting up Galera
 
-Copyright (c) 2000, 2018, Oracle, MariaDB Corporation Ab and others.
+To Start the Galera, we need to bootstrap the cluster from one of the nodes, but before that, we need to configure all the servers first.
 
-Type 'help;' or '\h' for help. Type '\c' to clear the current input statement.
+Edit the /etc/my.cnf.d/server.cnf and add the following in the `[galera]`, `[mariadb]` & `[sst]` sections
 
-MariaDB [(none)]> select version();
-+-----------------+
-| version()       |
-+-----------------+
-| 10.4.13-MariaDB |
-+-----------------+
-1 row in set (0.000 sec)
-
-MariaDB [(none)]> show create user root@localhost;
-+----------------------------------------------------------------------------------------------------+
-| CREATE USER for root@localhost                                                                     |
-+----------------------------------------------------------------------------------------------------+
-| CREATE USER `root`@`localhost` IDENTIFIED VIA mysql_native_password USING 'invalid' OR unix_socket |
-+----------------------------------------------------------------------------------------------------+
-1 row in set (0.000 sec)
-```
-Something to take note here, the root user is now connected to the OS `root` user using the `unix_socket` plugin. This means, as long as the user can login to the os `root` user, he can connect to the MariaDB running on the same server without a password. 
-
-This behaviur can be changed by simply setting up a new password for the `root` user. Once logged in to the server as the root user, we can do the following to set a root password
-
-```txt
-MariaDB [(none)]> SET PASSWORD FOR root@localhost = PASSWORD('New$uperP@ssword1');
-1 row in set (0.000 sec)
-```
-
-```txt
-[root@galera-71 ~]# mariadb
-ERROR 1045 (28000): Access denied for user 'root'@'localhost' (using password: NO)
-```
-
-Time to secure our MariaDB server using the `mariadb-secure-installation`
-
-```txt
-[root@galera-71 /]# mariadb-secure-installation
-
-NOTE: RUNNING ALL PARTS OF THIS SCRIPT IS RECOMMENDED FOR ALL MariaDB
-      SERVERS IN PRODUCTION USE!  PLEASE READ EACH STEP CAREFULLY!
-
-In order to log into MariaDB to secure it, we'll need the current
-password for the root user. If you've just installed MariaDB, and
-haven't set the root password yet, you should just press enter here.
-
-Enter current password for root (enter for none):
-OK, successfully used password, moving on...
-
-Setting the root password or using the unix_socket ensures that nobody
-can log into the MariaDB root user without the proper authorisation.
-
-You already have your root account protected, so you can safely answer 'n'.
-
-Switch to unix_socket authentication [Y/n] Y
-Enabled successfully!
-Reloading privilege tables..
- ... Success!
-
-
-You already have your root account protected, so you can safely answer 'n'.
-
-Change the root password? [Y/n] Y
-New password:
-Re-enter new password:
-Password updated successfully!
-Reloading privilege tables..
- ... Success!
-
-
-By default, a MariaDB installation has an anonymous user, allowing anyone
-to log into MariaDB without having to have a user account created for
-them.  This is intended only for testing, and to make the installation
-go a bit smoother.  You should remove them before moving into a
-production environment.
-
-Remove anonymous users? [Y/n] Y
- ... Success!
-
-Normally, root should only be allowed to connect from 'localhost'.  This
-ensures that someone cannot guess at the root password from the network.
-
-Disallow root login remotely? [Y/n] Y
- ... Success!
-
-By default, MariaDB comes with a database named 'test' that anyone can
-access.  This is also intended only for testing, and should be removed
-before moving into a production environment.
-
-Remove test database and access to it? [Y/n] Y
- - Dropping test database...
- ... Success!
- - Removing privileges on test database...
- ... Success!
-
-Reloading the privilege tables will ensure that all changes made so far
-will take effect immediately.
-
-Reload privilege tables now? [Y/n] Y
- ... Success!
-
-Cleaning up...
-
-All done!  If you've completed all of the above steps, your MariaDB
-installation should now be secure.
-
-Thanks for using MariaDB!
-```
-
-Take note here that for the prompt, `Switch to unix_socket authentication [Y/n] Y`, we answered "Y" to this question as I wanted to keep my database `root` user linked with my OS `root` user, you can specify "N" here to change this setup and specify your own root password.
-
-If we look closely, we also specified the root password during the secure installation process. This means, if we are not logged in as the OS `root` user, we can still connect to MariaDB using this specific password else we can connect without any password if already connected to the OS `root` user.
-
-### Create the MariaBackup user account
-
-This is important, as Galera needs to have a special account in the database that has the privileges to run `MariaBackup` tool.
-
-```txt
-MariaDB [(none)]> CREATE USER backupuser@localhost IDENTIFIED BY 'SecretP@ssw0rd';
-Query OK, 0 rows affected (0.009 sec)
-
-MariaDB [(none)]> GRANT RELOAD, PROCESS, LOCK TABLES, REPLICATION CLIENT ON *.* TO backupuser@localhost;
-Query OK, 0 rows affected (0.009 sec)
-```
-
-Perform the same setup (creating the backupuser and grants) on the other **two Galera** nodes before proceeding.
-
-Our servers are now ready, time to stop MariaDB processes and define Galera specific configurations
-
-Edit the /etc/my.cnf.d/server.cnf file and edit the `[mariadb]` section as follows
-
-```txt
-[mariadb]
-log_error
-```
-
-This will enable error logging on the server in, always a good idea to keep this enabled to monitor the server properly.
-
-Edit the `[galera]` section as follows, also take note the `innodb_buffer_pool_size`, `innodb_log_file_size` & `max_allowed_packet` are just values for a very small setup, These needs to be adjusted depending on your server size and application requirements.
+***Note:** `[sst]` section needs to be defined as it does not exists by default.*
 
 ```txt
 [galera]
 wsrep_on=ON
-wsrep_provider=/usr/lib64/galera-4/libgalera_smm.so
-wsrep_cluster_address=gcomm://192.168.56.71,192.168.56.72,192.168.56.73
-wsrep_provider_options="pc.weight=2"
+wsrep_provider=/usr/lib64/galera/libgalera_enterprise_smm.so
+wsrep_cluster_address=gcomm://172.31.32.37,172.31.41.102,172.31.34.254
 wsrep_sst_method=mariabackup
-wsrep_sst_auth=backupuser:SecretP@ssw0rd
+wsrep_sst_auth=mysql:
 
+# Local node setup
+wsrep_node_address=172.31.32.37
+wsrep_node_name=galera1
+
+## Data Streaming for large transactions, this will start to stream transactions effecting more than 1000 rows to the other Galera nodes! Only enable if doing one time migration or loading
+## Else the server TPS will be effected of permanently added
+#wsrep_trx_fragment_unit=rows
+#wsrep_trx_fragment_size=1000
+
+#Galera Cache setup for performance as 5 GB, default location is on `datadir`
+wsrep_provider_options="gcache.size=5G; gcache.keep_pages_size=5G; gcache.recover=yes; gcs.fc_factor=0.8;"
+
+[sst]
+inno-backup-opts="--parallel=4"
+inno-apply-opts="--use-memory=8192M"
+compressor="pigz"
+decompressor="pigz -d"
+
+[mariadb]
+log_error=server.log
 binlog_format=row
+
 default_storage_engine=InnoDB
 innodb_autoinc_lock_mode=2
+innodb_lock_schedule_algorithm=FCFS
 innodb_flush_log_at_trx_commit=0
-innodb_buffer_pool_size=512M
-innodb_log_file_size=512M
-max_allowed_packet=256M
+innodb_buffer_pool_size=16G
+innodb_log_file_size=1G
 
-## Galera Node Configuration
-wsrep_node_address=192.168.56.71
-wsrep_node_name=galera-71
+character-set-server = utf8
+collation-server = utf8_unicode_ci
 
 ## Allow server to accept connections on all interfaces.
 bind-address=0.0.0.0
 ```
 
-Let's look through the above section and explain what is the purpose for each line.
+Let's discuss the above variables:
+- **`[galera]`**
+  - **`wsrep_on=ON`**
+    - This enables Galera on the server
+  - **`wsrep_provider=/usr/lib64/galera/libgalera_enterprise_smm.so`**
+    - This is the Enterprise Galera library, make sure the path is correct, the above is for the CentOS/RHEL envuronments using the MariaDB Enterprise server.
+    - The path and filename is different for other OS and builds like community MariaDB.
+    - Validate the path using `SHOW GLOBAL VARIABLES LIKE 'plugin_dir';`
+  - **`wsrep_cluster_address=gcomm://192.168.56.71,192.168.56.72,192.168.56.73`**
+    - This cluster address should have the list of internal IP addresses of rhe Galera nodes without spaces.
+  - **`wsrep_sst_method=mariabackup`**
+    - Galera will use MariaDB Backup to pefrorm full system state transfer SST when a full recovery/rebuild of a node is needed or a new node is added to the cluster.
+  - **`wsrep_sst_auth=mysql:`**
+    - the built-in `mysql@localhost` MariaDB & OS user will be used for MariaDB Galera SST, since `mysql@localhost` is an OS Authenticated used, there is no need to hardcode the password in the config file.
+    - We do however, need to grant **BACKUP privileges to `mysql@localhost`** user once the cluster is up and running.
+  - **`wsrep_node_address`** & **`wsrep_node_name`**
+    - These two variables define the local node and should be unique for each node, the address is the IP address of the current node and node name, well, it's the node name, not necessarily the hostname but any text value that you want to define as the node name
+  - **`wsrep_trx_fragment_unit=rows`** & **`wsrep_trx_fragment_size=1000`**
+    - These two are new features in 10.5 and are used for streaming transactions as soon as the transaction size is larger than 1000 rows as defined in the variables
+  - **`wsrep_provider_options`**
+    - This defines some of the Galera specific properties, the most important is the `gcache.size` This must be large enough to support IST when a node is out of the cluster or down for some time. If the delta data is within the 5GB mark a FAST IST is performed to bring the node in sync with the cluster else a FULL SST is performed. 
+- **`[sst]`**
+  - This section defines the various MariaDB backup parameters for fastest backup/restore operation using parallel compression
+  - make sure `pigz` is installed on all nodes
+  - Parallel threads and memory used for `pigz` can be increased if more CPU / RAM is available on the server. The configured value is considering 32GB RAM and 8 CPU per node.
+  - All these variables are not MariaDB server variables, these are just read by Galera during SST. That's why we can't see these variables using `SHOW GLOBAL VARIABLES` command.
+- **`[mariadb]`**
+  - **`binlog_format=row`**
+    - Galera does not need binary logs in physical files, but ROW based binlog format is needed to be defined
+  - **`innodb_autoinc_lock_mode=2`**
+    - Fast AutoIncrement columns insertions
+  - **`innodb_flush_log_at_trx_commit=0`**
+    - Galera is based on fully sybchronous replication, flush logs at transaction commit = 1 is not needed, this makes it faster when it comes to write performance
+  - **`innodb_buffer_pool_size`**
+    - This variable MUST be configured to be 70% of the total RAM of the server, critical for best performance
+  - **`innodb_log_file_size=1G`**
+    - REDO Log file size, larger file means faster IO performance but longer recovery time, can be lower like 512M or so if the app is not write heavy.
 
-- **`wsrep_on=ON`**
-  - This enables Galera service on the node
-- **`wsrep_provider=/usr/lib64/galera-4/libgalera_smm.so`**
-  - This tells Galera on the location of the Galera libraries. In case you have a custom path selected for installation, this should point to the specific location. Ensure that the `libgalera_smm.so` is available at the location selected.
-- **`wsrep_cluster_address=gcomm://192.168.56.71,192.168.56.72,192.168.56.73`**
-  - This holds the list of all the IP addresses of each node in the galera cluster. At the moment we have only one node available, but we have provided 3 different IP as we are going to setup the other two after this.
-- **`wsrep_provider_options="pc.weight=2"`**
-  - This is **important** for a two data center setup. Set this to `pc.weight=2` for the two nodes in one data center, and `pc.weight=1` for the two nodes on the DR data center. This will define that the primary data center will have the higher weightage and will help establish quorum.
-- **`wsrep_sst_method=mariabackup`**
-  - This is very important, this is used to define how the new nodes or SST is handled. Configure it as using `mariabackup` this will make sure that the node is always available even when it's playing the part of a Doner's.
-    - Refer to <https://mariadb.com/kb/en/mariabackup-sst-method/> for full details on this process.
-- **`wsrep_sst_auth=backupuser:SecretP@ssw0rd`**
-  - This is also very **important**, it let's Galera know the user **name** and **password** to be used for the internal SST events. For this we have already created the `backupuser@localhost` account and granted the necessary priviliges to be able to run mariabackup on all the ndoes already.
-- **`binlog_format=row`**
-  - Bionary logging is required by the Galera cluster, it does not write these logs on disk because we have not specified any `log_bin` parameter. Galera will just use the transaction logs internally for sending the transaction to the other nodes.
-- **`default_storage_engine=InnoDB`**
-  - Since Galera cluster can only support InnoDB engine, its a good idea to keep it as a default.
-- **`innodb_autoinc_lock_mode=2`**
-  - This is an important parameter specifically for auto increment keys. If this parameter is set to any other values, inserts on AUTO_INCREMENT enabled tables may face deadlocks
-- **`innodb_flush_log_at_trx_commit=1`**
-  - To Ensure no data loss in case of power failure.
-- **`innodb_buffer_pool_size=256M`**
-  - This must be set to **70%** of the total physical RAM in the server. This is quite critical for performance. We are using 512M here because of the tiny server configuration.
-- **`innodb_log_file_size=512M`**
-  - Another important parameter for improving **write** performance. This defines the redo log file size on the server, keep it as big as possible to avoid frequent flushing and IO. On a production server, This can be safely set to 1GB or more depending on the transaction volume size. 
-- **`max_allowed_packet=256M`**
-  - This controlls what is the max size of a single transaction. Having a large enough value can improve **write** performance a good measure would be set it as large as the largest BLOB / CLOB (TEXT) that can be written to the server. This ensure the data goes to the server in one single trip.
-- **`wsrep_node_address=192.168.56.71`**
-  - This is important, this parameter tells galera the IP of this particular node. Each node will have their respective IP addresses mentioned for this property, take note!
-- **`wsrep_node_name=galera-71`**
-  - The name of this Galera Node, its up to us to chose what we want and should be in reference to individual node, the above config is for the node 71, for node 72 and 73, we will have to chose a different node name.
-- **`bind-address=0.0.0.0`**
-  - Allows connection from any interface, ensure we dont bind the server to 127.0.0.1
+Once the values are in and saved for each node according to the above explanation, we can now start the cluster.
 
-We can't yet start the server because it will now look for the other two Galera nodes which are not ready yet.
+To start the cluster, we need to bootstrap one node using `galera_new_cluster` command, once started, all the other nodes are started using standard `systemctl start mariadb` command. Once the cluster is started, after that nodes can be started and stopped as per normal using `systemctl start/stop mariadb` 
 
-We will now repeat the above setup on all three nodes and make sure to change `wsrep_node_address` & `wsrep_node_name` for each node accordingly.
-
-Asuming that we have 4 nodes in total, 2 nodes on Primary DC and 2 nodes on DR DC. The weightage needs to setup as `wsrep_provider_options="pc.weight=2"` for the two primary nodes and `wsrep_provider_options="pc.weight=1"` for the two nodes in the secondary DC.
-
-But if we have a setup on a single DC with three nodes then this weightage is not very important. It is only important if the servers are spread across data centers with even number of nodes in total.
-
-The `/etc/my.cnf.d/server.cnf` can simply be copied to all the other nodes and just modify the above three parameters accordingly (`wsrep_node_address`, `wsrep_node_name` & `wsrep_provider_options="pc.weight=2"`)
-
-### Start Galera Cluster
-
-Once the other two nodes have been setup as per above, its time to bootstrap the galera cluster from the first node.
-
-execute `galera_new_cluster` on the first VM and verify the server error log file under the /var/lib/mysql location. If the command completes successfully without errors, it meaans Galera is now ready for new nodes.
+Let's start the cluster
 
 ```txt
-[root@galera-71 ~]# galera_new_cluster
+[root@galera1 ~]# galera_new_cluster
+
+[root@galera1 ~]# mariadb -uroot
+Welcome to the MariaDB monitor.  Commands end with ; or \g.
+Your MariaDB connection id is 7
+Server version: 10.5.10-7-MariaDB-enterprise MariaDB Enterprise Server
+
+Copyright (c) 2000, 2018, Oracle, MariaDB Corporation Ab and others.
+
+Type 'help;' or '\h' for help. Type '\c' to clear the current input statement.
+
+MariaDB [(none)]> show global status like 'wsrep_cluster_size';
++--------------------+-------+
+| Variable_name      | Value |
++--------------------+-------+
+| wsrep_cluster_size | 1     |
++--------------------+-------+
+1 row in set (0.004 sec)
 ```
 
-Connect to mariadb client and check Galera cluster status
+The global status `wsrep_cluster_size` shows the number of nodes currently in the cluster, let's start the other two nodes and verify the cluster size.
 
 ```txt
 MariaDB [(none)]> show global status like 'wsrep_cluster_size';
-+-----------------------+-------+
-| Variable_name         | Value |
-+-----------------------+-------+
-| wsrep_cluster_size    | 1     |
-+-----------------------+-------+
-1 rows in set (0.000 sec)
-```
-
-This indicates that Galera is running and it has 1 node in the cluster, which is itself. Lets start the otehr two nodes using the standard `systemctl start mariadb` command. We cannot run `galera_new_cluster` on other nodes as the bootstrap has already start from a VM.
-
-Once the other two VMs have been started, execute the `show global status` again to check
-
-```txt
-MariaDB [(none)]> show global status like '%wsrep_cluster_size';
 +--------------------+-------+
 | Variable_name      | Value |
 +--------------------+-------+
@@ -472,10 +314,6 @@ MariaDB [(none)]> show global status like '%wsrep_cluster_size';
 +--------------------+-------+
 1 row in set (0.001 sec)
 ```
-
-We now have a Galera cluster up and running! At this point, we can connect to any node and perform DDL/DML and everything we do should get synced up with the other two nodes in the cluster.
-
-Next we will install MaxScale 2.3/2.4 and configure it connect to this Galera clustster.
 
 ### Restarting a Galera Cluster
 
@@ -496,86 +334,77 @@ It may not be safe to bootstrap the cluster from this node. It was not the last 
 To force cluster bootstrap with this node, edit the grastate.dat file manually and set safe_to_bootstrap to 1
 ```
 
-## MaxScale 2.3/2.4
+### SST User
 
-Setup and config is the same for 2.3 or 2.4
+As we know, we have defined **`mysql@localhost`** user as the SST user who will be running Maria Backup when SST is needed, but we still need to grant the necessary privileges required by the user running Maria Backup.
+
+Execute the following command from any of the three nodes, make suree all the  nodes are running as a 3 node cluster. 
+
+```sql
+GRANT RELOAD, PROCESS, LOCK TABLES, REPLICATION CLIENT ON *.* TO mysql@localhost;
+```
+
+## MaxScale 2.5
+
+Setup and configuration is the same for both MaxScale 2.4 and 2.5
+
+### MaxScale Database User Setup
+
+Connect to any of the Galera node and execute the following statements to create the `maxuser` and grants necessary for it to work with MaxScale.
+
+```sql
+CREATE USER maxuser@'%' IDENTIFIED BY 'SecretP@ssw0rd';
+GRANT SELECT ON mysql.* TO maxuser@'%';
+GRANT SHOW DATABASES, REPLICATION CLIENT ON *.* TO maxuser@'%';
+GRANT SUPER ON *.* TO maxuser@'%';
+```
 
 ### Install MaxScale
 
-Download the MaxScale RPM file from the <https://mariadb.com/downloads/#mariadb_platform-mariadb_maxscale> for the specific server, we will be downloading CentOS 7 2.4.10 version which is the latest GA at this point in time.
+Download the MaxScale RPM file from the <https://mariadb.com/downloads/#mariadb_platform-mariadb_maxscale> for the specific OS, we will be downloading CentOS7 2.5.13 version which is the latest GA at this point in time.
 
-Download the RPM and transfer the file to the MaxScale VM. Like for MariaDB, I will download the RPM directly on the MaxScale VM and run through the installation process.
+Download the RPM and transfer the file to the MaxScale VM. Like we did for MariaDB, I have already downloaded the file to the MaxScale node.
 
 ```txt
-[root@maxscale-70 tmp]# wget https://downloads.mariadb.com/MaxScale/2.4.10/centos/7/x86_64/maxscale-2.4.10-1.centos.7.x86_64.rpm
---2019-04-24 15:59:14--  https://downloads.mariadb.com/MaxScale/2.4.10/centos/7/x86_64/maxscale-2.4.10-1.centos.7.x86_64.rpm
-Resolving downloads.mariadb.com (downloads.mariadb.com)... 51.255.85.11
-Connecting to downloads.mariadb.com (downloads.mariadb.com)|51.255.85.11|:443... connected.
-HTTP request sent, awaiting response... 200 OK
-Length: 24290292 (23M) [application/x-redhat-package-manager]
-Saving to: ‘maxscale-2.4.10-1.centos.7.x86_64.rpm’
-
-100%[=============================================================================>] 24,290,292  2.38MB/s   in 15s    
-
-2019-04-24 15:59:30 (1.57 MB/s) - ‘maxscale-2.4.10-1.centos.7.x86_64.rpm’ saved [24290292/24290292]
-
-[root@maxscale-70 tmp]# ls -lrt
-total 23728
--rw-------. 1 root root        0 Jan 28 13:52 yum.log
--rw-r--r--  1 root root 24290292 Apr 18 04:00 maxscale-2.4.10-1.centos.7.x86_64.rpm
-[root@maxscale-70 tmp]# 
+[root@max1 ~]# ls -rlt
+total 43440
+-rw-r--r--. 1 root root 44463256 Jun  4 11:57 maxscale-2.5.13-1.rhel.7.x86_64.rpm
 ```
 
-The MaxScale 2.4.10 has been downloaded on the VM, we can now use `yum` to install this. Remember to remove the old MariaDB packages like how we did for the MariaDB server installation.
+Now we are ready to install MaxScale 2.5 on this node.
 
 ```txt
-[root@maxscale-70 tmp]# rpm -qa | grep -i mariadb
-mariadb-libs-5.5.70-1.el7_5.x86_64
-[root@maxscale-70 tmp]# rpm -e --nodeps mariadb-libs-5.5.70-1.el7_5.x86_64
-```
-
-Now we are ready to install MaxScale 2.3 on this new VM.
-
-```txt
-[root@maxscale-70 tmp]# yum -y install maxscale-2.4.10-1.centos.7.x86_64.rpm
-Loaded plugins: fastestmirror
-Examining maxscale-2.4.10-1.centos.7.x86_64.rpm: maxscale-2.4.10-1.x86_64
-Marking maxscale-2.4.10-1.centos.7.x86_64.rpm to be installed
-Resolving Dependencies
---> Running transaction check
----> Package maxscale.x86_64 0:2.4.10-1 will be installed
---> Finished Dependency Resolution
+[root@max1 ~]# yum -y install maxscale-2.5.13-1.rhel.7.x86_64.rpm
 
 Dependencies Resolved
 
-=======================================================================================================================
- Package               Arch                Version                Repository                                      Size
-=======================================================================================================================
+============================================================================================================================================================================================================================================================================================
+ Package                                                       Arch                                                       Version                                                                Repository                                                                            Size
+============================================================================================================================================================================================================================================================================================
 Installing:
- maxscale              x86_64              2.4.10-1                /maxscale-2.4.10-1.centos.7.x86_64               92 M
+ maxscale                                                      x86_64                                                     2.5.13-1.rhel.7                                                        /maxscale-2.5.13-1.rhel.7.x86_64                                                     167 M
+Installing for dependencies:
+ gnutls                                                        x86_64                                                     3.3.29-9.el7_6                                                         base                                                                                 680 k
+ libatomic                                                     x86_64                                                     4.8.5-44.el7                                                           base                                                                                  51 k
+ nettle                                                        x86_64                                                     2.7.1-9.el7_9                                                          updates                                                                              328 k
+ trousers                                                      x86_64                                                     0.3.14-2.el7                                                           base                                                                                 289 k
 
 Transaction Summary
-=======================================================================================================================
-Install  1 Package
-
-Total size: 92 M
-Installed size: 92 M
-Downloading packages:
-Running transaction check
-Running transaction test
-Transaction test succeeded
-Running transaction
-  Installing : maxscale-2.4.10-1.x86_64                                                                             1/1 
-  Verifying  : maxscale-2.4.10-1.x86_64                                                                             1/1 
+============================================================================================================================================================================================================================================================================================
+Install  1 Package (+4 Dependent packages)
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Total                                                                                                                                                                                                                                                       9.6 
+...
+...
+...
 
 Installed:
-  maxscale.x86_64 0:2.4.10-1                                                                                            
+  maxscale.x86_64 0:2.5.13-1.rhel.7
+
+Dependency Installed:
+  gnutls.x86_64 0:3.3.29-9.el7_6                                        libatomic.x86_64 0:4.8.5-44.el7                                        nettle.x86_64 0:2.7.1-9.el7_9                                        trousers.x86_64 0:0.3.14-2.el7
 
 Complete!
-
-[root@maxscale-70 tmp]# rpm -qa | grep maxscale
-maxscale-2.4.10-1.x86_64
-[root@maxscale-70 tmp]# 
 ```
 
 MaxScale is now installed, we can now configure /etc/maxscale.cnf file to connect to the three Galera nodes.
@@ -589,36 +418,38 @@ This setup will do the following for the applicaiton.
 - Auto Connection Failover
 - Auto Transaction Replay in case of a node failure
 - Monitor the Galera cluster and provide a birdseye view the entire setup.
+- Sticky setting for Master failover
+- Make the Galera cluster available even while SST is being performed
 
 ### MaxScale Configuration
 
 It's time to edit the /etc/maxscale.cnf file and configure it to connect to our three 
 node Galera cluster
 
-Edit the /etc/maxscale.cnf file and delete all of it's contents and then insert the following set of configurations.
+Edit the **`/etc/maxscale.cnf`** file and delete all of it's contents and then insert the following set of configurations.
 
 ```txt
 [maxscale]
 threads=auto
 
 # List of servers in the Cluster
-[Galera-71]
+[Galera-1]
 type=server
-address=192.168.56.71
+address=172.31.32.37
 port=3306
 protocol=MariaDBBackend
 priority=1
 
-[Galera-72]
+[Galera-2]
 type=server
-address=192.168.56.72
+address=172.31.41.102
 port=3306
 protocol=MariaDBBackend
 priority=2
 
-[Galera-73]
+[Galera-3]
 type=server
-address=192.168.56.73
+address=172.31.34.254
 port=3306
 protocol=MariaDBBackend
 priority=3
@@ -627,23 +458,27 @@ priority=3
 [Galera-Monitor]
 type=monitor
 module=galeramon
-servers=Galera-71,Galera-72,Galera-73
+servers=Galera-1,Galera-2,Galera-3
 user=maxuser
 password=SecretP@ssw0rd
 
-monitor_interval=2500
+monitor_interval=2000
 use_priority=true
 available_when_donor=true
+
+# This will ensure that the current master remains the master as long as it's up and dunning
+disable_master_failback=true
+backend_connect_timeout=3s
+backend_write_timeout=3s
+backend_read_timeout=3s
 
 # Galera Read/Write Splitter service
 [Galera-RW-Service]
 type=service
 router=readwritesplit
-servers=Galera-71,Galera-72,Galera-73
+servers=Galera-1,Galera-2,Galera-3
 user=maxuser
 password=SecretP@ssw0rd
-
-
 master_reconnection=true
 transaction_replay=true
 transaction_replay_retry_on_deadlock=true
@@ -662,18 +497,18 @@ Save and exit the `/etc/maxscale.cnf`, let's review the above configuration and 
 
 - **`[maxscale]`**
   - This is the common section for maxscale configration and usually contains log file details and the number of threads maxscale uses. We have given _threads=auto_ to let MaxScale use the number of available cores in the CPU and spawn threads accordingly. Else we can use a static numnber like 2, 4 or 16 etc.
-- Next set of sections (`[Galera-71]`) lists the servers we want MaxScale to monitor and use. Each section name is up to us what we want to call the server. I have used the following to indicate thir IP address
-  - Galera-71
-  - Galera-72
-  - Galera-73
-- Based on the above setup, Galera-71 has the highest priority=1, this will always be the Master node for MaxScale, if down a server with lower priority will be selected as Master.
-  - Refer to <https://mariadb.com/kb/en/mariadb-maxscale-23-galera-monitor/#interaction-with-server-priorities>
+- Next set of sections (`[Galera-1]`) lists the servers we want MaxScale to monitor and use. Each section name is up to us what we want to call the server. I have used the following to indicate thir IP address
+  - Galera-1
+  - Galera-2
+  - Galera-3
+- Based on the above setup, Galera-1 has the highest priority=1, this will always be the Master node for MaxScale, if down a server with lower priority will be selected as Master.
+  - Refer to <https://mariadb.com/kb/en/mariadb-maxscale-25-galera-monitor/#use_priority> for Galera monitor configuration parameters.
 - **`[Galera-Monitor]`**
   - This section of the configuration tells MaxScale about how to monitor the servers and what type of servers are those.
-  - Refer to <https://mariadb.com/kb/en/mariadb-maxscale-23-galera-monitor/> for details on available options for a Galera Monitor
+  - Refer to <https://mariadb.com/kb/en/mariadb-maxscale-25-galera-monitor/#galera-monitor> for details on available options for a Galera Monitor
     - **`module=galeramon`**
       - This indicates that the cluster to monitor is a Galera cluster, maxscale will handle it accordingly.
-    - **`servers=Galera-71,Galera-72,Galera-73`**
+    - **`servers=Galera-1,Galera-2,Galera-3`**
       - Tells which servers to monitor. The server names are coma separated, these names should be the same names we configured in the list of server section before.
       - Normally all the servers defined in the cluster area listed here unless for a very specific reason we want to ignore a specific node we can remove it from this `servers` property.
     - **`user=maxuser`**
@@ -688,12 +523,14 @@ Save and exit the `/etc/maxscale.cnf`, let's review the above configuration and 
       - This tells MaxScale to use the `priority` setup in the server's configuration. Priority is used by MaxScale to identify the `Master` node, the node with the smallest priority number is treated as Primary node for writes while others for reads. If it's desired that MaxScale selects a random node as master, then this property can be set to **false**
     - **`available_when_donor=true`**
       - This is one of the important parameters which tells MaxScale to use Galera node even when it's playing a DONOR's role. This works together with the server configuration done earlier in the `server.cnf` file as `wsrep_sst_method=mariabackup`, without this change in the server side config, MaxScale can't use the donor node normally.
+    - **`disable_master_failback=true`** 
+      - This makes sure that the current Master remains the Master as long as the node is up and running. This will increase the stability of the transaction with minimum disaturbance to the application.
 - **`[Galera-RW-Service]`**
   - This section controls the Read / Write splitting and controls how connections and ongoing transactions are handlked in case of node failures.
-  - Refer to <https://mariadb.com/kb/en/mariadb-maxscale-23-readwritesplit> for details on various avilable options
+  - Refer to <https://mariadb.com/kb/en/mariadb-maxscale-25-readwritesplit/> for details on various avilable options
     - **`router=readwritesplit`**
       - Tells that this section is a router and it's for R/W splitting
-    - **`servers=Galera-71,Galera-72,Galera-73`**
+    - **`servers=Galera-1,Galera-2,Galera-3`**
       - This tells MaxScale which servers are to be used for R/W splitting. You can remove a server from the list in case you don't want Reads or Writes going to that node. But usually all the servers are mentioned here.
     - **`user=maxuser`**
       - This tells which DB user to use for monitoring the cluster. We will need to create this user in the database before starting the maxscale service. Limited DB access is required for this user.
@@ -708,10 +545,10 @@ Save and exit the `/etc/maxscale.cnf`, let's review the above configuration and 
       - Automatically Replays the inflight transactions if the Master node goes down. With this enabled, applications will not face any transaction loss or failures in case of a lost node.
     - **`transaction_replay_retry_on_deadlock=true`**
       - MaxScale automatiacally retrys the transaction that failed due to a deadlock on the database. Can be very helpful on the Galera cluster.
-      - refer to <https://mariadb.com/kb/en/mariadb-maxscale-24-readwritesplit/#transaction_replay_retry_on_deadlock> for more details.
+      - refer to <https://mariadb.com/kb/en/mariadb-maxscale-25-readwritesplit/#transaction_replay_retry_on_deadlock> for more details.
     - **`slave_selection_criteria=ADAPTIVE_ROUTING`**
       - There are multiple ways MaxScale can select a node for READ queries. ADAPTIVE_ROUTING tells MaxScale to select a node which has the best average response time.
-      - Look at <https://mariadb.com/kb/en/mariadb-maxscale-23-readwritesplit/#slave_selection_criteria> for available options
+      - Look at <https://mariadb.com/kb/en/mariadb-maxscale-25-readwritesplit/#slave_selection_criteria> for available options
 - **`[Galera-Listener]`**
   - This is the listener for the R/W splitter service `[Galera-Service]`
     - **`protocol=MariaDBClient`**
@@ -720,316 +557,129 @@ Save and exit the `/etc/maxscale.cnf`, let's review the above configuration and 
         - When application connect to MariaDB, they will connect through MaxScale using MaxScale IP and this **PORT**
 - `[MaxAdmin-Service]` & `[MaxAdmin-Listener]`
   - These are internal services to MaxScale, check the MariaDB MaxSCale Knowledgbase for more details.
-
+-
 ### Usig MaxScale
 
-Let's start MaxScale Service and use it to connect to the Galera Cluster.
-
-```txt
-[root@maxscale-70 ~]# systemctl restart maxscale
-
-[root@maxscale-70 ~]# maxctrl list servers
-┌───────────┬───────────────┬──────┬─────────────┬───────┬──────┐
-│ Server    │ Address       │ Port │ Connections │ State │ GTID │
-├───────────┼───────────────┼──────┼─────────────┼───────┼──────┤
-│ Galera-71 │ 192.168.56.71 │ 3306 │ 0           │ Down  │      │
-├───────────┼───────────────┼──────┼─────────────┼───────┼──────┤
-│ Galera-72 │ 192.168.56.72 │ 3306 │ 0           │ Down  │      │
-├───────────┼───────────────┼──────┼─────────────┼───────┼──────┤
-│ Galera-73 │ 192.168.56.73 │ 3306 │ 0           │ Down  │      │
-└───────────┴───────────────┴──────┴─────────────┴───────┴──────┘
-```
-
-`maxctrl` is an internal MaxScale interface that can tell us a lot of info about the various MaxScale services and their status. Here we have used it to list the servers.
-
-Important thing to take note here is that Galera don't use GTID, that's why the column is empty. To see if the server nodes are in sync or not, we can rely on the MaxScale output as shown later on.
-
-MaxScale is showing the cluster as currently down even though the servers are up and running. Let's check the Galera internal status.
-
-```txt
-[root@galera-71 ~]# mariadb -uroot -p
-Enter password: **********
-Welcome to the MariaDB monitor.  Commands end with ; or \g.
-Your MariaDB connection id is 321
-Server version: 10.3.14-MariaDB MariaDB Server
-
-Copyright (c) 2000, 2018, Oracle, MariaDB Corporation Ab and others.
-
-Type 'help;' or '\h' for help. Type '\c' to clear the current input statement.
-
-MariaDB [(none)]> show global status like '%wsrep_cluster_size';
-+--------------------+-------+
-| Variable_name      | Value |
-+--------------------+-------+
-| wsrep_cluster_size | 3     |
-+--------------------+-------+
-1 row in set (0.002 sec)
-```
-
-Indeed, Galera is running with three online nodes.
-
-Let's review the MaxSCale log under `/var/log/maxscale/maxscale.log`
-
-```txt
-2019-04-25 00:55:28   error  : [Galera-Monitor] Failed to connect to server 'Galera-71' ([192.168.56.71]:3306) when checking monitor user credentials and permissions: Host '192.168.56.70' is not allowed to connect to this MariaDB server
-2019-04-25 00:55:28   error  : [Galera-Monitor] Failed to connect to server 'Galera-72' ([192.168.56.72]:3306) when checking monitor user credentials and permissions: Host '192.168.56.70' is not allowed to connect to this MariaDB server
-2019-04-25 00:55:28   error  : [Galera-Monitor] Failed to connect to server 'Galera-73' ([192.168.56.73]:3306) when checking monitor user credentials and permissions: Host '192.168.56.70' is not allowed to connect to this MariaDB server
-```
-
-We can see the above errors, it seems MaxSCale is not able to connect to the backend servers. This is because we have yet to create the user **maxuser** on the database.
-
-Let's create these two users and restart MaxScale service.
-
-Connect to any of the three Galera nodes and create the following users.
-
-```txt
-MariaDB [(none)]>  create user maxuser@'%' identified by 'secretpassword';
-Query OK, 0 rows affected (0.021 sec)
-
-MariaDB [(none)]> grant select on mysql.* to maxuser@'%';
-Query OK, 0 rows affected (0.017 sec)
-
-MariaDB [(none)]> grant show databases on *.* to maxuser@'%';
-Query OK, 0 rows affected (0.015 sec)
-```
-
-Limited SELECT privilege is needed on `mysql.*`, and `SHOW DATABASE` on all databases.
-
-With user creation and grants done, we should be able to verify this user from any of the Galera nodes, this user should already exist there thanks to Galera's internal replication.
-
-Now restart the MaxScale service `systemctl restart maxscale` and verify the MaxScale logs, there shold be no errors there.
-
-Let's restart MaxScale node and retry `maxctrl list servers` and `services`
-
-```txt
-[root@mx-70 ~]# maxctrl list servers;
-┌───────────┬───────────────┬──────┬─────────────┬─────────────────────────┬──────┐
-│ Server    │ Address       │ Port │ Connections │ State                   │ GTID │
-├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼──────┤
-│ Galera-71 │ 192.168.56.71 │ 3306 │ 0           │ Master, Synced, Running │      │
-├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼──────┤
-│ Galera-72 │ 192.168.56.72 │ 3306 │ 0           │ Slave, Synced, Running  │      │
-├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼──────┤
-│ Galera-73 │ 192.168.56.73 │ 3306 │ 0           │ Slave, Synced, Running  │      │
-└───────────┴───────────────┴──────┴─────────────┴─────────────────────────┴──────┘
-
-[root@mx-70 ~]# maxctrl list services;
-┌───────────────────┬────────────────┬─────────────┬───────────────────┬─────────────────────────────────┐
-│ Service           │ Router         │ Connections │ Total Connections │ Servers                         │
-├───────────────────┼────────────────┼─────────────┼───────────────────┼─────────────────────────────────┤
-│ Galera-RW-Service │ readwritesplit │ 0           │ 0                 │ Galera-71, Galera-72, Galera-73 │
-└───────────────────┴────────────────┴─────────────┴───────────────────┴─────────────────────────────────┘
-```
-
-We have Galera now running with Galera-71 as the Master node based on our **priority** setup.
-
-Important thing to take note that as long as one see "Synced" in the status, one can be sure that the nodes are in sync. Since Galera don't use GTID, this one of the ways to tell if the nodes are in sync or not.s
-
-Let's Check the Monitors.
-
-```txt
-[root@maxscale-70 ~]# maxctrl list monitors
-┌────────────────┬─────────┬─────────────────────────────────┐
-│ Monitor        │ State   │ Servers                         │
-├────────────────┼─────────┼─────────────────────────────────┤
-│ Galera-Monitor │ Running │ Galera-71, Galera-72, Galera-73 │
-└────────────────┴─────────┴─────────────────────────────────┘
-```
-
-We have a Galera-Monitor running which is Monitoring all three servers.
-
-Using maxctrl commands we can monitor MaxScale and its services along with the backend servers.
-
-### Connecting to MaxScale as a Client
-
-We need to create an application user which the apps will use to connect to MaxScale. This user will have Read/Write access to application specific database.
-
-Connect to any of the Galera nodes and create the application user with ncessary grants.
-
-```txt
-MariaDB [(none)]> create user app_user@'%' identified by 'secretpassword';
-Query OK, 0 rows affected (0.019 sec)
-
-MariaDB [(none)]> create database app_db;
-Query OK, 1 row affected (0.011 sec)
-
-MariaDB [(none)]> grant all on app_db.* to app_user@'%';
-Query OK, 0 rows affected (0.014 sec)
-```
-
-In this specific test, we have created a new user `app_user` which can connect from any host because of `'%'` as the host, and created a new database `app_db`. We have also given full access on **app_db** and all its objects to the new user `app_user`.
-
-A quick check on the grants.
-
-```txt
-MariaDB [(none)]> show grants for app_user@'%';
-+---------------------------------------------------------------------------------------------------------+
-| Grants for app_user@%                                                                                   |
-+---------------------------------------------------------------------------------------------------------+
-| GRANT USAGE ON *.* TO 'app_user'@'%' IDENTIFIED BY PASSWORD '*F89FFE84BFC48A876BC682C4C23ABA4BF64711A4' |
-| GRANT ALL PRIVILEGES ON `app_db`.* TO 'app_user'@'%'                                                    |
-+---------------------------------------------------------------------------------------------------------+
-2 rows in set (0.000 sec)
-```
-
-Now we can connect to MaxScale R/W splitter service using the R/W listener configured at **port 4006**
-
-From any of the Galera nodes, connect to MaxScale IP using `mariadb` CLI.
-
-*Note: This can also be done by installing MariaDB-client on the MaxScale node and connecting to it using that client instead of using one of the Galera nodes to connect to MaxScale*
-
-```txt
-[root@galera-71 ~]# mariadb -uapp_user -p -h192.168.56.70 -P4006
-Enter password: **********
-Welcome to the MariaDB monitor.  Commands end with ; or \g.
-Your MariaDB connection id is 3
-Server version: 10.3.14-MariaDB MariaDB Server
-
-Copyright (c) 2000, 2018, Oracle, MariaDB Corporation Ab and others.
-
-Type 'help;' or '\h' for help. Type '\c' to clear the current input statement.
+Let's start MaxScale Service and use it to connect to the Galera Cluster. We need to make sure that the IP addresses defined in the `[Galera-1], [Galera-2] & [Galera-3]` are correct. Furthermore, the USER `maxuser` is already created with the defined password and required GRANT as defined in the **`MaxScale Database User Setup`** section
 
 ```
+[root@max1 ~]# systemctl start maxscale
+[root@max1 ~]# systemctl status maxscale
+● maxscale.service - MariaDB MaxScale Database Proxy
+   Loaded: loaded (/usr/lib/systemd/system/maxscale.service; enabled; vendor preset: disabled)
+   Active: active (running) since Mon 2021-07-19 17:28:30 UTC; 5min ago
+  Process: 21260 ExecStart=/usr/bin/maxscale (code=exited, status=0/SUCCESS)
+  Process: 21257 ExecStartPre=/usr/bin/install -d /var/lib/maxscale -o maxscale -g maxscale (code=exited, status=0/SUCCESS)
+  Process: 21255 ExecStartPre=/usr/bin/install -d /var/run/maxscale -o maxscale -g maxscale (code=exited, status=0/SUCCESS)
+ Main PID: 21262 (maxscale)
+   CGroup: /system.slice/maxscale.service
+           └─21262 /usr/bin/maxscale
 
-- **-h** defines the host IP to connec to, **-P** (Capital "P") specifies the port number
-
-We have successfully connected to MasScale on its R/W splitter listener port using the app_user.
-
-Now we can check maxscale status to see if we actually see a new user connected, on the MaxScale node execute the following
-
-```txt
-root@maxscale-70 ~]# maxctrl list servers
-┌───────────┬───────────────┬──────┬─────────────┬─────────────────────────┬──────┐
-│ Server    │ Address       │ Port │ Connections │ State                   │ GTID │
-├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼──────┤
-│ Galera-71 │ 192.168.56.71 │ 3306 │ 1           │ Master, Synced, Running │      │
-├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼──────┤
-│ Galera-72 │ 192.168.56.72 │ 3306 │ 1           │ Slave, Synced, Running  │      │
-├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼──────┤
-│ Galera-73 │ 192.168.56.73 │ 3306 │ 1           │ Slave, Synced, Running  │      │
-└───────────┴───────────────┴──────┴─────────────┴─────────────────────────┴──────┘
+Jul 19 17:28:30 max1 maxscale[21262]: 'Galera-3' sent version string '10.5.10-7-MariaDB-enterprise'. Detected type: 'MariaDB', version: 10.5.10.
+Jul 19 17:28:30 max1 maxscale[21262]: Server 'Galera-3' charset: utf8
+Jul 19 17:28:30 max1 maxscale[21262]: Server changed state: Galera-1[172.31.32.37:3306]: master_up. [Down] -> [Master, Synced, Running]
+Jul 19 17:28:30 max1 maxscale[21262]: Server changed state: Galera-2[172.31.41.102:3306]: slave_up. [Down] -> [Slave, Synced, Running]
+Jul 19 17:28:30 max1 maxscale[21262]: Server changed state: Galera-3[172.31.34.254:3306]: slave_up. [Down] -> [Slave, Synced, Running]
+Jul 19 17:28:30 max1 maxscale[21262]: Starting a total of 1 services...
+Jul 19 17:28:30 max1 maxscale[21262]: (Galera-Listener) Listening for connections at [::]:4006
+Jul 19 17:28:30 max1 maxscale[21262]: Service 'Galera-RW-Service' started (1/1)
+Jul 19 17:28:30 max1 systemd[1]: Started MariaDB MaxScale Database Proxy.
+Jul 19 17:28:31 max1 maxscale[21262]: Read 4 user@host entries from 'Galera-1' for service 'Galera-RW-Service'.
 ```
 
-We now see **ONE** connection on all the three nodes. Whenever a client connects to MaxScale listener port, internally MaxScale connects to all three nodes and maintains the connectivity even after a node failure.
+***Note:** MaxScale service is up and running, if service failed to start or any other issues, make sure the IP addresses and the username/passwords are correct.*
 
-At this point, on our MaxScale connection, we can perform a READ and WRITE operation, and MaxScale R/W service will send the qieres to the respective nodes accordingly.
+Let's varify the MaxScale and Galera servers through MaxScale monitoring
 
-```txt
-MariaDB [(none)]> select @@hostname;
-+------------+
-| @@hostname |
-+------------+
-| galera-72  |
-+------------+
-1 row in set (0.002 sec)
+```
+[root@max1 ~]# maxctrl list servers
+┌──────────┬───────────────┬──────┬─────────────┬─────────────────────────┬──────┐
+│ Server   │ Address       │ Port │ Connections │ State                   │ GTID │
+├──────────┼───────────────┼──────┼─────────────┼─────────────────────────┼──────┤
+│ Galera-1 │ 172.31.32.37  │ 3306 │ 0           │ Master, Synced, Running │      │
+├──────────┼───────────────┼──────┼─────────────┼─────────────────────────┼──────┤
+│ Galera-2 │ 172.31.41.102 │ 3306 │ 0           │ Slave, Synced, Running  │      │
+├──────────┼───────────────┼──────┼─────────────┼─────────────────────────┼──────┤
+│ Galera-3 │ 172.31.34.254 │ 3306 │ 0           │ Slave, Synced, Running  │      │
+└──────────┴───────────────┴──────┴─────────────┴─────────────────────────┴──────┘
 
-MariaDB [(none)]> show databases;
-+--------------------+
-| Database           |
-+--------------------+
-| app_db             |
-| information_schema |
-+--------------------+
-2 rows in set (0.003 sec)
-
-MariaDB [(none)]> use app_db;
-Database changed
-MariaDB [app_db]> create table t(id serial, col varchar(100));
-Query OK, 0 rows affected (0.033 sec)
-
-MariaDB [app_db]> insert into t(col) select column_name from information_schema.columns;
-Query OK, 782 rows affected (0.024 sec)
-Records: 782  Duplicates: 0  Warnings: 0
-
-MariaDB [app_db]> select count(*) from t;
-+----------+
-| count(*) |
-+----------+
-|      782 |
-+----------+
-1 row in set (0.003 sec)
-
-MariaDB [app_db]> select count(*), @@hostname from t;
-+----------+------------+
-| count(*) | @@hostname |
-+----------+------------+
-|      782 | galera-73  |
-+----------+------------+
-1 row in set (0.003 sec)
+[root@max1 ~]# maxctrl list services
+┌───────────────────┬────────────────┬─────────────┬───────────────────┬──────────────────────────────┐
+│ Service           │ Router         │ Connections │ Total Connections │ Servers                      │
+├───────────────────┼────────────────┼─────────────┼───────────────────┼──────────────────────────────┤
+│ Galera-RW-Service │ readwritesplit │ 0           │ 0                 │ Galera-1, Galera-2, Galera-3 │
+└───────────────────┴────────────────┴─────────────┴───────────────────┴──────────────────────────────┘
 ```
 
-The first SELECT query was sent ot Galera-72, then we created a table and inserted some dummy data (782 rows), Then selected from the same table and this time `@@hostname` returned Galera-73 as the host where the SELECT query was executed.
+We can see the servers are up and running and the read/write service is accessing all three nodes.
 
-Let's do a test to ensure our insert statements are always done on the Galera-71 since it is the Master node as far as MaxScale is concerned.
+Let's test some failover scenarios.
 
-```txt
-MariaDB [app_db]> insert into t(col) values(@@hostname);
-Query OK, 1 row affected (0.010 sec)
+We will now shutdown Galera Node 1 and see what MaxScale does to the servers.
 
-MariaDB [app_db]> insert into t(col) values(@@hostname);
-Query OK, 1 row affected (0.012 sec)
-
-MariaDB [app_db]> insert into t(col) values(@@hostname);
-Query OK, 1 row affected (0.008 sec)
-
-MariaDB [app_db]> select * from t order by id desc limit 3;
-+------+-----------+
-| id   | col       |
-+------+-----------+
-| 3078 | galera-71 |
-| 3075 | galera-71 |
-| 3072 | galera-71 |
-+------+-----------+
-3 rows in set (0.003 sec)
+```
+[root@max1 ~]# maxctrl list servers
+┌──────────┬───────────────┬──────┬─────────────┬─────────────────────────┬──────┐
+│ Server   │ Address       │ Port │ Connections │ State                   │ GTID │
+├──────────┼───────────────┼──────┼─────────────┼─────────────────────────┼──────┤
+│ Galera-1 │ 172.31.32.37  │ 3306 │ 0           │ Down                    │      │
+├──────────┼───────────────┼──────┼─────────────┼─────────────────────────┼──────┤
+│ Galera-2 │ 172.31.41.102 │ 3306 │ 0           │ Master, Synced, Running │      │
+├──────────┼───────────────┼──────┼─────────────┼─────────────────────────┼──────┤
+│ Galera-3 │ 172.31.34.254 │ 3306 │ 0           │ Slave, Synced, Running  │      │
+└──────────┴───────────────┴──────┴─────────────┴─────────────────────────┴──────┘
 ```
 
-We inserted three rows and used `@@hostname` as the inmserted value, and we can see indeed it was executed on Galera-71 for all thre three inserts.
+MaxScale identifies the failure and quickly moves the Master responsibilities to the second highest priority node, which is Galera-2. If the Galera 1 was to come back on line, Galera-2 will remain the Master. This is controlled by the MaxScale configuration `disable_master_failback=true` We want this behaviour so that the Master remains consistent as much as possible to avoid any disturbance to the application.
 
-At this time, we can connect to any Galera node directly and verify that whatever we have done so far has been replicated to all three nodes.
-
-One last test to see how the auto-failover works, on the Galera-71, shutdown the database using `systemctl stop mariadb` and then on the MaxScale node, check the list server's output
-
-```txt
-[root@maxscale-70 ~]# maxctrl list servers
-┌───────────┬───────────────┬──────┬─────────────┬─────────────────────────┬──────┐
-│ Server    │ Address       │ Port │ Connections │ State                   │ GTID │
-├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼──────┤
-│ Galera-71 │ 192.168.56.71 │ 3306 │ 0           │ Down                    │      │
-├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼──────┤
-│ Galera-72 │ 192.168.56.72 │ 3306 │ 0           │ Master, Synced, Running │      │
-├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼──────┤
-│ Galera-73 │ 192.168.56.73 │ 3306 │ 0           │ Slave, Synced, Running  │      │
-└───────────┴───────────────┴──────┴─────────────┴─────────────────────────┴──────┘
+```
+[root@max1 ~]# maxctrl list servers
+┌──────────┬───────────────┬──────┬─────────────┬────────────────────────────────────────────┬──────┐
+│ Server   │ Address       │ Port │ Connections │ State                                      │ GTID │
+├──────────┼───────────────┼──────┼─────────────┼────────────────────────────────────────────┼──────┤
+│ Galera-1 │ 172.31.32.37  │ 3306 │ 0           │ Slave, Synced, Running                     │      │
+├──────────┼───────────────┼──────┼─────────────┼────────────────────────────────────────────┼──────┤
+│ Galera-2 │ 172.31.41.102 │ 3306 │ 0           │ Master, Synced, Master Stickiness, Running │      │
+├──────────┼───────────────┼──────┼─────────────┼────────────────────────────────────────────┼──────┤
+│ Galera-3 │ 172.31.34.254 │ 3306 │ 0           │ Slave, Synced, Running                     │      │
+└──────────┴───────────────┴──────┴─────────────┴────────────────────────────────────────────┴──────┘
 ```
 
-Galera-71 is down, and based on our priority setup, Galera-72 becomes the new master. Lets start the Galera-71 again and see what happens to the output.
+We can see that the Sticky behaviour for the Master, but if the Galera-2 node is to go down, Master will move to Galera-1. Let's test that.
 
-We expect Galera-71 to become the master node again as it has the highest priority.
-
-```txt
-[root@maxscale-70 ~]# maxctrl list servers
-┌───────────┬───────────────┬──────┬─────────────┬─────────────────────────┬──────┐
-│ Server    │ Address       │ Port │ Connections │ State                   │ GTID │
-├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼──────┤
-│ Galera-71 │ 192.168.56.71 │ 3306 │ 0           │ Master, Synced, Running │      │
-├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼──────┤
-│ Galera-72 │ 192.168.56.72 │ 3306 │ 0           │ Slave, Synced, Running  │      │
-├───────────┼───────────────┼──────┼─────────────┼─────────────────────────┼──────┤
-│ Galera-73 │ 192.168.56.73 │ 3306 │ 0           │ Slave, Synced, Running  │      │
-└───────────┴───────────────┴──────┴─────────────┴─────────────────────────┴──────┘
+```
+[root@max1 ~]# maxctrl list servers
+┌──────────┬───────────────┬──────┬─────────────┬─────────────────────────┬──────┐
+│ Server   │ Address       │ Port │ Connections │ State                   │ GTID │
+├──────────┼───────────────┼──────┼─────────────┼─────────────────────────┼──────┤
+│ Galera-1 │ 172.31.32.37  │ 3306 │ 0           │ Master, Synced, Running │      │
+├──────────┼───────────────┼──────┼─────────────┼─────────────────────────┼──────┤
+│ Galera-2 │ 172.31.41.102 │ 3306 │ 0           │ Down                    │      │
+├──────────┼───────────────┼──────┼─────────────┼─────────────────────────┼──────┤
+│ Galera-3 │ 172.31.34.254 │ 3306 │ 0           │ Slave, Synced, Running  │      │
+└──────────┴───────────────┴──────┴─────────────┴─────────────────────────┴──────┘
 ```
 
-Indeed, Galera-71 becomes the new master once more.
+As expected, Master is not designated to Galera-1.
 
 Things to take note:
 
-- All connections to the database must come from MaxScale using the MaxScale Listener Port defined in the maxscale.cnf
-- Reads will go to the non Master nodes
+- All connections to the database must come from MaxScale using the MaxScale Read/Write Listener Port `4006` defined in the maxscale.cnf
+- Galera does not have standard Replicated GTID but it can be enabled if we want to set up a standalone slave to replicate off the Galera cluster or even replicate to a different cluster using asynchronous replication. 
+  - https://github.com/mariadb-faisalsaeed/documentation/blob/master/MariaDB-10.5-ES-Galera%20ActiveActive.md
 - Writes will go to the Master node
+- Reads will go to the other nodes
+- All the ndoes are Master (Read/Write) if we were to connect to the backend nodes directly, but writing from all the nodes can create dead/locks which is prevented by connecting through MaxScale. 
+- Writing from all Master nodes does not scale writes but Read scaling is provided.
 - Priority defined in the server's definition will dictate which node becomes the master.
 - If a it's requred to replace a server with a new node, one can simply `rm -rf /var/lib/mysql/*` on that node and just restart the MariaDB process. Galera will automatically innitiate SST (full system state transfer) and send a fresh mariabackup copy to this new node and sync it up without any human intervention.
 - Mariabackup can be taken from any node.
 - Backup restore process remains the same as in standard MariaDB server.
+- A dedicated user needs to be created for `mariabackup` other than the `mysql@localhost` which is used by Galera SST.
+  ```sql
+  CREATE USER backupuser@localhost identified by 'SecretP@ssw0rd';
+  GRANT RELOAD, PROCESS, LOCK TABLES, REPLICATION CLIENT ON *.* TO backupuser@localhost;
+  ```
 
 This concludes this setup guide.
 
