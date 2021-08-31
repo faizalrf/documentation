@@ -93,6 +93,52 @@ else
   synced_list=""
   RetStatus=0
 
+  ############################################# -Utility Methods- ##################################################
+  #Finds the maximum number given the series of numbers
+  function max_number() {
+      printf "%s\n" "$@" | sort -g | tail -n1
+  }
+
+  #Takes in a single slave_pos 1-100-11 and compares with the list of gtid_binlog_pos (1-100-09,2-200-22), finds the match Domain_id - server_id
+  #(1-100) and finds out the maximum between seq_num 11,09 in this case and returns the 1-100-11, if found nothing returns original value
+  function compare_compute_gtid_slave_pos(){
+      single_value_slave_pos=`echo ${1} | cut -d- -f1 -f2`
+      gtid_binlog_pos="${2}"
+      for i in $(echo $gtid_binlog_pos | sed "s/,/ /g")
+      do
+        prefix=`echo "$i" | cut -d- -f1 -f2`
+        if [ "${single_value_slave_pos}" == "${prefix}" ];
+        then
+          slave_pos_seq_num=`echo ${1} | sed 's/.*-//'`
+          gtid_binlog_pos_seq_num=`echo ${i} | sed 's/.*-//'`
+          max="$(max_number $slave_pos_seq_num $gtid_binlog_pos_seq_num)"
+          echo "${single_value_slave_pos}-${max}"
+          return
+        fi
+      done
+
+      echo ${1}
+  }
+
+
+  #Takes the slave_pos and gtid_binlog_pos and computes the get_gtid_slave_pos
+  function get_gtid_slave_pos(){
+      slave_pos="${1}" # $1 represent first argument
+      gtid_binlog_pos="${2}" # $2 represent second argument
+      gtid_slave_pos_list=()
+      #slave_pos_noseq=`echo ${slave_pos} | awk -F, '{for (i=1;i<=NF;i++)print $i}'`
+      for i in $(echo $slave_pos | sed "s/,/ /g")
+      do
+        # call your procedure/other scripts here below
+        updated_gtid_pos="$(compare_compute_gtid_slave_pos $i $gtid_binlog_pos)"
+        new_gtid_slave_pos+=`echo "${updated_gtid_pos}"`
+      done
+      printf -v joined '%s,' "${new_gtid_slave_pos[@]}"
+      echo "${joined%,}"
+  }
+
+  ############################################# -End Utility Methods- ##################################################
+
   ############################################# -User Config- ##################################################
   #This needs to point to the remove MaxScale on the opposite DC
   Remote_MaxScale_Host=${remoteMaxScale}
@@ -143,7 +189,7 @@ else
         rm ${TMPFILE}
       fi
 
-      # When a new Master is selected, That new master will be used as a slave to the remote MaxScale 
+      # When a new Master is selected, That new master will be used as a slave to the remote MaxScale
       if [[ ${event} = "new_master" ]]
       then
         echo "$(date) | NOTIFY SCRIPT: Dectected a ${event} event, new master list = '${master_list}'" >> ${Log_Path}
@@ -176,16 +222,12 @@ else
 	   echo "$(date) | NOTIFY SCRIPT: gtid_slave_pos is empty" >> ${Log_Path}
 	else
 	   # Get 'Domain_id'-'server_id' from gtid_slave_pos (ex. '1-100-11' -> '1-100') 25th Jul 2021
-	   slave_pos_noseq=${slave_pos%-*}
-	   echo "$(date) | slave_pos_noseq = $slave_pos_noseq" >> ${Log_Path}
-
-	   # Get the up-to-date SEQ of slave_pos from gtid_slave_pos ("1-100-13,2-200-6" -> 13)
-	   gtid_seq=`echo ${binlog_pos} | sed "s/.*${slave_pos_noseq}-//" | sed "s/\,.*//"`
-	   echo "$(date) | gtid_seq = ${gtid_seq}" >> ${Log_Path}
+     updated_slave_pos="$(get_gtid_slave_pos $slave_pos $binlog_pos)"
+	   echo "$(date) | updated_slave_pos = ${updated_slave_pos}" >> ${Log_Path}
 
 	   # Set the up-to-date gtid_slave_pos by combining slave_pos_noseq + gtid_seq ("1-100" + "-" + "13")
-           echo "SET GLOBAL gtid_slave_pos = '${slave_pos_noseq}-${gtid_seq}';" > ${TMPFILE}
-           echo "$(date) | SET GLOBAL gtid_slave_pos = '${slave_pos_noseq}-${gtid_seq}';" >> ${Log_Path}
+           echo "SET GLOBAL gtid_slave_pos = '${updated_slave_pos}';" > ${TMPFILE}
+           echo "$(date) | SET GLOBAL gtid_slave_pos = '${updated_slave_pos}';" >> ${Log_Path}
            mariadb -u${Replication_User_Name} -p${Replication_User_Pwd} -h${lv_master_host} -P${lv_master_port} < ${TMPFILE}
 	fi
         # If Remote MaxScale Host is defined, then execute CHANGE MASTER to connect to it on the new MASTER selection
