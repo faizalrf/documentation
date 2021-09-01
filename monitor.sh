@@ -103,14 +103,15 @@ else
   #(1-100) and finds out the maximum between seq_num 11,09 in this case and returns the 1-100-11, if found nothing returns original value
   function compare_compute_gtid_slave_pos(){
       echo "$(date) | Received first argument slave_pos as = ${1} with gtid_binlog_pos = ${2}" >> ${Log_Path}
-      single_value_slave_pos=`echo "${1}" | cut -d- -f1 -f2`
+      single_value_slave_pos=${1%-*}
       gtid_binlog_pos="${2}"
       echo "$(date) | Obtained single value slave pos is = ${single_value_slave_pos} with gtid_binlog_pos = ${gtid_binlog_pos}" >> ${Log_Path}
       for i in $(echo $gtid_binlog_pos | sed "s/,/ /g")
       do
-        prefix=`echo "$i" | cut -d- -f1 -f2`
+        prefix=${i%-*}
         if [ "${single_value_slave_pos}" == "${prefix}" ];
         then
+          echo "$(date) | Comparing the positions = ${single_value_slave_pos} and ${prefix}" >> ${Log_Path}
           slave_pos_seq_num=`echo ${1} | sed 's/.*-//'`
           gtid_binlog_pos_seq_num=`echo ${i} | sed 's/.*-//'`
           max="$(max_number $slave_pos_seq_num $gtid_binlog_pos_seq_num)"
