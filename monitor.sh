@@ -112,6 +112,7 @@ else
           slave_pos_seq_num=`echo ${1} | sed 's/.*-//'`
           gtid_binlog_pos_seq_num=`echo ${i} | sed 's/.*-//'`
           max="$(max_number $slave_pos_seq_num $gtid_binlog_pos_seq_num)"
+          echo "$(date) | Single value slave pos = $single_value_slave_pos / max = ${max}" >> ${Log_Path}
           echo "${single_value_slave_pos}-${max}"
           return
         fi
@@ -126,6 +127,8 @@ else
       slave_pos="${1}" # $1 represent first argument
       gtid_binlog_pos="${2}" # $2 represent second argument
       gtid_slave_pos_list=()
+
+      echo "$(date) | Getting updated slave pos with gtid_slave_pos = $slave_pos / gtid_binlog_pos = ${gtid_binlog_pos}" >> ${Log_Path}
       #slave_pos_noseq=`echo ${slave_pos} | awk -F, '{for (i=1;i<=NF;i++)print $i}'`
       for i in $(echo $slave_pos | sed "s/,/ /g")
       do
