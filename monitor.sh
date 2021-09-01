@@ -104,6 +104,7 @@ else
   function compare_compute_gtid_slave_pos(){
       single_value_slave_pos=`echo ${1} | cut -d- -f1 -f2`
       gtid_binlog_pos="${2}"
+      echo "$(date) | Obtained single value slave pos is = ${single_value_slave_pos} with gtid_binlog_pos = ${gtid_binlog_pos}" >> ${Log_Path}
       for i in $(echo $gtid_binlog_pos | sed "s/,/ /g")
       do
         prefix=`echo "$i" | cut -d- -f1 -f2`
@@ -133,6 +134,7 @@ else
       for i in $(echo $slave_pos | sed "s/,/ /g")
       do
         # call your procedure/other scripts here below
+        echo "$(date) | Computing the new slave pos with prefix = ${i}" >> ${Log_Path}
         updated_gtid_pos="$(compare_compute_gtid_slave_pos $i $gtid_binlog_pos)"
         gtid_slave_pos_list+=(`echo "${updated_gtid_pos}"`)
       done
