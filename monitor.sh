@@ -102,7 +102,8 @@ else
   #Takes in a single slave_pos 1-100-11 and compares with the list of gtid_binlog_pos (1-100-09,2-200-22), finds the match Domain_id - server_id
   #(1-100) and finds out the maximum between seq_num 11,09 in this case and returns the 1-100-11, if found nothing returns original value
   function compare_compute_gtid_slave_pos(){
-      single_value_slave_pos=`echo ${1} | cut -d- -f1 -f2`
+      echo "$(date) | Received first argument slave_pos as = ${1} with gtid_binlog_pos = ${2}" >> ${Log_Path}
+      single_value_slave_pos=`echo "${1}" | cut -d- -f1 -f2`
       gtid_binlog_pos="${2}"
       echo "$(date) | Obtained single value slave pos is = ${single_value_slave_pos} with gtid_binlog_pos = ${gtid_binlog_pos}" >> ${Log_Path}
       for i in $(echo $gtid_binlog_pos | sed "s/,/ /g")
@@ -135,7 +136,7 @@ else
       do
         # call your procedure/other scripts here below
         echo "$(date) | Computing the new slave pos with prefix = ${i}" >> ${Log_Path}
-        updated_gtid_pos="$(compare_compute_gtid_slave_pos $i $gtid_binlog_pos)"
+        updated_gtid_pos="$(compare_compute_gtid_slave_pos ${i} $gtid_binlog_pos)"
         gtid_slave_pos_list+=(`echo "${updated_gtid_pos}"`)
       done
       printf -v joined '%s,' "${gtid_slave_pos_list[@]}"
