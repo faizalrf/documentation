@@ -131,9 +131,9 @@ else
       do
         # call your procedure/other scripts here below
         updated_gtid_pos="$(compare_compute_gtid_slave_pos $i $gtid_binlog_pos)"
-        new_gtid_slave_pos+=`echo "${updated_gtid_pos}"`
+        gtid_slave_pos_list+=(`echo "${updated_gtid_pos}"`)
       done
-      printf -v joined '%s,' "${new_gtid_slave_pos[@]}"
+      printf -v joined '%s,' "${gtid_slave_pos_list[@]}"
       echo "${joined%,}"
   }
 
