@@ -1,4 +1,4 @@
-
+#!/bin/bash
 
 ###########################################################
 ## MaxScale Notify Script                                ##
@@ -199,37 +199,37 @@ else
       slave_pos_list+=(`echo "${slave_pos_noseq}-${gtid_seq}"`)
     done
     printf -v joined '%s,' "${slave_pos_list[@]}"
-    
-    updated_slave_pos=`echo "${joined%,}"`
-	  echo "$(date) | updated_slave_pos = ${updated_slave_pos}" >> ${Log_Path}
 
-	  # Set the up-to-date gtid_slave_pos by combining slave_pos_noseq + gtid_seq ("1-100" + "-" + "13")
-    echo "SET GLOBAL gtid_slave_pos = '${updated_slave_pos}';" > ${TMPFILE}
-    echo "$(date) | SET GLOBAL gtid_slave_pos = '${updated_slave_pos}';" >> ${Log_Path}
-    mariadb -u${Replication_User_Name} -p${Replication_User_Pwd} -h${lv_master_host} -P${lv_master_port} < ${TMPFILE}
-    # If Remote MaxScale Host is defined, then execute CHANGE MASTER to connect to it on the new MASTER selection
-    if [[ ${Remote_MaxScale_Host} = "none" ]]
-    then
-       echo "$(date) | NOTIFY SCRIPT: No master host set for Remote_MaxScale_Host" >> ${Log_Path}
-    else
-       echo "$(date) | NOTIFY SCRIPT: Running change master on master server ${lv_master_to_use} to ${Remote_MaxScale_Host}" >> ${Log_Path}
-       echo "CHANGE MASTER '${Remote_MaxScale_Name}' TO master_use_gtid=slave_pos, MASTER_HOST='${Remote_MaxScale_Host}', MASTER_USER='${Replication_User_Name}', MASTER_PASSWORD='${Replication_User_Pwd}', MASTER_PORT=${Remote_MaxScale_Port}, MASTER_CONNECT_RETRY=10; " > ${TMPFILE}
-       echo "$(date) | CHANGE MASTER '${Remote_MaxScale_Name}' TO master_use_gtid=slave_pos, MASTER_HOST='${Remote_MaxScale_Host}', MASTER_USER='${Replication_User_Name}', MASTER_PASSWORD='*********************', MASTER_PORT=${Remote_MaxScale_Port}, MASTER_CONNECT_RETRY=10; "  >> ${Log_Path}
-       mariadb -u${Replication_User_Name} -p${Replication_User_Pwd} -h${lv_master_host} -P${lv_master_port} < ${TMPFILE}
-       RetStatus=$?
-       echo "$(date) | CHANGE MASTER: return status ${RetStatus}" >> ${Log_Path}
-       # Execute START SLAVE only when CHANGE MASTER is successful
-       if [ ${RetStatus} -eq 0 ]
-       then
-          echo "START SLAVE '${Remote_MaxScale_Name}';" > ${TMPFILE}
-          echo "$(date) | START SLAVE '${Remote_MaxScale_Name}';" >> ${Log_Path}
-          mariadb -u${Replication_User_Name} -p${Replication_User_Pwd} -h${lv_master_host} -P${lv_master_port} < ${TMPFILE}
-       else
-          echo "$(date) | Failed to execute CHANGE MASTER on Host: ${lv_master_host} Port: ${lv_master_port}" >> ${Log_Path}
-       fi
+    updated_slave_pos=`echo "${joined%,}"`
+
+	   # Set the up-to-date gtid_slave_pos by combining slave_pos_noseq + gtid_seq ("1-100" + "-" + "13")
+           echo "SET GLOBAL gtid_slave_pos = '${updated_slave_pos}';" > ${TMPFILE}
+           echo "$(date) | SET GLOBAL gtid_slave_pos = '${updated_slave_pos}';" >> ${Log_Path}
+           mariadb -u${Replication_User_Name} -p${Replication_User_Pwd} -h${lv_master_host} -P${lv_master_port} < ${TMPFILE}
+	fi
+        # If Remote MaxScale Host is defined, then execute CHANGE MASTER to connect to it on the new MASTER selection
+        if [[ ${Remote_MaxScale_Host} = "none" ]]
+        then
+           echo "$(date) | NOTIFY SCRIPT: No master host set for Remote_MaxScale_Host" >> ${Log_Path}
+        else
+           echo "$(date) | NOTIFY SCRIPT: Running change master on master server ${lv_master_to_use} to ${Remote_MaxScale_Host}" >> ${Log_Path}
+           echo "CHANGE MASTER '${Remote_MaxScale_Name}' TO master_use_gtid=slave_pos, MASTER_HOST='${Remote_MaxScale_Host}', MASTER_USER='${Replication_User_Name}', MASTER_PASSWORD='${Replication_User_Pwd}', MASTER_PORT=${Remote_MaxScale_Port}, MASTER_CONNECT_RETRY=10; " > ${TMPFILE}
+           echo "$(date) | CHANGE MASTER '${Remote_MaxScale_Name}' TO master_use_gtid=slave_pos, MASTER_HOST='${Remote_MaxScale_Host}', MASTER_USER='${Replication_User_Name}', MASTER_PASSWORD='*********************', MASTER_PORT=${Remote_MaxScale_Port}, MASTER_CONNECT_RETRY=10; "  >> ${Log_Path}
+           mariadb -u${Replication_User_Name} -p${Replication_User_Pwd} -h${lv_master_host} -P${lv_master_port} < ${TMPFILE}
+           RetStatus=$?
+           echo "$(date) | CHANGE MASTER: return status ${RetStatus}" >> ${Log_Path}
+           # Execute START SLAVE only when CHANGE MASTER is successful
+           if [ ${RetStatus} -eq 0 ]
+           then
+              echo "START SLAVE '${Remote_MaxScale_Name}';" > ${TMPFILE}
+              echo "$(date) | START SLAVE '${Remote_MaxScale_Name}';" >> ${Log_Path}
+              mariadb -u${Replication_User_Name} -p${Replication_User_Pwd} -h${lv_master_host} -P${lv_master_port} < ${TMPFILE}
+           else
+              echo "$(date) | Failed to execute CHANGE MASTER on Host: ${lv_master_host} Port: ${lv_master_port}" >> ${Log_Path}
+           fi
+        fi
+        rm ${TMPFILE}
+      fi
     fi
-    rm ${TMPFILE}
-  fi
-fi
   fi
 fi
