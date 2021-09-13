@@ -256,6 +256,21 @@ then
           fi # End of remote maxscale host
           rm ${TMPFILE}
        fi # End of new master
+
+       # Verifying if the slave is running fine, or if there are any IO issues. Not doing on any event since it has to be continously checked and rechecked
+       echo "$(date) | NOTIFY SCRIPT: Checking for slave status on (${initiator}), trying to see if we must stop the slave and restart'" >> ${Log_Path}
+       query_string="show all slaves status;";
+       slave_status=$(mariadb -u${Replication_User_Name} -p${Replication_User_Pwd} -h${lv_master_host} -P${lv_master_port} -se "${query_string}")
+       slave_io_running="$(echo ${slave_status} | grep "Slave_IO_Running: Yes" | wc -l)"
+       slave_sql_running="$(echo ${slave_status} | grep "Slave_SQL_Running: Yes" | wc -l)"
+       if [ $slave_io_running != 1 ] && [ $slave_sql_running != 0 ]
+       then
+         TMPFILE=`mkslavetemp`
+         echo "START SLAVE '${Remote_MaxScale_Name}';" > ${TMPFILE}
+         echo "$(date) | START SLAVE '${Remote_MaxScale_Name}';" >> ${Log_Path}
+         mariadb -u${Replication_User_Name} -p${Replication_User_Pwd} -h${lv_master_host} -P${lv_master_port} < ${TMPFILE}
+         rm ${TMPFILE}
+       fi
      fi
    fi
  fi
