@@ -65,26 +65,6 @@ process_arguments()
    done
 }
 
-process_lost_master(){
-    echo "$(date) | NOTIFY SCRIPT: We have lost a master (${initiator}), trying to connect and stop slave'" >> ${Log_Path}
-    if [[ ${initiator} =~ "," ]];
-    then
-       echo "$(date) | NOTIFY SCRIPT: ... more than one master in list, using first one." >> ${Log_Path}
-       lv_initiator=`echo ${initiator} | cut -f1 -d"," | sed 's/\[//g' | sed 's/\]//g'`
-    else
-       echo "$(date) | NOTIFY SCRIPT: ... there is only one master in the list." >> ${Log_Path}
-       lv_initiator=`echo ${initiator} | sed 's/\[//g' | sed 's/\]//g'`
-    fi
-    lv_master_host=`echo ${lv_initiator} | cut -f1 -d":"`
-    lv_master_port=`echo ${lv_initiator} | cut -f2 -d":"`
-    # This may fail depending on why server went away
-    TMPFILE=`mktemp`
-    echo "STOP ALL SLAVES; RESET SLAVE '${Remote_MaxScale_Name}' ALL;" > ${TMPFILE}
-    echo "$(date) | STOP ALL SLAVES; RESET SLAVE '${Remote_MaxScale_Name}' ALL;" >> ${Log_Path}
-    mariadb -u${Replication_User_Name} -p${Replication_User_Pwd} -h${lv_master_host} -P${lv_master_port} < ${TMPFILE}
-    rm ${TMPFILE}
-}
-
 # Import info file
 . /var/lib/maxscale/.maxinfo
 
@@ -256,21 +236,6 @@ then
           fi # End of remote maxscale host
           rm ${TMPFILE}
        fi # End of new master
-
-       # Verifying if the slave is running fine, or if there are any IO issues. Not doing on any event since it has to be continously checked and rechecked
-       echo "$(date) | NOTIFY SCRIPT: Checking for slave status on (${initiator}), trying to see if we must stop the slave and restart'" >> ${Log_Path}
-       query_string="show all slaves status\G;";
-       slave_status=$(mariadb -u${Replication_User_Name} -p${Replication_User_Pwd} -h${lv_master_host} -P${lv_master_port} -se "${query_string}")
-       slave_io_running="$(echo ${slave_status} | grep "Slave_IO_Running: Yes" | wc -l)"
-       slave_sql_running="$(echo ${slave_status} | grep "Slave_SQL_Running: Yes" | wc -l)"
-       if [ $slave_io_running != 1 ] && [ $slave_sql_running != 0 ]
-       then
-         TMPFILE=`mktemp`
-         echo "START SLAVE '${Remote_MaxScale_Name}';" > ${TMPFILE}
-         echo "$(date) | START SLAVE '${Remote_MaxScale_Name}';" >> ${Log_Path}
-         mariadb -u${Replication_User_Name} -p${Replication_User_Pwd} -h${lv_master_host} -P${lv_master_port} < ${TMPFILE}
-         rm ${TMPFILE}
-       fi
      fi
    fi
  fi
