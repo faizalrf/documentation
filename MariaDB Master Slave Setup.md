@@ -686,6 +686,7 @@ type=listener
 service=Read-Write-Service
 protocol=MariaDBClient
 port=4006
+address=0.0.0.0
 ```
 
 The following are important for high avialability setup to ensure auto failover and transaction replay is enabled. Works with MaxScale 2.3 and higher

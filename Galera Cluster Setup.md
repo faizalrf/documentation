@@ -206,11 +206,6 @@ wsrep_sst_auth=mysql:
 wsrep_node_address=172.31.32.37
 wsrep_node_name=galera1
 
-## Data Streaming for large transactions, this will start to stream transactions effecting more than 1000 rows to the other Galera nodes! Only enable if doing one time migration or loading
-## Else the server TPS will be effected of permanently added
-#wsrep_trx_fragment_unit=rows
-#wsrep_trx_fragment_size=1000
-
 #Galera Cache setup for performance as 5 GB, default location is on `datadir`
 wsrep_provider_options="gcache.size=5G; gcache.keep_pages_size=5G; gcache.recover=yes; gcs.fc_factor=0.8;"
 
@@ -491,6 +486,7 @@ type=listener
 service=Galera-RW-Service
 protocol=MariaDBClient
 port=4006
+address=0.0.0.0
 ```
 
 Save and exit the `/etc/maxscale.cnf`, let's review the above configuration and what these mean.

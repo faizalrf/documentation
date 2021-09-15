@@ -140,6 +140,7 @@ type=listener
 service=Read-Write-Service
 protocol=MariaDBClient
 port=4009
+address=0.0.0.0
 ```
 
 The `Read-Write-Listener` points to `4009` as the port number, this is the port that the application should connect to.

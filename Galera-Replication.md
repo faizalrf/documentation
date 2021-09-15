@@ -99,97 +99,97 @@ The following needs to be edited in the `/etc/my.cnf.d/server.cnf` file, add the
  
 - Primary Data Center
  
-    ```
-    [galera]
-    wsrep_on=ON
-    wsrep_gtid_mode=ON
-    wsrep_gtid_domain_id=70
-    wsrep_auto_increment_control=0
-    wsrep_provider=/usr/lib64/galera/libgalera_enterprise_smm.so
-    wsrep_cluster_address=gcomm://192.168.56.71,192.168.56.72,192.168.56.73
-    wsrep_cluster_name=DC
- 
-    # Local node setup
-    wsrep_node_address=192.168.56.71
-    wsrep_node_name=galera-71
- 
-    #Galera Cache setup for performance as 5 GB, default location is on `datadir`
-    wsrep_provider_options="gcache.size=5G; gcache.keep_pages_size=5G; gcache.recover=yes; gcs.fc_factor=0.8;"
- 
-    [mariadb]
-    log_error=server.log
-    binlog_format=row
-    log_slave_updates=ON
- 
-    log_bin
-    skip-slave-start=ON
- 
-    gtid_domain_id=71
-    gtid-ignore-duplicates=ON
-    server_id=7000
-    default_storage_engine=InnoDB
-    innodb_autoinc_lock_mode=2
-    innodb_lock_schedule_algorithm=FCFS
-    innodb_flush_log_at_trx_commit=0
-    innodb_buffer_pool_size=512M
-    innodb_log_file_size=512M
- 
-    auto_increment_offset=1
-    auto_increment_increment=6
- 
-    character-set-server = utf8
-    collation-server = utf8_unicode_ci
- 
-    ## Allow server to accept connections on all interfaces.
-    bind-address=0.0.0.0
-    ```
+```
+[galera]
+wsrep_on=ON
+wsrep_gtid_mode=ON
+wsrep_gtid_domain_id=70
+wsrep_auto_increment_control=0
+wsrep_provider=/usr/lib64/galera/libgalera_enterprise_smm.so
+wsrep_cluster_address=gcomm://192.168.56.71,192.168.56.72,192.168.56.73
+wsrep_cluster_name=DC
+
+# Local node setup
+wsrep_node_address=192.168.56.71
+wsrep_node_name=galera-71
+
+#Galera Cache setup for performance as 5 GB, default location is on `datadir`
+wsrep_provider_options="gcache.size=5G; gcache.keep_pages_size=5G; gcache.recover=yes; gcs.fc_factor=0.8;"
+
+[mariadb]
+log_error=server.log
+binlog_format=row
+log_slave_updates=ON
+
+log_bin
+skip-slave-start=ON
+
+gtid_domain_id=71
+gtid-ignore-duplicates=ON
+server_id=7000
+default_storage_engine=InnoDB
+innodb_autoinc_lock_mode=2
+innodb_lock_schedule_algorithm=FCFS
+innodb_flush_log_at_trx_commit=0
+innodb_buffer_pool_size=512M
+innodb_log_file_size=512M
+
+auto_increment_offset=1
+auto_increment_increment=6
+
+character-set-server = utf8
+collation-server = utf8_unicode_ci
+
+## Allow server to accept connections on all interfaces.
+bind-address=0.0.0.0
+```
  
 - DR Data Center
  
-    ```
-    [galera]
-    wsrep_on=ON
-    wsrep_gtid_mode=ON
-    wsrep_gtid_domain_id=80
-    wsrep_auto_increment_control=0
-    wsrep_provider=/usr/lib64/galera/libgalera_enterprise_smm.so
-    wsrep_cluster_address=gcomm://192.168.56.81,192.168.56.82,192.168.56.83
-    wsrep_cluster_name=DR
- 
-    # Local node setup
-    wsrep_node_address=192.168.56.81
-    wsrep_node_name=galera-81
- 
-    #Galera Cache setup for performance as 5 GB, default location is on `datadir`
-    wsrep_provider_options="gcache.size=5G; gcache.keep_pages_size=5G; gcache.recover=yes; gcs.fc_factor=0.8;"
- 
-    [mariadb]
-    log_error=server.log
-    binlog_format=row
-    log_slave_updates=ON
- 
-    log_bin
-    skip-slave-start=ON
- 
-    gtid_domain_id=81
-    gtid-ignore-duplicates=ON
-    server_id=8000
-    default_storage_engine=InnoDB
-    innodb_autoinc_lock_mode=2
-    innodb_lock_schedule_algorithm=FCFS
-    innodb_flush_log_at_trx_commit=0
-    innodb_buffer_pool_size=512M
-    innodb_log_file_size=512M
- 
-    auto_increment_offset=4
-    auto_increment_increment=6
- 
-    character-set-server = utf8
-    collation-server = utf8_unicode_ci
- 
-    ## Allow server to accept connections on all interfaces.
-    bind-address=0.0.0.0
-    ```
+```
+[galera]
+wsrep_on=ON
+wsrep_gtid_mode=ON
+wsrep_gtid_domain_id=80
+wsrep_auto_increment_control=0
+wsrep_provider=/usr/lib64/galera/libgalera_enterprise_smm.so
+wsrep_cluster_address=gcomm://192.168.56.81,192.168.56.82,192.168.56.83
+wsrep_cluster_name=DR
+
+# Local node setup
+wsrep_node_address=192.168.56.81
+wsrep_node_name=galera-81
+
+#Galera Cache setup for performance as 5 GB, default location is on `datadir`
+wsrep_provider_options="gcache.size=5G; gcache.keep_pages_size=5G; gcache.recover=yes; gcs.fc_factor=0.8;"
+
+[mariadb]
+log_error=server.log
+binlog_format=row
+log_slave_updates=ON
+
+log_bin
+skip-slave-start=ON
+
+gtid_domain_id=81
+gtid-ignore-duplicates=ON
+server_id=8000
+default_storage_engine=InnoDB
+innodb_autoinc_lock_mode=2
+innodb_lock_schedule_algorithm=FCFS
+innodb_flush_log_at_trx_commit=0
+innodb_buffer_pool_size=512M
+innodb_log_file_size=512M
+
+auto_increment_offset=4
+auto_increment_increment=6
+
+character-set-server = utf8
+collation-server = utf8_unicode_ci
+
+## Allow server to accept connections on all interfaces.
+bind-address=0.0.0.0
+```
  
 ***Note:** `wsrep_cluster_address` should not have any white spaces between the IP addresses!*
  
@@ -346,18 +346,8 @@ Edit the `/etc/maxscale.cnf` file on **both data centers** and define the respec
  
 ```txt
 [maxscale]
-# The number of worker threads that are handling the events coming from the kernel.
 threads=auto
-# Enable or disable the substitution of environment variables in the MaxScale configuration file
-substitute_variables=true
-# Send output to Syslog 0 Disabled / 1 Enabled
-syslog=0
-# Enable or disable the logging of messages whose syslog priority is info
 log_info=off
-# Enable or disable the logging of messages whose syslog priority is notice
-log_notice=on
-# Enable or disable the logging of messages whose syslog priority is warning
-log_warning=off
  
 # List of servers in the Cluster
 [Galera-71]
@@ -386,7 +376,7 @@ priority=3
 type=monitor
 module=galeramon
 servers=Galera-71,Galera-72,Galera-73
-user=maxuser
+user=mxs
 password=SecretP@ssw0rd
 monitor_interval=2000
 use_priority=true
@@ -406,13 +396,10 @@ script=/var/lib/maxscale/monitor.sh --initiator=$INITIATOR --parent=$PARENT --ch
 type=service
 router=readwritesplit
 servers=Galera-71,Galera-72,Galera-73
-user=maxuser
+user=mxs
 password=SecretP@ssw0rd
 master_reconnection=true
 transaction_replay=true
-transaction_replay_retry_on_deadlock=true
-master_failure_mode=error_on_write
-slave_selection_criteria=ADAPTIVE_ROUTING
  
 # Galera cluster listener
 [Galera-Listener]
@@ -421,42 +408,11 @@ service=Galera-RW-Service
 protocol=MariaDBClient
 port=4006
 address=0.0.0.0
- 
-## Enable this section if not using Binlog-Router for replication
-#[Replication-Service]
-#type=service
-#router=readconnroute
-#router_options=master
-#servers=Galera-71,Galera-72,Galera-73
-#user=repl_user
-#password=SecretP@ssw0rd
- 
-[Replication-Service-Binlog-Router]
-type=service
-router=binlogrouter
-cluster=Galera-Monitor
-select_master=true
-server_id=7001
-datadir=/var/lib/maxscale/binlogs
-expire_log_duration=24h
-expire_log_minimum_files=3
-user=maxuser
-password=SecretP@ssw0rd
- 
-[Replication-Listener]
-type=listener
-## Change the servie to use [Replication-Service] or [Replication-Service-Binlog-Router] depending on the usage
-service=Replication-Service-Binlog-Router
-protocol=MariaDBClient
-port=4007
-address=0.0.0.0
 ```
  
 ***Note:** Best to encrypt the Passwords in the `maxscale.cnf` file, but we are keeping it simple here.*
  
 **Refer to:** [script=/var/lib/maxscale/monitor.sh](monitor.sh) for the source.
- 
-**`[Replication-Service-Binlog-Router]`** Service defines the binlog router behaviour, take note of the `datadir` variable and `server_id` variable, set these accordingly for all the MaxScale nodes. As expected, `server_id` should be unique for all the MaxScale nodes. Binlog router needs to be configured with **`maxuser@'%'`** user.
  
 Set the `/var/lib/maxscale/monitor.sh` with the ownership of `maxscale` user / group and change the permission to `chmod 500` to ensure minimum permission for users.
  
@@ -465,8 +421,6 @@ This needs to be done on all the MaxScale nodes on both data centers.
 ```
 ➜  chown maxscale:maxscale /var/lib/maxscale/monitor.sh
 ➜  chmod 500 /var/lib/maxscale/monitor.sh
-➜  mkdir /var/lib/maxscale/binlogs
-➜  chown maxscale:maxscale /var/lib/maxscale/binlogs
 ```
  
 An additional hidden file `/var/lib/maxscale/.maxinfo` needs to be created owned by `maxscale:maxscale` and `chmod 400` limited privileges, the file contains the following parameters 
@@ -474,10 +428,8 @@ An additional hidden file `/var/lib/maxscale/.maxinfo` needs to be created owned
 ```txt
 remoteMaxScale=<DR MaxScale IP Address>
 remoteMaxScaleName=DR-MaxScale
-remoteMaxScaleReplicationPort=4007
-repuser=repl_user
-reppwd=SecretP@ssw0rd
-maxuser=maxuser
+remoteMaxScaleReplicationPort=4006
+maxuser=mxs
 maxpwd=SecretP@ssw0rd
 ```
  
@@ -486,10 +438,7 @@ maxpwd=SecretP@ssw0rd
 - `remoteMaxScaleName=<MaxScale Name>`
   - This is the name that you want to give to the Replication connection, generally we can use "DR-MaxScale" or "DC-MaxScale"
 - `remoteMaxScaleReplicationPort=<MaxScale ReadConnRoute Port>`
-  - The port of the **`ReadConRoute`** listener service that we configured, e.g `4007`
-- `repuser=<Replication User Name>` & `reppwd=<Replication User Password>`
-  - This is the replication user defined `repl_user@'%'`, the value should be without the hostname as in the example above block.
-  - The password is the replication user's password for the database account
+  - The port of the **`readwritesplit`** listener service that we configured, e.g `4006`
 - `maxuser=<MaxScale Monitor User>` & `maxpwd=<MaxScale User Password>`
   - These are the user and password for the MaxScale user. 
  
@@ -499,16 +448,46 @@ This setup gives us the basic read/write split, standard monitoring and a connec
  
 ### Configure MaxScale & Replication Users
  
-We need to create the **`maxuser`** & **`repl_user`** accounts with a password of `SecretP@ssw0rd` (As defined in the `maxscale.cnf`), we will also grant **`mysql@localhost`** use the MariaDB Backup grants for SST, this needs to be done on both **Primary DC** and **DR DC**.
- 
+We need to create the **`mxs`** account with a password of `SecretP@ssw0rd` (As defined in the `maxscale.cnf`), we will also grant **`mysql@localhost`** use the MariaDB Backup grants for SST, this needs to be done on both **Primary DC** and **DR DC**.
+
+MaxScale **`10.5.8-5`** or higher the following is needed
 ```sql
-CREATE USER maxuser@'%' IDENTIFIED BY 'SecretP@ssw0rd';
-GRANT SELECT ON mysql.* TO maxuser@'%';
-GRANT SUPER, RELOAD, SHOW DATABASES, REPLICATION SLAVE, REPLICATION CLIENT ON *.* TO maxuser@'%';
-CREATE USER repl_user@'%' IDENTIFIED BY 'SecretP@ssw0rd';
-GRANT SUPER, RELOAD, REPLICATION SLAVE ON *.* TO repl_user@'%';
+CREATE USER mxs@'%' IDENTIFIED BY 'SecretP@ssw0rd';
+GRANT BINLOG ADMIN,
+   READ_ONLY ADMIN,
+   RELOAD,
+   REPLICA MONITOR,
+   REPLICATION MASTER ADMIN,
+   REPLICATION REPLICA ADMIN,
+   REPLICATION REPLICA,
+   SHOW DATABASES
+ON *.* TO mxs@'%';
+GRANT RELOAD, 
+   PROCESS, 
+   LOCK TABLES, 
+   BINLOG MONITOR 
+ON *.* TO 'mysql'@'localhost';
 ```
- 
+
+MaxScale **`10.5.6`** or older versions the following is needed
+```sql
+CREATE USER mxs@'%' IDENTIFIED BY 'SecretP@ssw0rd';
+GRANT BINLOG ADMIN,
+   BINLOG MONITOR,
+   READ_ONLY ADMIN,
+   RELOAD,
+   REPLICATION MASTER ADMIN,
+   REPLICATION REPLICA ADMIN,
+   REPLICATION REPLICA,
+   SHOW DATABASES
+ON *.* TO mxs@'%';
+GRANT RELOAD, 
+   PROCESS, 
+   LOCK TABLES, 
+   BINLOG MONITOR 
+ON *.* TO 'mysql'@'localhost';
+```
+
 #### Setup SST for Galera Nodes
  
 Edit the `/etc/my.cnf.d/server.cnf` file on **all Galera nodes** and add the following to the **`[galera]`** section
