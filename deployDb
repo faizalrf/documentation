@@ -7,7 +7,7 @@ FileName=$(ls *${Version}*.tar.gz)
 clear
 if [[ ${UserName} == "root" ]]
 then
-   echo "ROOT user not allowed for deployment, Aborting!"
+   echo "ROOT user not allowed for deployment, Aborting!!!"
    echo
    exit
 fi
