@@ -265,7 +265,7 @@ then
        slave_sql_running="$(echo ${slave_status} | grep "Slave_SQL_Running: Yes" | wc -l)"
        if [ $slave_io_running != 1 ] && [ $slave_sql_running != 0 ]
        then
-         TMPFILE=`mkslavetemp`
+         TMPFILE=`mktemp`
          echo "START SLAVE '${Remote_MaxScale_Name}';" > ${TMPFILE}
          echo "$(date) | START SLAVE '${Remote_MaxScale_Name}';" >> ${Log_Path}
          mariadb -u${Replication_User_Name} -p${Replication_User_Pwd} -h${lv_master_host} -P${lv_master_port} < ${TMPFILE}
