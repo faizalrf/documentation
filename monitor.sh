@@ -33,6 +33,7 @@
 # remoteMaxScaleReplicationPort=<MaxScale Replicaton Port>
 # maxuser=<MaxScale User Name>
 # maxpwd=<MaxScale User Password>
+# logPath=/var/log/maxscale
 
 # Set ownership if this file to maxuser:maxuser
 #  chown maxscale:maxscale /var/lib/maxscale/.maxinfo
@@ -40,11 +41,14 @@
 #  chmod 400 /var/lib/maxscale/.maxinfo
 # End...
 
+# Import info file
+. /var/lib/maxscale/.maxinfo
+
 writeLog()
 {
    MESSAGE=$1
    # Log output file, this path must be owned by maxscale OS user
-   LOG_PATH=/var/log/maxscale/monitor.log
+   LOG_PATH=${logPath}
 
    # Create the missing log file! Faisal 25th July 2021
    if [ ! -f ${LOG_PATH} ]; then
@@ -78,9 +82,6 @@ process_arguments()
       shift
    done
 }
-
-# Import info file
-. /var/lib/maxscale/.maxinfo
 
 if [[ ${MAX_PASSIVE} = "true" ]];
 then
