@@ -48,7 +48,7 @@ writeLog()
 {
    MESSAGE=$1
    # Log output file, this path must be owned by maxscale OS user
-   LOG_PATH=${logPath}
+   LOG_PATH=${logPath}/monitor.log
 
    # Create the missing log file! Faisal 25th July 2021
    if [ ! -f ${LOG_PATH} ]; then
@@ -203,7 +203,8 @@ else
                   writeLog "slave_pos_seq_no = ${slave_pos_seq_no}"
                   writeLog "binlog_seq_num = ${binlog_seq_num}"
 
-                  gtid_seq=$(if [ "${slave_pos_seq_no}" \> "${binlog_seq_num}" ]; then echo ${slave_pos_seq_no}; else echo ${binlog_seq_num}; fi)
+                  # Replaced \> with -gt because > cannot compare the values as strings and gives the wrong result
+                  gtid_seq=$(if [ ${slave_pos_seq_no} -gt ${binlog_seq_num} ]; then echo ${slave_pos_seq_no}; else echo ${binlog_seq_num}; fi)
                   writeLog "gtid_seq = ${gtid_seq}"
 
                   slave_pos_list+=(`echo "${slave_pos_noseq}-${gtid_seq}"`)
@@ -224,8 +225,8 @@ else
                writeLog "NOTIFY SCRIPT: No master host set for Remote_MaxScale_Host"
             else
                writeLog "NOTIFY SCRIPT: Running change master on master server ${lv_master_to_use} to ${Remote_MaxScale_Host}"
-               echo "CHANGE MASTER '${Remote_MaxScale_Name}' TO MASTER_USE_GTID=slave_pos, MASTER_HOST='${Remote_MaxScale_Host}', MASTER_USER='${Replication_User_Name}', MASTER_PASSWORD='${Replication_User_Pwd}', MASTER_PORT=${Remote_MaxScale_Port}, MASTER_CONNECT_RETRY=10;" > ${TMPFILE}
-               writeLog "CHANGE MASTER '${Remote_MaxScale_Name}' TO MASTER_USE_GTID=slave_pos, MASTER_HOST='${Remote_MaxScale_Host}', MASTER_USER='${Replication_User_Name}', MASTER_PASSWORD='*********************', MASTER_PORT=${Remote_MaxScale_Port}, MASTER_CONNECT_RETRY=10;"
+               echo "CHANGE MASTER '${Remote_MaxScale_Name}' TO MASTER_USE_GTID=slave_pos, MASTER_HOST='${Remote_MaxScale_Host}', MASTER_USER='${Replication_User_Name}', MASTER_PASSWORD='${Replication_User_Pwd}', MASTER_PORT=${Remote_MaxScale_Port}, IGNORE_SERVER_IDS=(), MASTER_CONNECT_RETRY=30;" > ${TMPFILE}
+               writeLog "CHANGE MASTER '${Remote_MaxScale_Name}' TO MASTER_USE_GTID=slave_pos, MASTER_HOST='${Remote_MaxScale_Host}', MASTER_USER='${Replication_User_Name}', MASTER_PASSWORD='*********************', MASTER_PORT=${Remote_MaxScale_Port}, IGNORE_SERVER_IDS=(), MASTER_CONNECT_RETRY=30;"
                mariadb -u${Replication_User_Name} -p${Replication_User_Pwd} -h${lv_master_host} -P${lv_master_port} < ${TMPFILE}
                RetStatus=$?
                writeLog "CHANGE MASTER: return status ${RetStatus}"
