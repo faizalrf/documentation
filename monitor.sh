@@ -16,6 +16,7 @@
 ## Sep 15th 2021 Added writeLog method                   ##
 ## Updated by: Koushik Ramachandra<rkoushik.14@gmail.com ##
 ## Sept 2nd, 2022                                        ##
+## Changed the > to -gt to get the highest sequence      ##
 ###########################################################
 
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
