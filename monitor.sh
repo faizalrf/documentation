@@ -15,8 +15,10 @@
 ## July 25th 2021                                        ##
 ## Sep 15th 2021 Added writeLog method                   ##
 ## Updated by: Koushik Ramachandra<rkoushik.14@gmail.com ##
-## Sept 2nd, 2022                                        ##
+## Sept 22nd, 2021                                       ##
 ## Changed the > to -gt to get the highest sequence      ##
+## Sept 27th, 2021                                       ##
+## Aded logic to validate the Replication status         ##
 ###########################################################
 
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
@@ -43,7 +45,7 @@
 # End...
 
 # Import info file
-. /var/lib/maxscale/.maxinfo
+source /var/lib/maxscale/.maxinfo
 
 writeLog()
 {
@@ -56,6 +58,17 @@ writeLog()
       echo "$(date) | Start monitoring" > ${LOG_PATH}
    fi
    echo "$(date) | ${MESSAGE}" >> ${LOG_PATH}
+}
+
+validateReplication()
+{
+   local strArg="$*"
+   if [ $(echo ${strArg} | grep -o "Yes" | wc -l) -eq 2 ]; then
+      writeLog "Replciation started successfully"
+   else
+      writeLog "There were problems setting up the replicaiton"
+      writeLog "Replication Failed"
+   fi   
 }
 
 process_arguments()
@@ -237,6 +250,10 @@ else
                   echo "START SLAVE '${Remote_MaxScale_Name}';" > ${TMPFILE}
                   writeLog "START SLAVE '${Remote_MaxScale_Name}';"
                   mariadb -u${Replication_User_Name} -p${Replication_User_Pwd} -h${lv_master_host} -P${lv_master_port} < ${TMPFILE}
+                  repStatus=$(mariadb -u${Replication_User_Name} -p${Replication_User_Pwd} -h${lv_master_host} -P${lv_master_port} -e "SHOW SLAVE '${Remote_MaxScale_Name}' STATUS\G" | grep "Running:")
+                  writeLog "mariadb -u${Replication_User_Name} -p${Replication_User_Pwd} -h${lv_master_host} -P${lv_master_port} -e \"SHOW SLAVE '${Remote_MaxScale_Name}' STATUS\G\" | grep \"Running:\""
+                  # Validate the replication status by ensuring both SQL and IO threads area running
+                  validateReplication ${repStatus}
                else
                   writeLog "Failed to execute CHANGE MASTER on Host: ${lv_master_host} Port: ${lv_master_port}"
                fi
