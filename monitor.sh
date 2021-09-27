@@ -251,7 +251,7 @@ else
                   writeLog "START SLAVE '${Remote_MaxScale_Name}';"
                   mariadb -u${Replication_User_Name} -p${Replication_User_Pwd} -h${lv_master_host} -P${lv_master_port} < ${TMPFILE}
                   repStatus=$(mariadb -u${Replication_User_Name} -p${Replication_User_Pwd} -h${lv_master_host} -P${lv_master_port} -e "SHOW SLAVE '${Remote_MaxScale_Name}' STATUS\G" | grep "Running:")
-                  writeLog "mariadb -u${Replication_User_Name} -p${Replication_User_Pwd} -h${lv_master_host} -P${lv_master_port} -e \"SHOW SLAVE '${Remote_MaxScale_Name}' STATUS\G\" | grep \"Running:\""
+                  writeLog "mariadb -u${Replication_User_Name} -p'*******************' -h${lv_master_host} -P${lv_master_port} -e \"SHOW SLAVE '${Remote_MaxScale_Name}' STATUS\G\" | grep \"Running:\""
                   # Validate the replication status by ensuring both SQL and IO threads area running
                   validateReplication ${repStatus}
                else
