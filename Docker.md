@@ -10,7 +10,7 @@ The above starts a new container nginx which listens to port 80 rediecting from 
 
 To enter into `bash` of the container, we need to start with the `-it` argument which runs it in in interactive mode, this will also change the default command that was supposed to run when the container started. In this case we are changing the nginx container to run a bash prompt instead of starting the nginx itself.
 
-```txt
+```text
 HellsKitchen :: ~ » docker container run -it --name proxy2 -p 80:80 nginx bash
 
 root@bd2ec6a56ee3:/# ls -lrt
