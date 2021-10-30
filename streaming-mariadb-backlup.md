@@ -281,7 +281,7 @@ It's important to time this on your environment and see what works best before y
 
 ### Restore 
 
-Let's see how to restore a compressed backup the fastest way with parallel `pigz` streams.
+The restore is very simple, let's see how.
 
 ```
 [shell] systemctl stop mariadb
@@ -297,9 +297,9 @@ sys	0m34.530s
 [shell] systemctl start mariadb
 ```
 
-The restore is also very fast, took less than 2 minutes for 15GB file unzipped in 8 parallel threads and restored to the data directory.
+The restore is also very fast, took less than 2 minutes for `pigz` to uncompress 15GB of data using 8 parallel threads and write it all to the MariaDB's data directory.
 
-Let's discuss the restore method
+A quick look at the restore steps.
 
 - **`systemctl stop mariadb`** and **`rm -rf /var/lib/mysql/*`**
   - Stop the MariaDB server and cleanup it's data directory
