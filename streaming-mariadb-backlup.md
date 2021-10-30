@@ -6,7 +6,7 @@ I have discussed this with many clients who want to make sure there MariaDB back
 - `mariabackup --prepare`
 - `mariabackup --copy-back`
 
-Well, the states are still the same but we can now use streaming backup and push the backup stream into a tool called `pigz`, this is not really Pig Zip, rather "**P**arallel **I**mplementation of gz**ip**" It's available through the standard linux repositories.
+Well, the steps are still the same but now, we can send parallel streams of backup into a tool called `pigz` which can catch those parallel streams and compress them in parallel. This is not really Pig Zip, rather, "**P**arallel **i**mplementation of **gz**ip". It's available through the standard linux repositories.
 
 Refer to <https://zlib.net/pigz/> for mode details on the tool.
 
@@ -89,10 +89,7 @@ To download sysbench, you need to install `yum install epel-release` package on 
 Executing sysbench directly from the MariaDB server, that's why `--mysql-host=127.0.0.1`
 
 ```
-[shell] read pass
-SecretP@ssw0rd
-
-[shell] sysbench /usr/share/sysbench/oltp_read_write.lua --threads=8 --mysql-host=127.0.0.1 --mysql-user=sbuser --mysql-password=$pass --mysql-port=3306 --tables=12 --table-size=5000000 prepare
+[shell] sysbench /usr/share/sysbench/oltp_read_write.lua --threads=8 --mysql-host=127.0.0.1 --mysql-user=sbuser --mysql-password=SecretP@ssw0rd --mysql-port=3306 --tables=12 --table-size=5000000 prepare
 
 sysbench 1.0.20 (using bundled LuaJIT 2.1.0-beta2)
 
@@ -100,40 +97,20 @@ Initializing worker threads...
 
 Creating table 'sbtest3'...
 Creating table 'sbtest4'...
-Creating table 'sbtest6'...
-Creating table 'sbtest1'...
-Creating table 'sbtest5'...
-Creating table 'sbtest2'...
-Creating table 'sbtest7'...
-Creating table 'sbtest8'...
+.
+.
 Inserting 5000000 records into 'sbtest6'
 Inserting 5000000 records into 'sbtest4'
-Inserting 5000000 records into 'sbtest2'
-Inserting 5000000 records into 'sbtest8'
-Inserting 5000000 records into 'sbtest3'
-Inserting 5000000 records into 'sbtest1'
-Inserting 5000000 records into 'sbtest7'
-Inserting 5000000 records into 'sbtest5'
+.
+.
 Creating a secondary index on 'sbtest4'...
 Creating a secondary index on 'sbtest2'...
 Creating a secondary index on 'sbtest7'...
-Creating a secondary index on 'sbtest1'...
-Creating a secondary index on 'sbtest8'...
-Creating a secondary index on 'sbtest5'...
-Creating a secondary index on 'sbtest3'...
-Creating a secondary index on 'sbtest6'...
+.
+.
 Creating table 'sbtest9'...
 Creating table 'sbtest12'...
-Creating table 'sbtest10'...
-Inserting 5000000 records into 'sbtest9'
-Inserting 5000000 records into 'sbtest10'
 Inserting 5000000 records into 'sbtest12'
-Creating table 'sbtest11'...
-Inserting 5000000 records into 'sbtest11'
-Creating a secondary index on 'sbtest9'...
-Creating a secondary index on 'sbtest10'...
-Creating a secondary index on 'sbtest11'...
-Creating a secondary index on 'sbtest12'...
 ```
 
 This will create 12 tables with 5 million rows each, we will see the size of the database once it's done.
@@ -146,8 +123,6 @@ Just for fun, we can track how many rows are being inserted per second with the 
 | Com_insert                                             | 77976                                            |
 | Com_insert                                             | 78058                                            |
 | Com_insert                                             | 78160                                            |
-| Com_insert                                             | 78264                                            |
-.
 .
 .
 ```
@@ -167,7 +142,7 @@ The current size of the data directory is roughly 16G
 
 ### Standard Backup
 
-All the prep is done, let's see how log it takes to take a full backup of a 16GB database using the traditional way.
+All the prep work is done, let's see how log it takes to take a full backup of a 16GB database using the traditional way.
 
 ```
 [shell] time mariabackup --backup --target-dir=/root/backup/ --datadir=/var/lib/mysql --user=backup --password=SecretP@ssw0rd
@@ -192,36 +167,7 @@ user	0m8.436s
 sys	0m18.814s
 ```
 
-The backup process took roughly 4 to 5 minutes time for 16GB data.
-
-Let's time the `--prepare` stage
-
-```
-[root@ip-172-31-3-201 ~]# time mariabackup --prepare --use-memory=16G --target-dir=/root/backup/
-mariabackup based on MariaDB server 10.6.4-1-MariaDB Linux (x86_64)
-[00] 2021-10-30 15:07:02 cd to /root/backup/
-[00] 2021-10-30 15:07:02 open files limit requested 0, set to 1024
-[00] 2021-10-30 15:07:02 This target seems to be not prepared yet.
-[00] 2021-10-30 15:07:02 mariabackup: using the following InnoDB configuration for recovery:
-[00] 2021-10-30 15:07:02 innodb_data_home_dir = .
-[00] 2021-10-30 15:07:02 innodb_data_file_path = ibdata1:12M:autoextend
-[00] 2021-10-30 15:07:02 innodb_log_group_home_dir = .
-[00] 2021-10-30 15:07:02 InnoDB: Using Linux native AIO
-[00] 2021-10-30 15:07:02 Starting InnoDB instance for recovery.
-[00] 2021-10-30 15:07:02 mariabackup: Using 104857600 bytes for buffer pool (set by --use-memory parameter)
-.
-.
-.
-[00] 2021-10-30 15:07:06 completed OK!
-
-real	0m3.535s
-user	0m3.365s
-sys	0m0.138s
-```
-
-Roughly 3 seconds.
-
-The size of the backup is around 15GB which is expected.
+The backup process took roughly 4 to 5 minutes time, we can verify how much data was written to the backup folder.
 
 ```
 [shell] du -h backup/
@@ -238,9 +184,9 @@ Streaming mariabackup is very simillar to traditional backup with the addition o
 
 - `--stream=xbstream `
 - `--parallel=n`
-  - Here `n` is the number of parallel streams beign generated by `mariabackup`
+  - Here `'n'` is the number of parallel streams beign generated by `mariabackup`
 
-We also need `pigz` to cath these parallel streams, this is done simply by redirecting the `mariabackup` command to `pigz` with `-p n` argument, here `n` is the number of parallel compression threads used by `pigz`, this should be the same as the number of `xbstream` parallel streams. 
+We also need `pigz` to cath these parallel streams, this is done simply by redirecting the `mariabackup` command to `pigz` with `-p n` argument, here `'n'` is the number of parallel compression threads used by `pigz`, this should be the same as the number of `xbstream` parallel streams. 
 
 Also take note that there is no need for a `target-dir` since it's now using backup sterams which needs to be redirected into `pigz` or another receiver.
 
@@ -258,7 +204,7 @@ user	17m54.658s
 sys	0m12.358s
 ```
 
-The best part is the backup size, as it's comoressed, it takes a lot less storage, 6.3GB vs 15GB.
+The best part is the backup size, as it's comoressed, it takes a lot less storage, 6.3GB vs 15GB for the traditional backup.
 
 ```
 [shell] du -h backup/
