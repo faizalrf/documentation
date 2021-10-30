@@ -1,4 +1,4 @@
-# Faster Parallel Streaming MariaDB Backup
+# Parallel Streaming MariaDB Backup
 
 I have discussed this with many clients who want to make sure there MariaDB backup is faster and don't consume much space. So far we have been used to the traditional MariaDB backup using the following three steps
 
