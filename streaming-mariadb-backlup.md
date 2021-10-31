@@ -2,6 +2,8 @@
 
 Recently, quite a few clients have asked me on what is the best and fastest way to take MariaDB backup? can we improve it's performance? how much storate is required for a full backup and restore? etc. If you have had any of the above thoughts then this blog is going to be helpful. 
 
+I was involved in a project where we had 1.6TB of MariaDB database and took more than 6 hours to take a backup and transfer that backup to other nodes in order to build a slave. Parallel mariabackup would have been a perfect solution for that scenario but it was many years ago when we did not have this option!
+
 To begin with, so far we have been used to the traditional MariaDB backup using the following three steps
 
 - `mariabackup --backup`
@@ -145,13 +147,13 @@ The current size of the data directory is roughly 30G
 3.1M	/var/lib/mysql/mysql
 4.0K	/var/lib/mysql/performance_schema
 616K	/var/lib/mysql/sys
-28G	/var/lib/mysql/sbtest
-30G	/var/lib/mysql/
+41G	/var/lib/mysql/sbtest
+43G	/var/lib/mysql/
 ```
 
 ### Standard Backup
 
-All the prep work is done, let's see how log it takes to take a full backup of a 30GB database using the traditional way.
+All the prep work is done, let's see how log it takes to take a full backup of a 43GB database using the traditional way.
 
 ```
 [shell] time mariabackup --backup --target-dir=/backup --datadir=/var/lib/mysql --user=backup --password=SecretP@ssw0rd
@@ -171,23 +173,22 @@ All the prep work is done, let's see how log it takes to take a full backup of a
 [00] 2021-10-30 15:03:53 Redo log (from LSN 71518599223 to 71623288280) was copied.
 [00] 2021-10-30 15:03:53 completed OK!
 
-real	4m30.496s
-user	0m8.436s
-sys	0m18.814s
+real	2m49.329s
+user	0m4.805s
+sys	0m24.971s
 ```
 
-The backup process took roughly 4m30s time, we can verify how much data was written to the backup folder.
+The backup process took roughly 2m49s to complete the full backup, we can verify how much data was written to the backup folder.
 
 ```
 [shell] du -h backup/
-616K    /backup/sys
-28G     /backup/sbtest
-8.0K    /backup/performance_schema
-3.1M    /backup/mysql
-29G     /backup
+3.1M	/backup/mysql
+41G	/backup/sbtest
+616K	/backup/sys
+4.0K	/backup/performance_schema
+43G	/backup/
 ```
 
-Given the size, the backup is very fast the reason being, the backup target directory `/backup` is a physical dedicated mount and not a part of the primary storage. This increases the throughput drastically as reads and writes can be in parallel.
 
 ### Streaming Parallel Backup
 
@@ -205,36 +206,22 @@ Let's see how this all comes together.
 
 #### Streaming Backup Test 1
 
-Streaming backup test with `mariabackup` and  `pigz` both allocated **8 cores**, we can see immediately it was almost half the time of normal backup
+Streaming backup test with `mariabackup` and  `pigz` both allocated **16 cores**, we can see immediately it was almost half the time of normal backup
 
 ```
 [shell] time mariabackup --backup --tmpdir=/tmp --stream=xbstream --parallel=16 --datadir=/var/lib/mysql --user=backup --password=SecretP@ssw0rd 2>/backup/backup.log | pigz -p 16 > /backup/full_backup.gz
 
-real	2m39.622s
-user	35m26.558s
-sys	0m29.978s
+real	3m57.896s
+user	53m22.399s
+sys	0m37.987s
 ```
 
-The best part is the backup size, as it's comoressed, it takes a lot less storage, 6.3GB vs 15GB for the traditional backup.
+The compressed backup took slightly longer to complete vs the full uncomoressed backup, the main reason is multiple streams writing reading from and writing to the same storage. This can be helped greatly if we have a dedicated backup storage. The best part is the backup size, as it's comoressed, it takes a lot less storage, 19GB vs 43GB for the uncompressed backup.
 
 ```
 [shell] du -h /backup
-13G	/backup
+19G	/backup
 ```
-
-#### Streaming Backup Test 2
-
-Suppose we over allocate the **20 cores** for both `mariabackup` and `pigz`, we can see the laws of diminishing return in action, the backup now took longer because the total cores available are 8 in the server but we allocated much more than that, the CPUs are not fighting for `clock-time` to work which leads to delays.
-
-```
-[shell] time mariabackup --backup --tmpdir=/tmp --stream=xbstream --parallel=20 --datadir=/var/lib/mysql --user=backup --password=SecretP@ssw0rd 2>/backup/backup.log | pigz -p 20 > /root/backup/full_backup.gz
-
-real	3m9.443s
-user	18m1.346s
-sys	0m12.654s
-```
-
-It's important to time this on your environment and see what works best before you start to get diminshing returns. Having a faster disk will also help a lot, we are using the standard spinning storage which is of course not ideal for a database in this modern data driven age. 
 
 ### Restore 
 
@@ -243,7 +230,7 @@ The restore is very simple, let's see how.
 ```
 [shell] systemctl stop mariadb
 [shell] rm -rf /var/lib/mysql/*
-[shell] time pigz full_backup.gz -dc -p 8 | mbstream --directory=/var/lib/mysql -x --parallel=8
+[shell] time pigz full_backup.gz -dc -p 16 | mbstream --directory=/var/lib/mysql -x --parallel=16
 
 real	1m59.549s
 user	1m52.057s
@@ -278,12 +265,38 @@ This stream of redirects from one node to another leads to the following
 MariaDB Backup -> `pigz` in parallel -> `ssh` to a new node -> uncompress in parallel -> restore using `mbstream`
 
 ```
-mariabackup --backup --tmpdir=/tmp --stream=xbstream --parallel=8 --datadir=/var/lib/mysql 2>/backup/backup.log | pigz -p 8 | ssh -q 192.168.56.200 -t "pigz -dc -p 8 | mbstream --directory=/var/lib/mysql -x --parallel=4"
+[shell] time mariabackup --backup --tmpdir=/tmp \
+                --stream=xbstream \
+                --parallel=16 \
+                --datadir=/var/lib/mysql \
+                --user=backup \
+                --password=SecretP@ssw0rd 2>/tmp/backup.log \
+            | pigz -p 16 \
+            | ssh -i ssh_key.pem user@172.31.21.72 -q -t \
+                "pigz -dc -p 16 \
+                  | sudo mbstream \
+                    --directory=/var/lib/mysql -x \
+                    --parallel=16"
+
+real	4m7.282s
+user	53m21.791s
+sys	0m58.784s
 ```
 
-Assuming `192.168.56.200` is the IP of the slave node where we want to stream this backup to, the above is one command that will take a streaming compressed backup, ssh to the slave node, unzip the streams and restore to the data directory in one swift set of parallel data streams from 1 node to another target node. 
+The great thing about this streaming backup to a different node is that it takes away a lot of manual steps such as
 
-Before starting the MariaDB server, we still need to do the `prepare`, and `chown -R mysql:mysql /var/lib/mysql` as per the normal restore process.
+- take a local full backup (this is going to take time as the local IO will come into play)
+- tar/zip the backup so that a smaller backup can be transferred over the network, maybe even to another data center which does not have the fastest network. Smaller compressed backup is desirable.
+- untar/unzip the backup on the remote node
+- Run mariabackup to restore that backup.
+
+All the above combined together will take a very long time depending on the backup size.
+
+Assuming `172.31.21.72` is the IP of the replica node where we want to stream this backup to and restore, the above is one command that will take a streaming compressed backup, ssh to the slave node, unzip the streams and restore to the data directory in one swift set of parallel data streams from 1 node to another target node.
+
+All the above is done in a single step of parallel streams where backup and compression from local node does not even use any IO locally as the comoressed stream is sent to `ssh` which triggers `pigz -dc -p 16` dc = De Compress using 16 CPUs and then send the streams to `mbstream which handles it using 16 parallel threads and restores it onto the node directly. Very smooth and efficient. I wish I had this at my disposal years back when I spent days rebuilding those replica nodes within and across the multiple data centers.
+
+Before starting the MariaDB server on this node, we still need to do the `prepare`, and `chown -R mysql:mysql /var/lib/mysql` as per the normal restore process.
 
 This is very efficient and performant because it's all parallel using the CPUs available, just take note that the network between the nodes must be a good 10GBps because on a slower network, the network will become the bollneck.
 
