@@ -265,32 +265,32 @@ This stream of redirects from one node to another leads to the following
 MariaDB Backup -> `pigz` in parallel -> `ssh` to a new node -> uncompress in parallel -> restore using `mbstream`
 
 ```
-[shell] time mariabackup --backup --tmpdir=/tmp \
+[shell] time mariabackup --backup \
                 --stream=xbstream \
                 --parallel=16 \
                 --datadir=/var/lib/mysql \
                 --user=backup \
                 --password=SecretP@ssw0rd 2>/tmp/backup.log \
-            | pigz -p 16 \
-            | ssh -i ssh_key.pem user@172.31.21.72 -q -t \
-                "pigz -dc -p 16 \
-                  | sudo mbstream \
-                    --directory=/var/lib/mysql -x \
-                    --parallel=16"
+              | pigz -p 16 \
+              | ssh -i ssh_key.pem user@172.31.21.72 -q -t \
+                  "pigz -dc -p 16 \
+                    | sudo mbstream \
+                      --directory=/var/lib/mysql -x \
+                      --parallel=16"
 
 real	4m7.282s
 user	53m21.791s
 sys	0m58.784s
 ```
 
-The great thing about this streaming backup to a different node is that it takes away a lot of manual steps such as
+The great thing about this streaming backup to a different node is that it is very fast and efficient and takes away a lot of manual steps such as
 
 - take a local full backup (this is going to take time as the local IO will come into play)
 - tar/zip the backup so that a smaller backup can be transferred over the network, maybe even to another data center which does not have the fastest network. Smaller compressed backup is desirable.
 - untar/unzip the backup on the remote node
 - Run mariabackup to restore that backup.
 
-All the above combined together will take a very long time depending on the backup size.
+All the above if done manually will take a very long time, depending on the backup size.
 
 Assuming `172.31.21.72` is the IP of the replica node where we want to stream this backup to and restore, the above is one command that will take a streaming compressed backup, ssh to the slave node, unzip the streams and restore to the data directory in one swift set of parallel data streams from 1 node to another target node.
 
