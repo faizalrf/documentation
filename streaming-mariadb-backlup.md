@@ -283,7 +283,9 @@ user	53m21.791s
 sys	0m58.784s
 ```
 
-The great thing about this streaming backup to a different node is that it is very fast and efficient and takes away a lot of manual steps such as
+***Note:** `--target-dir` is not required as the backup is not really written anywhere on local server*
+
+The great thing about streaming a highly compressed backup directly to a different node is that it is very fast and efficient that consumes much less IO and network bandwidth while taking away a lot of manual steps such as
 
 - take a local full backup (this is going to take time as the local IO will come into play)
 - tar/zip the backup so that a smaller backup can be transferred over the network, maybe even to another data center which does not have the fastest network. Smaller compressed backup is desirable.
