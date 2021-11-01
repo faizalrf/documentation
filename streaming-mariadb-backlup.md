@@ -341,17 +341,17 @@ This is very efficient and performant because it's all parallel using the CPUs a
 
 Let's time the approach as discussed above if we were to do all of this backup/transfer manually.
 
-- Full backup of 37GB took **2m24s**
-- tar/zip metod - **42 miutes**
-  - `tar -czvf backup.tar.gz backup/` took **34m56s**
-  - Transfer the tar to slave node took **1m10s**
-  - Untar on remote slave took **4m7s**
-- Direct copy without tar took **3m2s**
+- Full backup of 37GB took **2 minutes 24 seconds**
+- tar/zip + transfer to remote - **42 miutes**
+  - `tar -czvf backup.tar.gz backup/` took **34 minutes 56 seconds**
+  - Transfer the tar to slave node took **1 minutes 10 seconds**
+  - Untar on remote slave took **4 minutes 7 seconds**
+- Direct transfer without tar took **3 minutes 2 seconds**
   - `scp -r backup/* user@remnote:/tmp`
 
-Full Backup + tar compression + Transfer -> **45 minutes**
-Full Backup + Direct transfer without tar compression -> **5 minutes 30 seconds**
-Full streaming parallel backup with pigz compression and transfer -> **3 minutes 26 seconds** "Winner :)~"
+-> Full Backup + tar compression + Transfer: **45 minutes**
+-> Full Backup + Direct transfer without tar compression: **5 minutes 30 seconds**
+-> Full streaming parallel backup with pigz compression and transfer: **3 minutes 26 seconds** "Winner :)"
 
 Clearly the streaming backup with parallel compression and transfer is the best way.
 
