@@ -349,9 +349,11 @@ Let's time the approach as discussed above if we were to do all of this backup/t
 - Direct transfer without tar took **3 minutes 2 seconds**
   - `scp -r backup/* user@remnote:/tmp`
 
--> Full Backup + tar compression + Transfer: **45 minutes**
--> Full Backup + Direct transfer without tar compression: **5 minutes 30 seconds**
--> Full streaming parallel backup with pigz compression and transfer: **3 minutes 26 seconds** "Winner :)"
+**Results:**
+
+- Full Backup + tar compression + Transfer: **45 minutes**
+- Full Backup + Direct transfer without tar compression: **5 minutes 30 seconds**
+- Full streaming parallel backup with pigz compression and transfer: **3 minutes 26 seconds** "Winner :)"
 
 Clearly the streaming backup with parallel compression and transfer is the best way.
 
