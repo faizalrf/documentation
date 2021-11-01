@@ -102,7 +102,7 @@ Alternatively, sysbench can be fetched from CentOS repositories manually as RPM 
 Executing sysbench directly from the MariaDB server, that's why `--mysql-host=127.0.0.1`
 
 ```
-[shell] sysbench /usr/share/sysbench/oltp_read_write.lua --threads=12 --mysql-host=127.0.0.1 --mysql-user=sbuser --mysql-password=SecretP@ssw0rd --mysql-port=3306 --tables=24 --table-size=5000000 prepare
+[shell] sysbench /usr/share/sysbench/oltp_read_write.lua --threads=12 --mysql-host=127.0.0.1 --mysql-user=sbuser --mysql-password=SecretP@ssw0rd --mysql-port=3306 --tables=30 --table-size=5000000 prepare
 
 sysbench 1.0.20 (using bundled LuaJIT 2.1.0-beta2)
 
@@ -124,36 +124,69 @@ Creating a secondary index on 'sbtest7'...
 .
 ```
 
-This will create 24 tables with 5 million rows each, we will see the size of the database once it's done.
+This will create 30 tables with 5 million rows each, we will see the size of the database once it's done.
 
-Just for fun, we can track how many rows are being inserted per second with the help of `mariadb-admnin` with `extended-status` argument to get the following.
+Just for fun, we can track various MariaDB stats with the help of `mariadb-admin` using `extended-status` to get detailed stats. Combibed together with some Linux magic we get a nicely formatted output.
+
+`-i1` in the `mariadb-admin` argument stands for interval of 1 second where as `-r` is to get relative status numbers since the last execution. This in return gives us per second stats. 
 
 ```
-[shell] mariadb-admin extended-status -i1 | grep "Com_insert "
-| Com_insert                                             | 77882                                            |
-| Com_insert                                             | 77976                                            |
-| Com_insert                                             | 78058                                            |
-| Com_insert                                             | 78160                                            |
-.
-.
+[shell] mariadb-admin --no-defaults -r -i1 extended-status |\
+gawk -F"|" \
+"BEGIN{ count=0; }"\
+'{ if($2 ~ /Variable_name/ && ++count == 1){\
+    print "+----------+----------+-- MariaDB Command Status ---+----- Innodb row operation ------+--- Buffer Pool Read ---+";\
+    print "|   Time   |      QPS | select insert update delete |   read inserted updated deleted |    logical    physical |";\
+    print "+----------+----------+-----------------------------+---------------------------------+------------------------+";\
+}\
+else if ($2 ~ /Queries/){queries=$3;}\
+else if ($2 ~ /Com_select /){com_select=$3;}\
+else if ($2 ~ /Com_insert /){com_insert=$3;}\
+else if ($2 ~ /Com_update /){com_update=$3;}\
+else if ($2 ~ /Com_delete /){com_delete=$3;}\
+else if ($2 ~ /Innodb_rows_read/){innodb_rows_read=$3;}\
+else if ($2 ~ /Innodb_rows_deleted/){innodb_rows_deleted=$3;}\
+else if ($2 ~ /Innodb_rows_inserted/){innodb_rows_inserted=$3;}\
+else if ($2 ~ /Innodb_rows_updated/){innodb_rows_updated=$3;}\
+else if ($2 ~ /Innodb_buffer_pool_read_requests/){innodb_lor=$3;}\
+else if ($2 ~ /Innodb_buffer_pool_reads/){innodb_phr=$3;}\
+else if ($2 ~ /Uptime / && count >= 2){\
+  printf("| %s |%9d ",strftime("%H:%M:%S"),queries);\
+  printf("| %6d %6d %6d %6d ",com_select,com_insert,com_update,com_delete);\
+  printf("| %6d %8d %7d %7d ",innodb_rows_read,innodb_rows_inserted,innodb_rows_updated,innodb_rows_deleted);\
+  printf("| %10d %11d |\n",innodb_lor,innodb_phr);\
+}}'
+
++----------+----------+-- MariaDB Command Status ---+----- Innodb row operation ------+--- Buffer Pool Read ---+
+|   Time   |      QPS | select insert update delete |   read inserted updated deleted |    logical    physical |
++----------+----------+-----------------------------+---------------------------------+------------------------+
+| 13:08:58 |      119 |      0    118      0      0 |      0   312708       0       0 |    2367607           0 |
+| 13:09:00 |      118 |      0    116      0      0 |      0   313371       0       0 |    2703427           0 |
+| 13:09:00 |      100 |      0     97      0      0 |      0   262277       0       0 |    1868223           0 |
+| 13:09:01 |      133 |      0    134      0      0 |      0   360241       0       0 |    2948243           0 |
+| 13:09:03 |      116 |      0    116      0      0 |      0   303584       0       0 |    2311904           0 |
+| 13:09:03 |      122 |      0    121      0      0 |      0   315199       0       0 |    2751877           0 |
+...
+...
+...
 ```
 
-Based on the optimization parameters, we can see that 12 parallel threads can achieve a combined 77k+ inserts per second. 
+Based on the optimization parameters, we can see that 12 parallel threads can achieve a combined average of 25k+ inserts per second. 
 
-The current size of the data directory is roughly 43GB
+The current size of the data directory is roughly 37GB
 
 ```
 [shell] du -h /var/lib/mysql/
-3.1M	/var/lib/mysql/mysql
+3.2M	/var/lib/mysql/mysql
 4.0K	/var/lib/mysql/performance_schema
 616K	/var/lib/mysql/sys
-41G	/var/lib/mysql/sbtest
-43G	/var/lib/mysql/
+35G	/var/lib/mysql/sbtest
+37G	/var/lib/mysql/
 ```
 
 ### Standard Backup
 
-We have done All the prep work. Let’s see how long it takes to make a full backup of a 43GB database using the traditional way.
+We have done All the prep work. Let’s see how long it takes to make a full backup of a 37GB database using the traditional way.
 
 ```
 [shell] time mariabackup --backup --target-dir=/backup --datadir=/var/lib/mysql --user=backup --password=SecretP@ssw0rd
@@ -173,20 +206,20 @@ We have done All the prep work. Let’s see how long it takes to make a full bac
 [00] 2021-10-30 15:03:53 Redo log (from LSN 71518599223 to 71623288280) was copied.
 [00] 2021-10-30 15:03:53 completed OK!
 
-real	2m49.329s
-user	0m4.805s
-sys	0m24.971s
+real	2m22.235s
+user	0m4.340s
+sys	0m21.735s
 ```
 
-The backup process took roughly 2m49s to complete the full backup. We can verify how much data was written to the backup folder.
+The backup process took roughly 2m22s to complete the full backup. We can verify how much data was written to the backup folder.
 
 ```
 [shell] du -h backup/
-3.1M	/backup/mysql
-41G	/backup/sbtest
-616K	/backup/sys
-4.0K	/backup/performance_schema
-43G	/backup/
+3.2M	backup/mysql
+35G	backup/sbtest
+616K	backup/sys
+4.0K	backup/performance_schema
+36G	backup/
 ```
 
 
@@ -209,18 +242,20 @@ Let's see how this all comes together.
 Streaming backup test with `mariabackup` and  `pigz` both allocated **16 cores**, we can see immediately it was almost half the time of regular backup
 
 ```
-[shell] time mariabackup --backup --tmpdir=/tmp --stream=xbstream --parallel=16 --datadir=/var/lib/mysql --user=backup --password=SecretP@ssw0rd 2>/backup/backup.log | pigz -p 16 > /backup/full_backup.gz
+[shell] time mariabackup --backup --tmpdir=/tmp --stream=xbstream --parallel=16 --datadir=/var/lib/mysql --user=backup --password=SecretP@ssw0rd 2>backup/backup.log | pigz --fast -p 16 > backup/full_backup.gz
 
-real	3m57.896s
-user	53m22.399s
-sys	0m37.987s
+real	1m40.627s
+user	12m48.086s
+sys	0m35.985s
 ```
 
-The compressed backup took slightly longer to complete vs. the full uncompressed backup. The main reason is multiple streams of writing, reading from, and writing to the same storage. The slow performance can be fixed if we have  dedicated backup storage. The best part is the backup size. As it's compressed, it takes a lot less storage, 19GB vs. 43GB for the uncompressed backup.
+The compressed backup faster by 1 minute! The important parameters for `pigz` are `--fast` and `-p 16` to use the fastest compression algorithm, it compresses slightly less but is much faster than the default. Finally the `-p 16` to use 16 parallel threads, the threads must be according to the total CPUs/vCPUs available in the server.
+
+The performance can be further enhanced by having a dedicated backup storage mount. The best part is the backup size. As it's compressed, it takes a lot less storage, 17GB vs. 37GB for the full uncompressed backup.
 
 ```
 [shell] du -h /backup
-19G	/backup
+17G	/backup
 ```
 
 ### Restore 
@@ -230,18 +265,18 @@ The restore is straightforward. Let’s see how.
 ```
 [shell] systemctl stop mariadb
 [shell] rm -rf /var/lib/mysql/*
-[shell] time pigz full_backup.gz -dc -p 16 | mbstream --directory=/var/lib/mysql -x --parallel=16
+[shell] time pigz backup/full_backup.gz -dc -p 16 | mbstream --directory=/var/lib/mysql -x --parallel=16
 
-real	1m59.549s
-user	1m52.057s
-sys	0m34.530s
+real	2m29.132s
+user	3m10.598s
+sys	1m2.910s
 
 [shell] mariabackup --prepare --use-memory=16G --target-dir=/var/lib/mysql
 [shell] chown -R mysql:mysql /var/lib/mysql
 [shell] systemctl start mariadb
 ```
 
-The restore is also speedy. It took less than 2 minutes for `pigz` to uncompress 15GB of data using 16 parallel threads and write it all to the MariaDB's data directory.
+The restore is also speedy. It took around 2m30s for `pigz` to uncompress 37GB of data using 16 parallel threads and write it all to the MariaDB's data directory. Writes are always slow particularly when writing huge amounts of data like in this case.
 
 A quick look at the restore steps.
 
@@ -272,15 +307,15 @@ MariaDB Backup -> `pigz` in parallel -> `ssh` to a new node -> uncompress in par
                 --user=backup \
                 --password=SecretP@ssw0rd 2>/tmp/backup.log \
               | pigz -p 16 \
-              | ssh -i ssh_key.pem user@172.31.21.72 -q -t \
-                  "pigz -dc -p 16 \
+              | ssh -i ssh_key.pem user@172.31.32.26 -q -t \
+                  "pigz --fast -dc -p 16 \
                     | sudo mbstream \
                       --directory=/var/lib/mysql -x \
                       --parallel=16"
 
-real	4m7.282s
-user	53m21.791s
-sys	0m58.784s
+real	3m26.264s
+user	44m43.579s
+sys	0m47.138s
 ```
 
 ***Note:** `--target-dir` is not required as the backup is not written anywhere on the local server*
@@ -302,10 +337,28 @@ Before starting the MariaDB server on this node, we still need to do the `prepar
 
 This is very efficient and performant because it's all parallel using the CPUs available. Note that the network between the nodes must be a good 10GBps because, on a slower network, the network will become the bottleneck.
 
+#### Time that backup
+
+Let's time the approach as discussed above if we were to do all of this backup/transfer manually.
+
+- Full backup of 37GB took **2m24s**
+- tar/zip metod - **42 miutes**
+  - `tar -czvf backup.tar.gz backup/` took **34m56s**
+  - Transfer the tar to slave node took **1m10s**
+  - Untar on remote slave took **4m7s**
+- Direct copy without tar took **3m2s**
+  - `scp -r backup/* user@remnote:/tmp`
+
+Full Backup + Transfer using tar -> **45 minutes**
+Full Backup + Direct transfer without Tar -> **5 minutes 30 seconds**
+Full streaming parallel backup transfer -> **3 minutes 26 seconds** "Winner :)~"
+
+Clearly the streaming backup with parallel compression and transfer is the best way.
+
 ### Conclusion
 
-While streaming parallel backup might not be as fast as the traditional backup in some scenarios, such as reading and writing to the same disk. Still, it makes a massive difference in saving storage, rebuilding replica nodes directly from a node by streaming compressed backup to a remote machine where MariaDB receives the incoming streams using parallel threads and restores them directly onto the database data directory.
+Streaming backup taken locally or used for rebuilding a replica node is the fast approach. It helps with saving storage and network load while rebuilding replica nodes directly from a node by streaming compressed backup to a remote machine where. On the remote MariaDB receives the incoming streams using parallel threads and restores them directly onto the database data directory.
 
-It leads to automation and performant and straightforward at the same time.
+It leads to great automation, performant and straightforward at the same time.
 
 ### Thanks
