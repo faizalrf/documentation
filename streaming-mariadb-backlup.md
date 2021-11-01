@@ -337,7 +337,7 @@ Before starting the MariaDB server on this node, we still need to do the `prepar
 
 This is very efficient and performant because it's all parallel using the CPUs available. Note that the network between the nodes must be a good 10GBps because, on a slower network, the network will become the bottleneck.
 
-#### Time that backup
+### Time That Backup
 
 Let's time the approach as discussed above if we were to do all of this backup/transfer manually.
 
@@ -355,7 +355,7 @@ Full streaming parallel backup with pigz parallel compression and transfer -> **
 
 Clearly the streaming backup with parallel compression and transfer is the best way.
 
-### Conclusion
+## Conclusion
 
 Streaming backup taken locally or used for rebuilding a replica node is the fast approach. It helps with saving storage and network load while rebuilding replica nodes directly from a node by streaming compressed backup to a remote machine where. On the remote MariaDB receives the incoming streams using parallel threads and restores them directly onto the database data directory.
 
