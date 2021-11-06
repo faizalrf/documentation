@@ -157,29 +157,11 @@ Total download size: 38 M
 Installed size: 193 M
 Downloading packages:
 --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-Total                                                                                                                                                                                                                                                       319 MB/s |  38 MB  00:00:00
-Running transaction check
-Running transaction test
-Transaction test succeeded
-Running transaction
-  Installing : MariaDB-common-10.5.10_7-1.el7_9.x86_64                                                                                                                                                                                                                                  1/6
-  Installing : MariaDB-compat-10.5.10_7-1.el7_9.x86_64                                                                                                                                                                                                                                  2/6
-  Installing : MariaDB-client-10.5.10_7-1.el7_9.x86_64                                                                                                                                                                                                                                  3/6
-  Installing : galera-enterprise-4-26.4.8-1.el7_9.x86_64                                                                                                                                                                                                                                4/6
-  Installing : MariaDB-server-10.5.10_7-1.el7_9.x86_64                                                                                                                                                                                                                                  5/6
-  Installing : MariaDB-backup-10.5.10_7-1.el7_9.x86_64                                                                                                                                                                                                                                  6/6
-  Verifying  : MariaDB-compat-10.5.10_7-1.el7_9.x86_64                                                                                                                                                                                                                                  1/6
-  Verifying  : MariaDB-backup-10.5.10_7-1.el7_9.x86_64                                                                                                                                                                                                                                  2/6
-  Verifying  : galera-enterprise-4-26.4.8-1.el7_9.x86_64                                                                                                                                                                                                                                3/6
-  Verifying  : MariaDB-client-10.5.10_7-1.el7_9.x86_64                                                                                                                                                                                                                                  4/6
-  Verifying  : MariaDB-common-10.5.10_7-1.el7_9.x86_64                                                                                                                                                                                                                                  5/6
-  Verifying  : MariaDB-server-10.5.10_7-1.el7_9.x86_64                                                                                                                                                                                                                                  6/6
-
+.
+.
+.
 Installed:
   MariaDB-backup.x86_64 0:10.5.10_7-1.el7_9                                                                                                    MariaDB-server.x86_64 0:10.5.10_7-1.el7_9
-
-Dependency Installed:
-  MariaDB-client.x86_64 0:10.5.10_7-1.el7_9                             MariaDB-common.x86_64 0:10.5.10_7-1.el7_9                             MariaDB-compat.x86_64 0:10.5.10_7-1.el7_9                             galera-enterprise-4.x86_64 0:26.4.8-1.el7_9
 
 Complete!
 ```
@@ -199,8 +181,6 @@ Edit the /etc/my.cnf.d/server.cnf and add the following in the `[galera]`, `[mar
 wsrep_on=ON
 wsrep_provider=/usr/lib64/galera/libgalera_enterprise_smm.so
 wsrep_cluster_address=gcomm://172.31.32.37,172.31.41.102,172.31.34.254
-wsrep_sst_method=mariabackup
-wsrep_sst_auth=mysql:
 
 # Local node setup
 wsrep_node_address=172.31.32.37
@@ -209,16 +189,9 @@ wsrep_node_name=galera1
 #Galera Cache setup for performance as 5 GB, default location is on `datadir`
 wsrep_provider_options="gcache.size=5G; gcache.keep_pages_size=5G; gcache.recover=yes; gcs.fc_factor=0.8;"
 
-[sst]
-inno-backup-opts="--parallel=4"
-inno-apply-opts="--use-memory=8192M"
-compressor="pigz"
-decompressor="pigz -d"
-
 [mariadb]
 log_error=server.log
 binlog_format=row
-
 default_storage_engine=InnoDB
 innodb_autoinc_lock_mode=2
 innodb_lock_schedule_algorithm=FCFS
@@ -245,29 +218,21 @@ Let's discuss the above variables:
     - This cluster address should have the list of internal IP addresses of rhe Galera nodes without spaces.
   - **`wsrep_sst_method=mariabackup`**
     - Galera will use MariaDB Backup to pefrorm full system state transfer SST when a full recovery/rebuild of a node is needed or a new node is added to the cluster.
-  - **`wsrep_sst_auth=mysql:`**
-    - the built-in `mysql@localhost` MariaDB & OS user will be used for MariaDB Galera SST, since `mysql@localhost` is an OS Authenticated used, there is no need to hardcode the password in the config file.
-    - We do however, need to grant **BACKUP privileges to `mysql@localhost`** user once the cluster is up and running.
   - **`wsrep_node_address`** & **`wsrep_node_name`**
     - These two variables define the local node and should be unique for each node, the address is the IP address of the current node and node name, well, it's the node name, not necessarily the hostname but any text value that you want to define as the node name
   - **`wsrep_trx_fragment_unit=rows`** & **`wsrep_trx_fragment_size=1000`**
     - These two are new features in 10.5 and are used for streaming transactions as soon as the transaction size is larger than 1000 rows as defined in the variables
   - **`wsrep_provider_options`**
     - This defines some of the Galera specific properties, the most important is the `gcache.size` This must be large enough to support IST when a node is out of the cluster or down for some time. If the delta data is within the 5GB mark a FAST IST is performed to bring the node in sync with the cluster else a FULL SST is performed. 
-- **`[sst]`**
-  - This section defines the various MariaDB backup parameters for fastest backup/restore operation using parallel compression
-  - make sure `pigz` is installed on all nodes
-  - Parallel threads and memory used for `pigz` can be increased if more CPU / RAM is available on the server. The configured value is considering 32GB RAM and 8 CPU per node.
-  - All these variables are not MariaDB server variables, these are just read by Galera during SST. That's why we can't see these variables using `SHOW GLOBAL VARIABLES` command.
 - **`[mariadb]`**
   - **`binlog_format=row`**
     - Galera does not need binary logs in physical files, but ROW based binlog format is needed to be defined
   - **`innodb_autoinc_lock_mode=2`**
     - Fast AutoIncrement columns insertions
-  - **`innodb_flush_log_at_trx_commit=0`**
-    - Galera is based on fully sybchronous replication, flush logs at transaction commit = 1 is not needed, this makes it faster when it comes to write performance
+  - **`innodb_flush_log_at_trx_commit=2`**
+    - Galera is based on fully sybchronous replication, flush logs at transaction commit = 1 is not needed, setting it to **0** provides the fastest write performance but setting it to **2** is safer while still being faster than **0**
   - **`innodb_buffer_pool_size`**
-    - This variable MUST be configured to be 70% of the total RAM of the server, critical for best performance
+    - This variable MUST be configured to be **60% to 70%** of the total RAM of the server, critical for best performance
   - **`innodb_log_file_size=1G`**
     - REDO Log file size, larger file means faster IO performance but longer recovery time, can be lower like 512M or so if the app is not write heavy.
 
@@ -331,14 +296,46 @@ To force cluster bootstrap with this node, edit the grastate.dat file manually a
 
 ### SST User
 
-As we know, we have defined **`mysql@localhost`** user as the SST user who will be running Maria Backup when SST is needed, but we still need to grant the necessary privileges required by the user running Maria Backup.
+The default SST method is `rsync` which is not the best as it blocks the donor node from being accesse, we don't want that, we will use the built in **`mysql@localhost`** user as the SST user or you can create a new user which uses `unix_socket` for authentication, i.e. OS Authenticated user, this DB user will be running `mariabackup` when SST is needed, but we still need to grant the necessary privileges required for running `mariabackup`.
 
-Execute the following command from any of the three nodes, make suree all the  nodes are running as a 3 node cluster. 
+Execute the following command from any of the three nodes, make suree all the  nodes are running as a 3 node cluster. Before doing this that your installation has mysql@localhost already created, else you will need to create a new user. The name is not important when creating a new DB user, just need to ensure there is an OS user with the same name. 
 
 ```sql
 GRANT RELOAD, PROCESS, LOCK TABLES, REPLICATION CLIENT ON *.* TO mysql@localhost;
 ```
 
+In case you need to create a new DB user
+
+```sql
+CREATE USER backup@localhost IDENTIFIED VIA unix_socket;
+GRANT RELOAD, PROCESS, LOCK TABLES, REPLICATION CLIENT ON *.* TO backup@localhost;
+```
+
+Once the user is created within the MariaDB cluster, add the following two lines in `server.cnf` file under `[galera]` section and also create the `[sst]` section on all three nodes and restart then one by one.
+
+```
+wsrep_sst_method=mariabackup
+wsrep_sst_auth=mysql:
+
+[sst]
+streamfmt=xbstream
+transferfmt=socat
+inno-backup-opts="--parallel=4"
+inno-apply-opts="--use-memory=2048M"
+compressor="pigz"
+decompressor="pigz -dc"
+```
+
+- **`wsrep_sst_auth=mysql:`**
+  - the built-in `mysql@localhost` MariaDB & OS user will be used for MariaDB Galera SST, since `mysql@localhost` is an OS Authenticated used, there is no need to hardcode the password in the config file.
+  - We do however, need to grant **BACKUP privileges to `mysql@localhost`** user once the cluster is up and running.
+  - In case you don't have an OS user with the same name as the one used for `wsrep_sst_auth` in this case `mysql` then you would need to create a normal user with a password and use hardcode that password in the `server.cnf` file, which is not ideal, as an example if our `mariabackup` user is `backupuser` with `SecretP@ssword` as it's password
+    - `wsrep_sst_auth=backupuser:SecretP@ssword`
+- **`[sst]`**
+  - This section defines the various MariaDB backup parameters for fastest backup/restore operation using parallel compression
+  - make sure `pigz` is installed on all nodes
+  - Parallel threads and memory used for `pigz` can be increased if more CPU / RAM is available on the server. The configured value is considering 32GB RAM and 8 CPU per node.
+  - All these variables are not MariaDB server variables, these are just read by Galera during SST. That's why we can't see these variables using `SHOW GLOBAL VARIABLES` command.
 ## MaxScale 2.5
 
 Setup and configuration is the same for both MaxScale 2.4 and 2.5
@@ -671,7 +668,7 @@ Things to take note:
 - If a it's requred to replace a server with a new node, one can simply `rm -rf /var/lib/mysql/*` on that node and just restart the MariaDB process. Galera will automatically innitiate SST (full system state transfer) and send a fresh mariabackup copy to this new node and sync it up without any human intervention.
 - Mariabackup can be taken from any node.
 - Backup restore process remains the same as in standard MariaDB server.
-- A dedicated user needs to be created for `mariabackup` other than the `mysql@localhost` which is used by Galera SST.
+- A dedicated user needs to be created for `mariabackup` other than the `mysql@localhost` because, `mysql@localhost` is being used for Galera SST and is OS authenticated.
   ```sql
   CREATE USER backupuser@localhost identified by 'SecretP@ssw0rd';
   GRANT RELOAD, PROCESS, LOCK TABLES, REPLICATION CLIENT ON *.* TO backupuser@localhost;
