@@ -380,7 +380,7 @@ Dependency Installed:
 Complete!
 ```
 
-## The base MariaDB packages that are installed
+## The Installed MariaDB Packages
 
 ```
 shell> rpm -qa | grep -i mariadb
@@ -394,7 +394,7 @@ shell> rpm -qa | grep -i galera
 galera-enterprise-3-25.3.35-1.el7_9.x86_64
 ```
 
-If the `tar` pacakge is downloaded and extracted, the following RPM files can be found for MariaDB 10.2.41 enterprise.
+If the `tar` pacakge is downloaded from <https://www.mariadb.com/downloads> and extracted, the following RPM files can be found in the extracted directory.
 
 ```
 [root@ip-172-31-21-7 mariadb-enterprise-10.2.41-14-rhel-7-x86_64-rpms]# ls -rlt
@@ -418,7 +418,7 @@ drwxrwxr-x. 2 ec2-user ec2-user     4096 Nov 30 00:56 repodata
 -rw-rw-r--. 1 ec2-user ec2-user     1793 Nov 30 00:56 README
 ```
 
-We can also check the dependencies for each of the RPM files in the package very easily.
+We can now find out the dependencies list easily for each of the RPM files in the package using `rpm -qpR <rpm filename>`. Alternatively we can simply make use of the awesome `xargs` command to get the same done for all the RPM files in the folder.
 
 ```
 [root@ip-172-31-21-7 mariadb-enterprise-10.2.41-14-rhel-7-x86_64-rpms]# ls *rpm | xargs rpm -qpR | sort -u
@@ -545,7 +545,13 @@ tar
 which
 ```
 
-The list abve are all the packages/tools that are required by the server, some of these would alreay be in the installed os like `tar`, `which`, etc. but suggest to verify each and every one.
+The list above contains all the packages/tools that are required by the server, some of these would alreay be in the installed os like `tar`, `which`, etc. but suggest to verify each and every one.
+
+We have used the `sort -u` to get a unique list of dependencies and avoid duplicates from being listed because some of the dependenceis are shared by multiple RPM files.
+
+Using the same approach, we can find the dependencies for MaxScale RPM, unlike MariaDB tar package, the MaxScale is just one RPM file hence a simple `rpm -qpR <maxscale rpm filename>`. 
+
+MaxScale RPM can be downloaded from <https://mariadb.com/downloads/community/maxscale/>
 
 ### Thanks.
 #### Faisal~
