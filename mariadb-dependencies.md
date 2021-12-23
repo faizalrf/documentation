@@ -1,6 +1,34 @@
 # MariaDB 10.2 Enterprise Install Log
 
-The following is a capture of all the dependencies requirements that are installed on RHEL 7.9, this list might be different 
+The following is a capture of all the dependencies requirements that are installed on RHEL 7.9, this list might be different.
+
+## OS
+
+```
+[root@ip-172-31-21-7 ~]# cat /etc/os-release
+NAME="Red Hat Enterprise Linux Server"
+VERSION="7.9 (Maipo)"
+ID="rhel"
+ID_LIKE="fedora"
+VARIANT="Server"
+VARIANT_ID="server"
+VERSION_ID="7.9"
+PRETTY_NAME="Red Hat Enterprise Linux Server 7.9 (Maipo)"
+ANSI_COLOR="0;31"
+CPE_NAME="cpe:/o:redhat:enterprise_linux:7.9:GA:server"
+HOME_URL="https://www.redhat.com/"
+BUG_REPORT_URL="https://bugzilla.redhat.com/"
+
+REDHAT_BUGZILLA_PRODUCT="Red Hat Enterprise Linux 7"
+REDHAT_BUGZILLA_PRODUCT_VERSION=7.9
+REDHAT_SUPPORT_PRODUCT="Red Hat Enterprise Linux"
+REDHAT_SUPPORT_PRODUCT_VERSION="7.9"
+```
+
+## Install MariaDB
+
+To see the list of dependencies that are automatically installed, we can simply do a test install on a server/VM where RHEL repositories are enabled. This will clearly show which packages other than the MariaDB server are automatically installed.
+
 ```
 shell> yum -y install MariaDB-server MariaDB-backup
 Loaded plugins: amazon-id, search-disabled-repos
@@ -380,7 +408,9 @@ Dependency Installed:
 Complete!
 ```
 
-## The Installed MariaDB Packages
+### The Installed MariaDB Packages
+
+Do a quick verifications as to which base MariaDB packages are installed on the server.
 
 ```
 shell> rpm -qa | grep -i mariadb
@@ -393,6 +423,8 @@ MariaDB-backup-10.2.41_14-1.el7_9.x86_64
 shell> rpm -qa | grep -i galera
 galera-enterprise-3-25.3.35-1.el7_9.x86_64
 ```
+
+## List Dependencies Without Installation
 
 If the `tar` pacakge is downloaded from <https://www.mariadb.com/downloads> and extracted, the following RPM files can be found in the extracted directory.
 
