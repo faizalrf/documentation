@@ -122,7 +122,6 @@ user=maxuser
 password=secretpassword
 
 master_reconnection=true
-master_failure_mode=error_on_write
 transaction_replay=true
 slave_selection_criteria=ADAPTIVE_ROUTING
 
