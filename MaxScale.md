@@ -126,7 +126,7 @@ transaction_replay=true
 slave_selection_criteria=ADAPTIVE_ROUTING
 
 # For Read Consistency, test this with the value "local" and "global" to always use Slaves for reading 
-causal_reads=fast
+causal_reads=true
 
 ## The following needs to be tested but it's a nice feature to automatically retry a transaction failed due to deadlock, uncomment to enable.
 # transaction_replay_retry_on_deadlock=true
