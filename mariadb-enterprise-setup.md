@@ -431,7 +431,7 @@ To setup the slave node, we shouldd have already Installed MariaDB and all the `
 
 Take note of the Master server's IP address as we will need it when setting up the slave.
 
-We will execute the following command to set the replicaiton
+We will execute the following command on the SLAVE node to set the replicaiton
 
 ```sql
 SET GLOBAL GTID_SLAVE_POS='';
