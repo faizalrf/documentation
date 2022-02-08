@@ -16,7 +16,7 @@ To install MariaDB, we need a `root` user account. Extract the RPM tar package t
   - MariaDB <https://mariadb.com/downloads/enterprise/enterprise-server/>
   - MaxScale <https://mariadb.com/downloads/enterprise/enterprise-maxscale/>
 
-Download and transfer the two RPM TAR packages to the respective servers.
+Download and OS appropriate package from the above links and transfer to the respective servers.
 
 Please take note that the installation process of MariaDB server is the same for both nodes, all the following steps are to be repeated for both MariaDB servers in UAT & PROD where Master/Slave setup is needed.
 
