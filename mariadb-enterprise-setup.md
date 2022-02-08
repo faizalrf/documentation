@@ -545,7 +545,7 @@ MariaDB [(none)]> select user,host from mysql.user;
 +-------------+---------------+
 ```
 
-### MaxScale
+### MaxScale 6
 
 Install MaxScale using `yum install` or `rpm -ivh` method with the downloaded MaxScale RPM file
 
