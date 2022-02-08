@@ -322,13 +322,13 @@ Updating / installing...
 
 Followed by yum -y install of the remaining rpm files.
 
-- `yum -y intall mariadb-enterprise-10.4.13-7-centos-7-x86_64-rpms`
+- `yum -y install mariadb-enterprise-10.4.13-7-centos-7-x86_64-rpms`
 - `yum -y install MariaDB-shared-10.4.13_7-1.el7.x86_64.rpm`
-- `yum -y intall MariaDB-client-10.4.13_7-1.el7.x86_64.rpm`
-- `yum -y intall MariaDB-backup-10.4.13_7-1.el7.x86_64.rpm`
-- `yum -y intall MariaDB-rocksdb-engine-10.4.13_7-1.el7.x86_64.rpm`
-- `yum -y intall galera-enterprise-4-26.4.4-1.rhel7.5.el7.x86_64.rpm`
-- `yum -y intall MariaDB-server-10.4.13_7-1.el7.x86_64.rpm`
+- `yum -y install MariaDB-client-10.4.13_7-1.el7.x86_64.rpm`
+- `yum -y install MariaDB-backup-10.4.13_7-1.el7.x86_64.rpm`
+- `yum -y install MariaDB-rocksdb-engine-10.4.13_7-1.el7.x86_64.rpm`
+- `yum -y install galera-enterprise-4-26.4.4-1.rhel7.5.el7.x86_64.rpm`
+- `yum -y install MariaDB-server-10.4.13_7-1.el7.x86_64.rpm`
 
 Verify the installation, using `rpm -qa`
 
