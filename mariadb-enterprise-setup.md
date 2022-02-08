@@ -18,7 +18,7 @@ To install MariaDB, we need a `root` user account. Extract the RPM tar package t
 
 Download and OS appropriate package from the above links and transfer to the respective servers.
 
-Please take note that the installation process of MariaDB server is the same for both nodes, all the following steps are to be repeated for both MariaDB servers in UAT & PROD where Master/Slave setup is needed.
+Please take note that the installation process of the MariaDB server is the same for both nodes, all the following steps are to be repeated for both MariaDB servers in UAT & PROD where Master/Slave setup is needed.
 
 Untar the rpm package 
 
@@ -72,7 +72,7 @@ Repository file successfully created! Please install MariaDB Server with this co
    yum install MariaDB-server
 ```
 
-Repository is ready, as instructed by the output above, we can now Install the MariaDB 10.6 enterprise on to both of the servers.
+The repository is ready, as instructed by the output above, we can now Install the MariaDB 10.6 enterprise on both of the servers.
 
 We need to install `MariaDB-server` and `MariaDB-backup` for all the servers running MariaDB
 
@@ -138,7 +138,7 @@ Complete!
 
 ### Start The MariaDB Server
 
-Start the MariaDB server and excute `mariadb-secure-installation` script to perform base hardening of the server.
+Start the MariaDB server and execute `mariadb-secure-installation` script to perform base hardening of the server.
 
 ```
 [server1 ~]# systemctl start mariadb
@@ -189,7 +189,7 @@ Enter current password for root (enter for none):
 OK, successfully used password, moving on...
 
 Setting the root password or using the unix_socket ensures that nobody
-can log into the MariaDB root user without the proper authorisation.
+can log into the MariaDB root user without the proper authorization.
 
 You already have your root account protected, so you can safely answer 'n'.
 
@@ -262,7 +262,7 @@ By now we had done the following
 
 We can now configure custom `datadir` for the MariaDB server, in this exercise we will be using `/mariadb/data/`.
 
-Stop the MariaDB server, create the required path, copy all the contents from `/var/lib/mysql/*` to `/mariadb/data/` path and change the ownbership of `/mariadb` to `mysql:mysql` using the recursive flag `-R` 
+Stop the MariaDB server, create the required path, copy all the contents from `/var/lib/mysql/*` to `/mariadb/data/` path and change the ownership of `/mariadb` to `mysql:mysql` using the recursive flag `-R` 
 
 ```
 [server1 ~]# systemctl stop mariadb
@@ -356,14 +356,14 @@ server_id=2000
 gtid_domain_id=2
 ```
 
-Other specific configuration if needed, like, password complexity and auditing, refer to the following
+Other specific configurations if needed, like, password complexity and auditing, refer to the following
 
 - Simple Password Check Plugin
   - <https://mariadb.com/kb/en/simple-password-check-plugin/>
 - Enterprise Audit
   - <https://mariadb.com/products/skysql/docs/security/enterprise-audit/#enabling-enterprise-audit>
 
-Once all the required configurations are done, restart both of the MariaDB servers to enable binary logs and other configurations set.
+Once all the required configurations are done, restart both of the MariaDB servers to enable binary logs and other configuration sets.
 
 #### User Setup
 
@@ -402,7 +402,7 @@ GRANT SHOW DATABASES ON *.* TO 'maxuser'@'<maxscale-host-ip>';
 GRANT SELECT ON mysql.* TO 'maxuser'@'<maxscale-host-ip>';
 ```
 
-***Note:** Use a secure password, the avove password `mypassword` is just for reference*
+***Note:** Use a secure password, the above password `mypassword` is just for reference*
 
 Once the above is done, we can verify the users are created by the following SQL.
 
@@ -425,13 +425,13 @@ MariaDB [(none)]> select user,host from mysql.user;
 
 ### Replicaiton
 
-Now that all the required users have been created on Master node, we can proceed with setting up the replicaiton. Once the replication has started successfully, all the created users will automatically replicate and sync with the slave node.
+Now that all the required users have been created on the Master node, we can proceed with setting up the replication. Once the replication has started successfully, all the created users will automatically replicate and sync with the slave node.
 
-To setup the slave node, we shouldd have already Installed MariaDB and all the `server.cnf` file configuration should be already in. 
+To setup the slave node, we should have already Installed MariaDB and all the `server.cnf` file configurations should be already in. 
 
 Take note of the Master server's IP address as we will need it when setting up the slave.
 
-We will execute the following command on the SLAVE node to set the replicaiton
+We will execute the following command on the SLAVE node to set the replication
 
 ```sql
 SET GLOBAL GTID_SLAVE_POS='';
@@ -526,9 +526,9 @@ Slave_IO_Running: Yes
 Slave_SQL_Running: Yes
 ```
 
-Thesse two should always be "Yes" which means replication is healthy and running.
+These two should always be "Yes" which means replication is healthy and running.
 
-To verify, we can execute the following on the slave node and confirm the new users are available through replicaiton.
+To verify, we can execute the following on the slave node and confirm the new users are available through replication.
 
 ```
 MariaDB [(none)]> select user,host from mysql.user;
@@ -576,7 +576,7 @@ Dependency Installed:
 Complete!
 ```
 
-Edit the /etc/maxscale.cnf and remove all the contents, replace with the following block
+Edit the /etc/maxscale.cnf and remove all the contents, replace them with the following block
 
 `/etc/maxscale.cnf`
 ```
@@ -646,11 +646,12 @@ address=0.0.0.0
 
 Change the Listener port from 4009 to whatever is required and open up firewalls accordingly.
 
-Change the passwords withn the maxscale.cnf file based on the user creation earlier. Encrypt the password within MaxScale, refer to <https://mariadb.com/kb/en/mariadb-maxscale-23-encrypting-passwords/>
+Change the passwords within the maxscale.cnf file based on the user which was created earlier. 
+To encrypt the password within MaxScale, refer to <https://mariadb.com/kb/en/mariadb-maxscale-23-encrypting-passwords/>
 
 Restart the MaxScale service by `systemctl restart maxscale` in case of any errors or failure, refer to `/var/lob/maxscale/maxscale.log` file for details.
 
-Check the MariaDB cluster through MaxScale GUI throgh `maxctrl list servers`
+Check the MariaDB cluster through MaxScale GUI through `maxctrl list servers`
 
 ```
 [maxscale ~]# maxctrl list servers
@@ -681,6 +682,6 @@ I highly recommend enabling MaxScale GUI, refer to this detailed guide on how to
 
 Enable MaxSclae GUI, refer to the <https://mariadb.com/resources/blog/getting-started-with-the-mariadb-maxscale-gui/#:~:text=MariaDB%20MaxScale%20is%20an%20advanced,user%20interface%20for%20managing%20MaxScale.>
 
-From this point onwards, clients must should connect to MaxScale IP/PORT to access the database cluster. 
+From this point onwards, clients should connect to MaxScale IP/PORT to access the database cluster. 
 
 Thank you!
