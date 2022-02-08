@@ -98,6 +98,8 @@ The `sysbench` will use the following parameters:
   - Make sure the user `sb_user@'%'` (as in this example) or any other user account exists on the database server that has `ALL` privileges on the `sbtest` database.
     - CREATE USER sb_user@'%' identified by 'password';
     - GRANT ALL ON sbtest.* to sb_user@'%';
+- --mysql_db=sbtest
+  - Indicates which database to use for sysbench
 - --time=60
   - The duration of the test
 - --report-interval=10
@@ -108,7 +110,7 @@ The `sysbench` will use the following parameters:
 Executing sysbench with above mentioned parameters, we can expect to see the following results. By the end of this, we will have our tables creted and data populated based on our `oltp-table-size=100000` parameter, in this case, 100k rows in each table.
 
 ```txt
-shell> sysbench --db-driver=mysql --threads=8 --events=250000 --oltp-tables-count=12 --oltp-table-size=100000 --oltp-test-mode=complex --oltp-dist-type=uniform /usr/share/sysbench/tests/include/oltp_legacy/oltp.lua --mysql-host=192.168.56.1 --mysql-port=3306 --mysql-user=sb_user --mysql-password=password --time=60 --report-interval=10 prepare
+shell> sysbench --db-driver=mysql --threads=8 --events=250000 --oltp-tables-count=12 --oltp-table-size=100000 --oltp-test-mode=complex --oltp-dist-type=uniform /usr/share/sysbench/tests/include/oltp_legacy/oltp.lua --mysql-host=192.168.56.1 --mysql-port=3306 --mysql-user=sb_user --mysql-password=password --mysql_db=sbtest --time=60 --report-interval=10 prepare
 sysbench 1.0.17 (using bundled LuaJIT 2.1.0-beta2)
 
 Creating table 'sbtest1'...
@@ -156,7 +158,7 @@ Once the database is ready with tables and dummy data, we can now run the test.
 The following is exactly the same as the previous, just the last parameter, instead of `prepare` we will use `run`
 
 ```txt
-shell> sysbench --db-driver=mysql --threads=8 --oltp-tables-count=12 --oltp-table-size=100000 --oltp-test-mode=complex --oltp-dist-type=uniform /usr/share/sysbench/tests/include/oltp_legacy/oltp.lua --mysql-host=192.168.56.1 --mysql-port=3306 --mysql-user=sb_user --mysql-password=password --time=60 --report-interval=10 run
+shell> sysbench --db-driver=mysql --threads=8 --oltp-tables-count=12 --oltp-table-size=100000 --oltp-test-mode=complex --oltp-dist-type=uniform /usr/share/sysbench/tests/include/oltp_legacy/oltp.lua --mysql-host=192.168.56.1 --mysql-port=3306 --mysql-user=sb_user --mysql-password=password --mysql_db=sbtest --time=60 --report-interval=10 run
 sysbench 1.0.17 (using bundled LuaJIT 2.1.0-beta2)
 
 Running the test with following options:
