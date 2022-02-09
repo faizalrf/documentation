@@ -452,7 +452,7 @@ SHOW SLAVE STATUS\G
 The `SHOW SLAVE STATUS\G` should give something like the following output
 
 ```
-`[(none)]> show slave status\G
+[(none)]> show slave status\G
 *************************** 1. row ***************************
                 Slave_IO_State: Waiting for master to send event
                    Master_Host: 172.31.19.101
@@ -510,7 +510,7 @@ Slave_Non_Transactional_Groups: 0
 1 row in set (0.000 sec)
 ```
 
-Here important factors are the following
+Here some of the important items to pay attention to are the following
 
 ```
 Using_Gtid: Slave_Pos
@@ -603,9 +603,9 @@ module=mariadbmon
 servers=Server-1, Server-2
 
 user=maxmon
-password=mypassword
+password=092A756756DEF6C5F71E8697423197158A968DB7BE23D4952B322CD0A3A8623C
 replication_user=rep_user
-replication_password=mypassword
+replication_password=09CE9C6EEA5FADF320B246814FB7A480132793B5B1E6FC798C232843DBF01B86
 
 monitor_interval=1500
 failcount=5
@@ -628,7 +628,7 @@ servers=Server-1, Server-2
 master_accept_reads=true
 
 user=maxuser
-password=mypassword
+password=831F9F7B7F673F10A9274DE844495E25AE0609F85CD37FD5B3A29DFE2F9A9F4A
 
 master_reconnection=true
 transaction_replay=true
@@ -646,8 +646,64 @@ address=0.0.0.0
 
 Change the Listener port from 4009 to whatever is required and open up firewalls accordingly.
 
-Change the passwords within the maxscale.cnf file based on the user which was created earlier. 
-To encrypt the password within MaxScale, refer to <https://mariadb.com/kb/en/mariadb-maxscale-23-encrypting-passwords/>
+#### Encrypting the Passwords
+
+For a quick test, generally this step is skipped, but for any secure implementation, all the passwords should be encryted and added before adding them to the `maxscale.cnf` file.
+
+From the maxscale.cnf file data above, we can see that `maxuser`, `maxmon` and `rep_user` passwords are in readble free text format. We will encrypt these passwords with the tools provided along with MaxScale.
+
+Connect to the MaxScale server and execute the `maxkeys` command to generate an encryption key, the default path of the key is `/var/lib/maxscale`, this can be changed to any other location by simply appending the path after the `maxkeys` command like so `maxkeys /usr/secrets/keys`. Once the key is generated, we can now use `maxpasswd` command to encrypted passwords. Syntax is very simple
+
+```
+shell> maxpasswd mypassword
+```
+
+Here `mypassword` is your existing password that was created for the user we are tryng to encrypt.
+
+Here is what we will do, we need to use the `root` user for this activity.
+
+**Step 1 (Generating the Secrets file):**
+```
+[maxscale ~]# maxkeys
+Permissions of '/var/lib/maxscale/.secrets' set to owner:read.
+Ownership of '/var/lib/maxscale/.secrets' given to maxscale.
+```
+
+The above has generated the `.secrets` file under `/var/lib/maxscale` path, as mentioned above, this path is customizable.
+
+**Step 2 (Encrypting the passwords):**
+
+We have 3 user passwords to encrypt in this example, `maxuser`, `maxmon` and `rep_user`. Since we are using the same password (not recommended), we will still encrypt three times, MaxScale's password tool is intellint enough to generate a different encryptied value each time, even if it's the same base password.
+
+```
+[maxscale ~]# maxpasswd mypassword
+092A756756DEF6C5F71E8697423197158A968DB7BE23D4952B322CD0A3A8623C
+
+[maxscale ~]# maxpasswd mypassword
+09CE9C6EEA5FADF320B246814FB7A480132793B5B1E6FC798C232843DBF01B86
+
+[maxscale ~]# maxpasswd mypassword
+831F9F7B7F673F10A9274DE844495E25AE0609F85CD37FD5B3A29DFE2F9A9F4A
+```
+
+As we can see above, even though the password is the same (`mypassword`) the encrypted value is different each time. 
+
+We can now copy the above three passwords and edit the /etc/maxscale.cnf file for the following three lines as so.
+
+`MariaDB-Monitor]:`
+```
+user=maxmon
+password=092A756756DEF6C5F71E8697423197158A968DB7BE23D4952B322CD0A3A8623C
+replication_user=rep_user
+replication_password=09CE9C6EEA5FADF320B246814FB7A480132793B5B1E6FC798C232843DBF01B86
+```
+
+`[Read-Write-Service]:`
+
+```
+user=maxuser
+password=831F9F7B7F673F10A9274DE844495E25AE0609F85CD37FD5B3A29DFE2F9A9F4A
+```
 
 Restart the MaxScale service by `systemctl restart maxscale` in case of any errors or failure, refer to `/var/lob/maxscale/maxscale.log` file for details.
 
@@ -682,6 +738,32 @@ I highly recommend enabling MaxScale GUI, refer to this detailed guide on how to
 
 Enable MaxSclae GUI, refer to the <https://mariadb.com/resources/blog/getting-started-with-the-mariadb-maxscale-gui/#:~:text=MariaDB%20MaxScale%20is%20an%20advanced,user%20interface%20for%20managing%20MaxScale.>
 
-From this point onwards, clients should connect to MaxScale IP/PORT to access the database cluster. 
+From this point onwards, clients should connect to MaxScale IP/PORT to access the database cluster.
+
+Test connectivity to the MaxScale service from any of the MariaDB nodes and use MaxScale IP/PORT in the connection string like so, assuming you already have an account named "app_user".
+
+MariaDB Server 1 (Master):
+
+```
+[server1 ~]# mariadb -h172.31.22.229 -P4009 -uapp_user -pSecretPassword
+
+Welcome to the MariaDB monitor.  Commands end with ; or \g.
+Your MariaDB connection id is 2
+Server version: 10.6.5-2-MariaDB-enterprise-log MariaDB Enterprise Server
+
+Copyright (c) 2000, 2018, Oracle, MariaDB Corporation Ab and others.
+
+Type 'help;' or '\h' for help. Type '\c' to clear the current input statement.
+
+172.31.22.229 [(none)]> SELECT version();
++---------------------------------+
+| version()                       |
++---------------------------------+
+| 10.6.5-2-MariaDB-enterprise-log |
++---------------------------------+
+1 row in set (0.001 sec)
+```
+
+We can see the connection to the backend database is successful through MaxScale. The IP displayed at the MariaDB prompt indicates from which host the connection is comming from, in this case it's MaxScale's IP.
 
 Thank you!
