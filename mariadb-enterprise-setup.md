@@ -339,6 +339,8 @@ prompt=\H [\d]>\_
 
 ***Note:** Remember to configure **`innodb_buffer_pool_size`** based on 70% of your server's RAM*
 
+In the above config, **`shutdown_wait_for_slaves=ON`** is specific to the MariaDB enteprise server and not avialble in the community build. This is super important parameter that will ensure that all the slaves have replicated properly before shuttind down the Master node. Very useful for busy environments when you have to stop the Master node. 
+
 If TPS is critical then set the `sync` variables to ZERO and innodb_flush_log_at_trx_commit=2, this will improve the transaction throughput and replication speeds but at the cost of durability.
 
 ```
