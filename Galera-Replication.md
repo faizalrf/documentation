@@ -578,7 +578,7 @@ Use `systemctl stop mariadb` on both Master Nodes on DC Clusters
 └───────────┴───────────────┴──────┴─────────────┴─────────────────────────┴─────────────────────┘
 ```
  
-The New selected Master on the Primary DC cluster will show the following
+The New selected Master on the Primary DC cluster will show the following.
  
 ```
 MariaDB [(none)]> show all slaves status\G
