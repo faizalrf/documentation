@@ -10,7 +10,7 @@
 
 To configure HTAP (Hybnrid Transactional & Analytical Processing) setup, we will need use MaxScale 2.4 or higher. and condfigure it with standard Read/Write splitting service for the two node X4 setup.
 
-Asuming we have the following three nodes
+Asuming we have the following three nodes.
 
 - MaxScale 2.4 (192.168.56.201)
   - MariaDB X4 (192.168.56.101) - Primary
