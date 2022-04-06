@@ -85,37 +85,31 @@ In this step, we will generate some tables and populate data into those tables u
 
 The `sysbench` will use the following parameters:
 
-- --db-driver=mysql
+- `--db-driver=mysql`
   - Use MySQL drivers which works for MariaDB as well
-- --threads=8
+- `--threads=8`
   - The number of concurrent connections. This should be started with a lower and increased for each test to see the peak performance/limit of the database for the given hardware
-- --events=250000
-  - Attempt to perform these many events per second can be kept at this
-- --oltp-tables-count=12
+- `--oltp-tables-count=12`
   - How many tables to create
-- --oltp-table-size=100000
+- `--oltp-table-size=100000`
   - Number of rows to insert in each table for the loadtest
-- --oltp-test-mode=complex
+- `--oltp-test-mode=complex`
   - Type of load generation, Complex is the toughest one for the database
-- --oltp-dist-type=uniform
+- `--oltp-dist-type=uniform`
   - If you are using more than one nodes in the cluster, this will distribute the load equally on each node, however with MaxScale, it dosent make any differece since MaxScale will do the distribution automatically, given you have configured only one MaxScale server.
-- /usr/share/sysbench/tests/include/oltp_legacy/oltp.lua
+- `/usr/share/sysbench/tests/include/oltp_legacy/oltp.lua`
   - You have to look for this file and make sure the path is correct after the installation.
-- --mysql-host=192.168.56.1 --mysql-port=3306 --mysql-user=sb_user --mysql-password=password
+- `--mysql-host=192.168.56.1 --mysql-port=3306 --mysql-user=sb_user --mysql-password=password`
   - These point to your MariaDB server or the MaxScale or directly to your database instance, if you have more than one MaxScale nodes, it can be a coma separated list for `--mysql-host` parameter
-- --mysql_db=sbtest
+- `--mysql_db=sbtest`
   - Indicates which database to use for sysbench
-- --time=60
-  - The duration of the test
-- --report-interval=10
-  - Interval at which sysbench shuld report the performance numbers, this is in Seconds.
-- prepare
+- `prepare`
   - This indicates that we are preparing the envionment before the actual test. This will create those tables and pump the initial data to for the actual performance test
 
 Executing sysbench with above mentioned parameters, we can expect to see the following results. By the end of this, we will have our tables creted and data populated based on our `oltp-table-size=100000` parameter, in this case, 100k rows in each table.
 
 ```txt
-shell> sysbench --db-driver=mysql --threads=8 --oltp-tables-count=12 --oltp-table-size=100000 --oltp-test-mode=complex --oltp-dist-type=uniform /usr/share/sysbench/tests/include/oltp_legacy/oltp.lua --mysql-host=192.168.56.1 --mysql-port=3306 --mysql-user=sbuser --mysql-password=password --mysql_db=sbtest --time=60 --report-interval=10 prepare
+shell> sysbench --db-driver=mysql --threads=8 --oltp-tables-count=12 --oltp-table-size=100000 --oltp-test-mode=complex --oltp-dist-type=uniform /usr/share/sysbench/tests/include/oltp_legacy/oltp.lua --mysql-host=192.168.56.1 --mysql-port=3306 --mysql-user=sbuser --mysql-password=password --mysql_db=sbtest prepare
 sysbench 1.0.17 (using bundled LuaJIT 2.1.0-beta2)
 
 Creating table 'sbtest1'...
