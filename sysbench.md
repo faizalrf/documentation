@@ -22,6 +22,8 @@ innodb_doublewrite = 0
 innodb_autoinc_lock_mode = 2
 ```
 
+***Note:** Ignore the above configuration if you already have a setup to test*
+
 - `innodb_io_capacity` depends on the IOPS your server is capable of, for slow SATA/SAN drives it is normally set to 400, for SSD drives it should be 2000 or higher
 
 - `max_connections` should be more than the number of threads you run for sysbench test.
@@ -69,11 +71,17 @@ Type 'help;' or '\h' for help. Type '\c' to clear the current input statement.
 
 MariaDB [(none)]> create database sbtest;
 Query OK, 1 row affected (0.000 sec)
+
+MariaDB [(none)]> create user sbuser@'%' identified by 'password';
+Query OK, 0 rows affected (0.001 sec)
+
+MariaDB [(none)]> grant all on sbtest.* to sbuser@'%';
+Query OK, 0 rows affected (0.002 sec)
 ```
 
 #### Generate the Initial Data Volume
 
-In this step, we will generate some tables and populate data into those tables under the `sbtest` database. These are all configurable properties. 
+In this step, we will generate some tables and populate data into those tables under the `sbtest` database using `sbuser`. These are all configurable properties. 
 
 The `sysbench` will use the following parameters:
 
@@ -94,10 +102,7 @@ The `sysbench` will use the following parameters:
 - /usr/share/sysbench/tests/include/oltp_legacy/oltp.lua
   - You have to look for this file and make sure the path is correct after the installation.
 - --mysql-host=192.168.56.1 --mysql-port=3306 --mysql-user=sb_user --mysql-password=password
-  - These point to your MariaDB server or the MaxScale, if you have more than one MaxScale nodes, it can be a coma separated list for `--mysql-host` parameter
-  - Make sure the user `sb_user@'%'` (as in this example) or any other user account exists on the database server that has `ALL` privileges on the `sbtest` database.
-    - CREATE USER sb_user@'%' identified by 'password';
-    - GRANT ALL ON sbtest.* to sb_user@'%';
+  - These point to your MariaDB server or the MaxScale or directly to your database instance, if you have more than one MaxScale nodes, it can be a coma separated list for `--mysql-host` parameter
 - --mysql_db=sbtest
   - Indicates which database to use for sysbench
 - --time=60
@@ -110,7 +115,7 @@ The `sysbench` will use the following parameters:
 Executing sysbench with above mentioned parameters, we can expect to see the following results. By the end of this, we will have our tables creted and data populated based on our `oltp-table-size=100000` parameter, in this case, 100k rows in each table.
 
 ```txt
-shell> sysbench --db-driver=mysql --threads=8 --events=250000 --oltp-tables-count=12 --oltp-table-size=100000 --oltp-test-mode=complex --oltp-dist-type=uniform /usr/share/sysbench/tests/include/oltp_legacy/oltp.lua --mysql-host=192.168.56.1 --mysql-port=3306 --mysql-user=sb_user --mysql-password=password --mysql_db=sbtest --time=60 --report-interval=10 prepare
+shell> sysbench --db-driver=mysql --threads=8 --oltp-tables-count=12 --oltp-table-size=100000 --oltp-test-mode=complex --oltp-dist-type=uniform /usr/share/sysbench/tests/include/oltp_legacy/oltp.lua --mysql-host=192.168.56.1 --mysql-port=3306 --mysql-user=sbuser --mysql-password=password --mysql_db=sbtest --time=60 --report-interval=10 prepare
 sysbench 1.0.17 (using bundled LuaJIT 2.1.0-beta2)
 
 Creating table 'sbtest1'...
@@ -158,7 +163,7 @@ Once the database is ready with tables and dummy data, we can now run the test.
 The following is exactly the same as the previous, just the last parameter, instead of `prepare` we will use `run`
 
 ```txt
-shell> sysbench --db-driver=mysql --threads=8 --oltp-tables-count=12 --oltp-table-size=100000 --oltp-test-mode=complex --oltp-dist-type=uniform /usr/share/sysbench/tests/include/oltp_legacy/oltp.lua --mysql-host=192.168.56.1 --mysql-port=3306 --mysql-user=sb_user --mysql-password=password --mysql_db=sbtest --time=60 --report-interval=10 run
+shell> sysbench --db-driver=mysql --threads=8 --oltp-tables-count=12 --oltp-table-size=100000 --oltp-test-mode=complex --oltp-dist-type=uniform /usr/share/sysbench/tests/include/oltp_legacy/oltp.lua --mysql-host=192.168.56.1 --mysql-port=3306 --mysql-user=sbuser --mysql-password=password --mysql_db=sbtest --time=60 --report-interval=10 run
 sysbench 1.0.17 (using bundled LuaJIT 2.1.0-beta2)
 
 Running the test with following options:
@@ -212,12 +217,14 @@ For instance, the output above says `transactions:                        49716 
 
 Repeat the above and increase the threads to 8, 16, 32, 64, 128 and so on just to see when the performance stops to drop. That will be the peak capacity of your server.
 
+`--time=60` will execute load test for 60 seconds, recommended to increase this number to test for 30 minutes or higher to test how long the server can maintain the performance, over time the server's performance should stablise.
+
 #### Cleanup
 
 Finally, once done, you can run the same command with `CLEANUP` parameter to destroy the test data generated for this test. Once cleanup is done, you will have to `PREPARE` once again before re-running the test.
 
 ```txt
-shell> sysbench --db-driver=mysql --threads=8 --events=250000 --oltp-tables-count=12 --oltp-table-size=100000 --oltp-test-mode=complex --oltp-dist-type=uniform /usr/share/sysbench/tests/include/oltp_legacy/oltp.lua --mysql-host=localhost --mysql-port=3306 --mysql-user=dba --mysql-password=password --time=60 --report-interval=10 cleanup 
+shell> sysbench --db-driver=mysql --threads=8 --oltp-tables-count=12 --oltp-table-size=100000 --oltp-test-mode=complex --oltp-dist-type=uniform /usr/share/sysbench/tests/include/oltp_legacy/oltp.lua --mysql-host=192.168.56.1 --mysql-port=3306 --mysql-user=sbuser --mysql-password=password --mysql_db=sbtest --time=60 --report-interval=10 cleanup 
 sysbench 1.0.17 (using bundled LuaJIT 2.1.0-beta2)
 
 Dropping table 'sbtest1'...
