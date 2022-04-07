@@ -97,6 +97,10 @@ servers=Server-1, Server-2, Server-3
 user=maxmon
 password=secretpassword
 
+## In case any !
+# promotion_sql_file=/home/root/scripts/promotion.sql
+# demotion_sql_file=/home/root/scripts/demotion.sql
+ 
 monitor_interval=1500
 failcount=5
 failover_timeout=120s
