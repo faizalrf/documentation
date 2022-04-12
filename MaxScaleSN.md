@@ -9,6 +9,7 @@ All the MariaDB Servers should have the following confugration in the `server.cn
 log_error=server.log
 gtid_domain_id=<DomainID>
 server_id=<ServerID>
+gtid_strict_mode=1
 log_bin = mariadb-bin
 log_bin_index = mariadb-bin.index
 relay_log_recovery = 1
