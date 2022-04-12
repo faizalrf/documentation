@@ -27,7 +27,7 @@ Everything else including the `gtid_domain_id` remains the same in all the Maria
 Once this is done, proceed to configure the replication as per normal using GTID Based replication (`MASTER_USE_GTID=slave_pos`).
 
 ## MaxScale 6 User Account Setup
-
+  
 MaxScale needs to have two accounts created in the database. Execute the following statements on the PrimaryDB (Master) so that these get replicated on all the slaves.
 
 ```sql
@@ -61,6 +61,13 @@ Query OK, 0 rows affected (0.000 sec)
 Once the accounts are created on the Primary database node, verify that these are replciated on the secondary nodes as well. Proceed to configure the MaxScale server.
 
 ## MaxScale 6 Setup
+
+Download MaxScale from either the community MariaDB downloads page or the Enterprise link, both are same.
+
+- <https://mariadb.com/downloads/enterprise/enterprise-maxscale/>
+- <https://mariadb.com/downloads/community/maxscale/>
+
+Once the RPM/DEB package has been downloaded, install it as per the OS process.
 
 Edit the `/etc/maxscale.cnf` file and delete all the contents to do a clean start. Add the following to the `/etc/maxscale.cnf` file.
 
