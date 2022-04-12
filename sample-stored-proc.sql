@@ -1,3 +1,5 @@
+--# Sample code to demo how to break up huge updates and delete operation using automated while loops
+
 DELIMITER $$
 DROP PROCEDURE IF EXISTS updateCrews;
 CREATE PROCEDURE updateCrews(forDate DATETIME)
@@ -24,7 +26,6 @@ BEGIN
     -- Check if the effected rows are more than 0 then continue else exit the repeat loop
     UNTIL effectedCount = 0 END REPEAT;
 END$$
-
 DELIMITER ;
 
 DELIMITER $$
@@ -48,5 +49,4 @@ BEGIN
     -- Check if the effected rows are more than 0 then continue else exit the repeat loop
     UNTIL effectedCount = 0 END REPEAT;
 END$$
-
 DELIMITER ;
