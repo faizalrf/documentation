@@ -4,7 +4,8 @@ All the MariaDB Servers should have the following confugration in the `server.cn
 
 ```cnf
 [mariadb]
-innodb_flush_log_at_trx_commit=2
+log_error=server.log
+gtid_domain_id=1
 server_id=1000
 log_bin = mariadb-bin
 log_bin_index = mariadb-bin.index
@@ -12,19 +13,25 @@ binlog_format = MIXED
 gtid_strict_mode = 1
 log_slave_updates = 1
 bind_address = 0.0.0.0
-log_error
 
 # MariaDB Replication Durability but may slow down the replication on very heavy write environments
 sync_binlog = 1
 sync_master_info = 1
 sync_relay_log = 1
 sync_relay_log_info = 1
+relay_log_recovery = 1
+
+# Durability settings for the transaction log. 1 is slow but secure, 2 is faster but risk losing some data in case of critical power or hardware failure
+innodb_flush_log_at_trx_commit = 1
+
+# For MariaDB enterprise server only, use the following
+# shutdown_wait_for_slaves = 1
 
 [mysql]
 prompt=\H [\d]>\
 ```
 
-Everything remains the same in all the MariaDB servers except for the `server_id` parameter, configure it as **1000** for primnary, **2000** for secondary, **3000** for third database and **4000** for the backup server.
+Everything remains the same in all the MariaDB servers except for the `server_id` parameter, configure it as **1000** for primnary, **2000** for secondary, **3000**, **4000**, and so on.
 
 Once this is done, proceed to configure the replication as per normal.
 
@@ -68,82 +75,88 @@ Edit the `/etc/maxscale.cnf` file and delete all the contents to do a clean star
 
 ```txt
 [maxscale]
-threads=auto
-log_info=false
+threads = auto
+log_info = false
 
 ## Servers
 [Server-1]
-type=server
-address=<ip address>
-port=3306
-protocol=MariaDBBackend
+type = server
+address = <ip address>
+port = 3306
+protocol = MariaDBBackend
 
 [Server-2]
-type=server
-address=<ip address>
-port=3306
-protocol=MariaDBBackend
+type = server
+address = <ip address>
+port = 3306
+protocol = MariaDBBackend
 
 [Server-3]
-type=server
-address=<ip address>
-port=3306
-protocol=MariaDBBackend
+type = server
+address = <ip address>
+port = 3306
+protocol = MariaDBBackend
 
 [MariaDB-Monitor]
-type=monitor
-module=mariadbmon
-servers=Server-1, Server-2, Server-3
-user=maxmon
-password=secretpassword
+type = monitor
+module = mariadbmon
+servers = Server-1, Server-2, Server-3
+user = maxmon
+password = secretpassword
 
 ## In case any !
-# promotion_sql_file=/home/root/scripts/promotion.sql
-# demotion_sql_file=/home/root/scripts/demotion.sql
+# promotion_sql_file = /home/root/scripts/promotion.sql
+# demotion_sql_file = /home/root/scripts/demotion.sql
  
-monitor_interval=1500
-failcount=5
-failover_timeout=120s
-switchover_timeout=120s
-verify_master_failure=true
-master_failure_timeout=30s
-enforce_read_only_slaves=true
+monitor_interval = 1500
 
-auto_failover=true
-auto_rejoin=true
+## Some of the important timeout variables for reference.
+# failcount = 5
+# failover_timeout = 120s
+# switchover_timeout = 120s
+# master_failure_timeout = 30s
+
+verify_master_failure = true
+enforce_read_only_slaves = true
+
+auto_failover = true
+auto_rejoin = true
 
 cooperative_monitoring_locks=majority_of_all
 
-
 ## This is the replication-rwsplit-service
 [Read-Write-Service]
-type=service
-router=readwritesplit
-servers=Server-1, Server-2, Server-3
-master_accept_reads=true
+type = service
+router = readwritesplit
+servers = Server-1, Server-2, Server-3
+master_accept_reads = true
 
-user=maxuser
-password=secretpassword
+user = maxuser
+password = secretpassword
 
-master_reconnection=true
-transaction_replay=true
-slave_selection_criteria=ADAPTIVE_ROUTING
+master_reconnection = true
+transaction_replay = true
+transaction_replay_max_size = 10Mi
+transaction_replay_attempts = 10
+delayed_retry = ON
+delayed_retry_timeout = 240s
+prune_sescmd_history = true
+
+slave_selection_criteria = ADAPTIVE_ROUTING
 
 # For Read Consistency, test this with the value "local" and "global" to always use Slaves for reading 
-causal_reads=true
-
-## The following needs to be tested but it's a nice feature to automatically retry a transaction failed due to deadlock, uncomment to enable.
-# transaction_replay_retry_on_deadlock=true
+causal_reads = true
+transaction_replay_retry_on_deadlock = true
 
 ## To send all the stored procedure calls to Primary DB Server!
-# strict_sp_calls=true
+# strict_sp_calls = true
 
 [Read-Write-Listener]
 type=listener
 service=Read-Write-Service
 protocol=MariaDBClient
-port=4009
-address=0.0.0.0
+port = 4009
+address = 0.0.0.0
 ```
 
 The `Read-Write-Listener` points to `4009` as the port number, this is the port that the application should connect to.
