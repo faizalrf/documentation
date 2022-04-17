@@ -1,54 +1,54 @@
 # MariaDB - Circular Replication
 
-We all know how to set up standard Primary Replica replication, but I have been asked by many about what we call Multi-Source replication and how to set it up. This leads to the discussion of Circular Replication. Circular replication and Multi-Source replication have one thing in common, the use of `GTID_DOMAIN_ID` setup. We are going to discuss this in this blog.
+We all know how to set up standard Primary Replica replication, but I have been asked by many about Multi-Source replication and how to set it up. This leads to the discussion of Circular replication, which is what we are going to discuss this in this blog.
 
-As a followup to this blog, I will be discussing Multi-source replication which will be published sometime in the future.
+As a follow-up to this blog, I will be discussing Multi-source replication, which will be  published sometime in the future.
 
 ## Assumptions
 
-This is a going to be a short blog, we ar assuming that we have two servers running MariaDB 10.5 or higher, firwall between these two nodes have been opened to allow traffic on the defualt MariaDB port, `3306`. The document should also work with older versions of MariaDB as well.
+This will be a short blog, assuming that we have two servers running MariaDB 10.5 or higher. The firewall between these two nodes has been opened to allow traffic on the default MariaDB port, `3306`. The document should also work with older versions of MariaDB as well.
 
-***Note:** Important thing to take note here is that the replication technology discussed here isonly applicabele to MariaDB standard storage engines like InnoDB, RocksDB, etc. Xpand and ColumnStore are out of scope as these two have thir own way of distributing data across the cluster and don't really use replicaiton of any sort.*
+***Note:** Important thing to note here is that the replication technology discussed here is only applicable to MariaDB standard storage engines like InnoDB, RocksDB, etc. Xpand and ColumnStore are out of scope as these two have their native way of distributing data across the cluster and don't use replication of any sort.*
 
 ## Architecture
 
 ![image info](./Images/CircularReplication-1.png)
   
-The base concept behind circular replication is the same as standard replicaiton, we just have repeat the steps twice from both sides. 
+The base concept behind circular replication is the same as standard replication, and we just have to repeat the steps twice from both sides. 
 
-As the above image demonstrates the architecture. The two nodes of MariaDB replicates from each other. Which means, Primary DC is a Primary node in it's own rights while it's also a Replica to the Secondary DC node. Same thing apples to the MariaDB server on the Secondary DC, it's a Primary and also a Replica to the MariaDB server running in the Primary DC. 
+As the above image demonstrates, the architecture. The two nodes of MariaDB replicates from each other. This means the Primary DC is a Primary node in its own right while also a Replica of the Secondary DC node. Same thing applies to the MariaDB server on the Secondary DC. It's a Primary and a Replica of the MariaDB server running in the Primary DC. 
 
 ## Usecases
 
-There are some specific usecases to this setup. One of them can be described as follows. 
+There are some specific use cases for this setup. One of them can be described as follows. 
 
 - Multi-Regional Application Support
-  - The two DC nodes are geographically separated and a fully synchronous replciation is not possoble due to the network lag.
+  - The two DC nodes are geographically separated, and a fully synchronous replciation is not possible due to the network lag.
   - The app is also running locally in each region to support the clients.
-  - Both the apps in each region connect to the local database to prevent latency and provide best possible experience. 
+  - Both the apps in each region connect to the local database to prevent latency and provide the best possible experience. 
 
-This is a very common scenario, while there are other options available like Xpand to provide an extremely scalable solution, but an app that just needs a simple architecture, this is a good solution.
+This is a very common scenario. While there are other options available like Xpand to provide an extremely scalable solution, but an app that just needs a simple architecture, this is a good solution.
 
 ![image info](./Images/CircularReplication-2.png)
 
 ### Pros
 
 - Easy to set up
-- Fast asynchronus two way/circular replicaiton
-  - See cons section for things to watch out for
-- Further HA can be setup by adding a local Replica
+- Fast asynchronous two way/circular replicaiton
+  - See the cons section for things to watch out for
+- Local region HA can be set up by adding a local Replica nodes
 - MaxScale can be used locally in each DC for local HA and automatic failover
   
 ### Cons
 
-- No way to identify conflicting transaction
-  - Both sides submit same transaction, only one will be commnitted.
-- Not ideal if multi-master writes is a requirement but still possible thanks to mixed GTID_DOMAIN_ID setup.
-- MaxScale does not support circular replication, failover between DC must be handled manually.
+- No way to identify the conflicting transaction
+  - Both sides submit the same transaction. Only one will be committed.
+- Not ideal if multi-master writing is a requirement, but still possible thanks to the mixed GTID_DOMAIN_ID setup.
+- MaxScale does not support circular replication. Failover between DC must be handled manually.
 
 ## Implementation
 
-We are working with two MariaDB servers running 10.5 or higher. For our case it's MariaDB Enterprise 10.6
+We are working with two MariaDB servers running 10.5 or higher. For our case, it's MariaDB Enterprise 10.6
 
 
 ### Configuration
@@ -89,15 +89,15 @@ gtid_domain_id=20
 server_id=2000
 ```
 
-Take note of the "Replication Durability" section in the configuration, it will slow down the replication process purely because of the additional IO that is done here but highly recommended.
+Take note of the "Replication Durability" section in the configuration. It will slow down the replication process because of the additional IO done here but is highly recommended.
 
-Node-1 amd Node-2 configuration is identical except for the `gtid_domain_id` and `server_id`. Generally `gtid_domain_id` is kept the same for all the nodes within the same Primary/Replica cluster but since this is a multi-master circular replication setup, a distinct `gtid_domain_id` is mandatory.
+Node-1 and Node-2 configuration is identical except for the `gtid_domain_id` and `server_id`. Generally, `gtid_domain_id` is kept the same for all the nodes within the same Primary/Replica cluster, but since this is a multi-master circular replication setup, a distinct `gtid_domain_id` is mandatory.
 
 ### Replication User
 
-Once the configuration setup is done and both the servers have restarted successfully, we can now create a replication user `rep_user@'%'` with spicific replicaiton grants. This is the same user we would create for the standard replication.
+Once the configuration setup is done and both the servers have restarted successfully, we can create a replication user `rep_user@'%'` with specific replication grants. This is the same user we would create for the standard replication.
 
-***Note:** This user is created only on Node-1, this will automatically get replicated to Node-2 once the one way replication is done.* 
+***Note:** This user is created only on Node-1. This will automatically get replicated to Node-2 once the one-way replication is done.* 
 
 ```
 MariaDB [(none)]> create user rep_user@'%' identified by 'VerySecretPassw0rd!';
@@ -107,7 +107,7 @@ MariaDB [(none)]> grant replication slave on *.* to rep_user@'%';
 Query OK, 0 rows affected (0.003 sec)
 ```
 
-Now we are ready for replicaiton setup from `Node-1 > Node-2`
+Now we are ready for replication setup from `Node-1 > Node-2`
 
 ### Replication
 
@@ -154,9 +154,9 @@ MariaDB [(none)]> show global variables like 'GTID%';
 +-------------------------+-------+
 ```
 
-We can see the GTID on the Node-2 are completely empty which is fine as we know the server is new and no transactions have been performed on it. Take note of the `GTID_SLAVE_POS` which is also empty. We would gnerally set this to the GTID position from wherever we want the replication to start. But in this case "Empty" means it will start to request replkication data from the very first transaction which was logged in the binary logs on the Node-1.
+We can see the GTID on the Node-2 is empty, which is fine as we know the server is new and no transactions have been performed. Take note of the `GTID_SLAVE_POS`, which is also empty. We would gnerally set this to the GTID position from wherever we want the replication to start. But in this case, "Empty" means it will start to request replication data from the very first transaction logged in the binary logs on the Node-1.
 
-Execute the `CHANGE MASTER` on Node-2 just like we would do to set up the standard replicaiton.
+Execute the `CHANGE MASTER` on Node-2 just like we would do to set up the standard replication.
 
 **Node-2:**
 
@@ -190,7 +190,7 @@ MariaDB [(none)]> show slave status\G
                                 ...
 ```
 
-The above pouints to Node-1 as the master and confirms that the slave from Node-1 > Node-2 is working well as we can see the `GTID_IO_POS` reports `10-1000-2`. Now let's switch to Node-1 and repeat the same step with a slight twist.
+The above points to Node-1 as the master and confirms that the slave from Node-1 > Node-2 is working well, as we can see the `GTID_IO_POS` reports `10-1000-2`. Now let's switch to Node-1 and repeat the same step with a slight twist.
 
 **Node-1:**
 
@@ -216,7 +216,7 @@ MariaDB [(none)]> show global variables like 'gtid_slave_pos';
 1 row in set (0.001 sec)
 ```
 
-We need to set the gtid_slave_pos to be the same as gtid_binlog_state so that replication can start from this point onwards. This is required so that the server does not repeat the samer events which are already in it's local binary logs.
+We need to set the gtid_slave_pos to be the same as gtid_binlog_state so that replication can start from this point onwards. This is required so that the server does not repeat the same events already in it's local binary logs.
 
 ```
 MariaDB [(none)]> SET GLOBAL gtid_slave_pos=@@gtid_binlog_state;
@@ -239,7 +239,7 @@ Query OK, 0 rows affected (0.006 sec)
 
 This time the `MASTER_HOST` points to the Node-2. 
 
-Time to check the replication status but before we do that, let's do a few transactions on the Node-2.
+Time to check the replication status, but before we do that, let's do a few transactions on the Node-2.
 
 ```
 MariaDB [(none)]> create database testdb;
@@ -294,7 +294,7 @@ MariaDB [(none)]> show status status\G
                                 ...
 ```
 
-We can already see that the Node-1 has replicated the two transactions from the Node-2 `20-2000-2` We can also confirm if the new database and table have been created on this node or not?
+We can see that Node-1 has replicated the two transactions from the Node-2 `20-2000-2`. We can also confirm if the new database and table have been created on this node or not?
 
 ```
 MariaDB [(none)]> use testdb;
@@ -308,7 +308,7 @@ MariaDB [testdb]> show tables;
 +------------------+
 ```
 
-Indeed, everything looks good and we have a circular replication in place. Now repeat some transaction on both nodes and confirm that the replication works both ways without breaking the replication.
+Indeed, everything looks good, and we have a circular replication in place. Now repeat some transactions on both nodes and confirm that the replication works both ways without breaking.
 
 References:
 
