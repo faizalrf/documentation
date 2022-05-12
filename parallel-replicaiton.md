@@ -1,6 +1,6 @@
 # Parallel Replication
  
-A time comes, well, almost always, when onb runs into replication performance issues when the user concurrency grows. One can tune the network, the IOPS of the storage but nothing seems to help. This is the time to implement Parallel replication.
+A time comes, well, almost always, when one runs into replication performance issues as the user concurrency grows. One can tune the network, the IOPS of the storage but nothing seems to help. This is the time to implement Parallel replication.
  
 There are three parallel replication modes which can be set using the `slave_parallel_mode` variable, In MariaDB 10.5+ Optimistic is the default mode.
  
