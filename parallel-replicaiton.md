@@ -141,12 +141,16 @@ demotion_sql_file = /var/lib/maxscale/scripts/demotion.sql
 ...
 ```
  
-To identify the Group ID within Binary Logs the `cid` in the following GTID header line indicates it.
+To identify the Group ID within Binary Logs the `cid` in the following GTID header line indicates it. All the transaction blocks with the same `cid` belong to the same group and can be applied in parallel.
  
 ```
-#220510 12:39:20 server id 1  end_log_pos 1456683 CRC32 0x32e1fce1  GTID 0-1-2992 cid=7650 trans
+#150324 12:54:24 server id 1  end_log_pos 20052 	GTID 0-1-47 trans
+...
+#150324 12:54:24 server id 1  end_log_pos 20212 	GTID 0-1-48 cid=630 trans
+...
+#150324 12:54:24 server id 1  end_log_pos 20372 	GTID 0-1-49 cid=630 trans
 ```
- 
+
 ## Tuning the Group Commit Frequency
  
 After setting the `SET GLOBAL binlog_commit_wait_count=10;` and `SET GLOBAL binlog_commit_wait_usec=10000;` lets we will continue start the load test again to generate typical transactional load on the Master and measure the Binlog Commits/Binlog Group Commits as previously done.
