@@ -144,11 +144,11 @@ demotion_sql_file = /var/lib/maxscale/scripts/demotion.sql
 To identify the Group ID within Binary Logs the `cid` in the following GTID header line indicates it. All the transaction blocks with the same `cid` belong to the same group and can be applied in parallel.
  
 ```
-#150324 12:54:24 server id 1  end_log_pos 20052 	GTID 0-1-47 trans
+#250339 10:50:19 server id 1000  end_log_pos 20052 	GTID 0-1-47 trans
 ...
-#150324 12:54:24 server id 1  end_log_pos 20212 	GTID 0-1-48 cid=630 trans
+#250339 10:50:19 server id 1000  end_log_pos 20212 	GTID 0-1-48 cid=630 trans
 ...
-#150324 12:54:24 server id 1  end_log_pos 20372 	GTID 0-1-49 cid=630 trans
+#250339 10:50:19 server id 1000  end_log_pos 20372 	GTID 0-1-49 cid=630 trans
 ```
 
 ## Tuning the Group Commit Frequency
