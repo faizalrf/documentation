@@ -196,6 +196,6 @@ MariaDB [(none)]> SELECT (2754749-2595621)/(566335-550563);
  
 Now we can see that there are 10 transactions being grouped per Commit Group. This also means that we should be able to set the `slave_parallel_threads=10` safely on all the slave nodes. This will ensure that all the 10 threads can apply one transaction each in parallel leading to much faster replication.
  
-Another important point to take note here is the above measurement is beast done on expected peak load time so that we are prepared for the worst case scenario.
+Another important point to take note here is the above measurement is best done on expected peak load time so that we are prepared for the worst case scenario.
  
 ## Thank You!
