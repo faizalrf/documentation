@@ -153,9 +153,8 @@ To identify the Group ID within Binary Logs the `cid` in the following GTID head
 
 ## Tuning the Group Commit Frequency
  
-After setting the `SET GLOBAL binlog_commit_wait_count=10;` and `SET GLOBAL binlog_commit_wait_usec=10000;` lets we will continue start the load test again to generate typical transactional load on the Master and measure the Binlog Commits/Binlog Group Commits as previously done.
- 
- 
+After setting the `SET GLOBAL binlog_commit_wait_count=10;` and `SET GLOBAL binlog_commit_wait_usec=10000;` we will continue with the load test to generate typical transactional load on the Primary server and measure the Binlog Commits/Binlog Group Commits as previously done.
+
 ```
 MariaDB [(none)]> SHOW GLOBAL STATUS WHERE Variable_name IN ('Binlog_commits', 'Binlog_group_commits'); SELECT sleep(60); SHOW GLOBAL STATUS WHERE Variable_name IN ('Binlog_commits', 'Binlog_group_commits');
 +----------------------+---------+
