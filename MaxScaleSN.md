@@ -15,7 +15,6 @@ log_bin_index = mariadb-bin.index
 relay_log_recovery = 1
 shutdown_wait_for_slaves = 1
 binlog_format = ROW
-
 log_slave_updates = 1
 bind_address = 0.0.0.0
 ```
@@ -137,7 +136,7 @@ slave_selection_criteria=ADAPTIVE_ROUTING
 
 ## For Read Consistency, test this with the value "local" and "global" to always use Slaves for reading
 # GLOBAL is recommended for ServiceNow as it can detect changes in multiple connections and decide to read from master or from slave.
-# causal_reads=universal
+# causal_reads=global
 ## 
 
 # The following is a fast alternative instead of causal_reads, we force MaxScale to only connect to the primary node for all routing
@@ -168,8 +167,6 @@ The `Read-Write-Listener` points to `4007` as the port number, user defined, the
   - Can be good if read scaling is needed and data consistency across the server is important.
   - But of course, it slows down all the users SELECT tasks even if they are not doing any data changes
     - `causal_reads_timeout=10s` is still applicable and can be configured within MaxScale as to how long to wait for the replication of that particular transaction to catch up.
-- **`causal_reads=universal`**
-  - Multiple MaxScale nodes can provide consistent reads across the cluster.
 - **`max_slave_connections=0`**
   - Instead of `causal_reads` this is the fast alternative as there is no waits or delays and all the reads and writes simply go to the primary node without across the connections.
   
