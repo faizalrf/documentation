@@ -19,7 +19,7 @@ log_slave_updates = 1
 bind_address = 0.0.0.0
 ```
 
-Here the `gtid_domain_id` is an integer value, generally `1` which should remain the same across all the nodex. 
+Here the `gtid_domain_id` is an integer value, generally `1` which should remain the same across all the nodes. 
 
 Everything else including the `gtid_domain_id` remains the same in all the MariaDB servers except for the `server_id` parameter, which is generally configured as **1000** for primnary, **2000** for secondary, **3000**, **4000**, and so on.
 
