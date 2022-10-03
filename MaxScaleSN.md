@@ -75,7 +75,7 @@ The following config is assuming there are three nodes in the setup.
   - Replica 1
   - Replica 2
 
-```txt
+```
 [maxscale]
 threads=auto
 log_info=false
