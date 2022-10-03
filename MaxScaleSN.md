@@ -2,7 +2,7 @@
 
 This document is meant to be a guide on how to best setup MaxScale 6 so that it can be used with a ServiceNow deployment and MariaDB 10.4+ versions. 
 
-All the MariaDB Servers should have the following confugration in the `server.cnf` or the `my.cnf` files  
+All the MariaDB Servers should have the following confugration in the `server.cnf` or the `my.cnf` files, other than the default application specific configuration.  
 
 ```cnf
 [mariadb]
@@ -107,10 +107,6 @@ servers=Server-1, Server-2, Server-3
 user=maxmon
 password=<SecretPassword>
 
-## In case any !
-# promotion_sql_file=/home/root/scripts/promotion.sql
-# demotion_sql_file=/home/root/scripts/demotion.sql
-
 monitor_interval=2000
 verify_master_failure=true
 enforce_read_only_slaves=true
@@ -141,13 +137,14 @@ slave_selection_criteria=ADAPTIVE_ROUTING
 
 ## For Read Consistency, test this with the value "local" and "global" to always use Slaves for reading
 # GLOBAL is recommended for ServiceNow as it can detect changes in multiple connections and decide to read from master or from slave.
-causal_reads=global
+# causal_reads=universal
+## 
+
+# The following is a fast alternative instead of causal_reads, we force MaxScale to only connect to the primary node for all routing
+max_slave_connections=0
 
 ## The following needs to be tested but it's a nice feature to automatically retry a transaction failed due to deadlock, uncomment to enable.
 transaction_replay_retry_on_deadlock=true
-
-## To send all the stored procedure calls to Primary DB Server!
-# strict_sp_calls=true
 
 [Read-Write-Listener]
 type=listener
@@ -171,7 +168,11 @@ The `Read-Write-Listener` points to `4007` as the port number, user defined, the
   - Can be good if read scaling is needed and data consistency across the server is important.
   - But of course, it slows down all the users SELECT tasks even if they are not doing any data changes
     - `causal_reads_timeout=10s` is still applicable and can be configured within MaxScale as to how long to wait for the replication of that particular transaction to catch up.
-
+- **`causal_reads=universal`**
+  - Multiple MaxScale nodes can provide consistent reads across the cluster.
+- **`max_slave_connections=0`**
+  - Instead of `causal_reads` this is the fast alternative as there is no waits or delays and all the reads and writes simply go to the primary node without across the connections.
+  
 Once the configuration is ready, restart trhe MaxScale `systemctl restart maxscale` and execute the command to verify the server's are visible by executing the command: `maxctrl list servers` and `maxctrl list services` to see the running services.
 
 **Note:** With MaxScale 2.5+, there is no need to use thirdparty products like KeepAliveD or Corosync/Pacemaker etc, MaxScale alreay has built in "Cooperative Monotiring" capabilities. <https://mariadb.com/kb/en/mariadb-maxscale-6-mariadb-monitor/#cooperative_monitoring_locks>
