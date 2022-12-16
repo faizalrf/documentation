@@ -5,6 +5,7 @@ All the MariaDB Servers should have the following confugration in the `server.cn
 ```cnf
 [mariadb]
 gtid_strict_mode = 1
+session_track_system_variables=last_gtid
 ```
 
 Once this is done, proceed to configure the replication as per normal.
