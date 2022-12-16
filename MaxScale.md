@@ -1,66 +1,35 @@
-# MaxScale 2.5 Setup
+# MaxScale 22.08 Setup
 
-All the MariaDB Servers should have the following confugration in the `server.cnf` file 
+All the MariaDB Servers should have the following confugration in the `server.cnf` file for MaxScale to work properly. 
 
 ```cnf
 [mariadb]
-log_error=server.log
-gtid_domain_id=1
-server_id=1000
-log_bin = mariadb-bin
-log_bin_index = mariadb-bin.index
-binlog_format = MIXED
 gtid_strict_mode = 1
-log_slave_updates = 1
-bind_address = 0.0.0.0
-
-# MariaDB Replication Durability but may slow down the replication on very heavy write environments
-sync_binlog = 1
-sync_master_info = 1
-sync_relay_log = 1
-sync_relay_log_info = 1
-relay_log_recovery = 1
-
-# Durability settings for the transaction log. 1 is slow but secure, 2 is faster but risk losing some data in case of critical power or hardware failure
-innodb_flush_log_at_trx_commit = 1
-
-# For MariaDB enterprise server only, use the following
-# shutdown_wait_for_slaves = 1
-
-[mysql]
-prompt=\H [\d]>\
 ```
-
-Everything remains the same in all the MariaDB servers except for the `server_id` parameter, configure it as **1000** for primnary, **2000** for secondary, **3000**, **4000**, and so on.
 
 Once this is done, proceed to configure the replication as per normal.
 
-## MaxScale 2.5 User Account Setup
+## MaxScale User Account Setup
 
 MaxScale needs to have two accounts created in the database. Execute the following statements on the PrimaryDB (Master) so that these get replicated on all the slaves.
 
 ```sql
-# USER (maxuser): ReadWrite-Splitter user, this user is going to be a
-# part of the basic configuration
-# Following Grants are required for MariaDB 10.3.x 
-
 MariaDB [(none)]> CREATE USER 'maxuser'@'%' IDENTIFIED BY 'secretpassword';
 Query OK, 0 rows affected (0.001 sec)
 
+MariaDB [(none)]> GRANT BINLOG ADMIN,
+   READ_ONLY ADMIN,
+   RELOAD,
+   REPLICA MONITOR,
+   REPLICATION MASTER ADMIN,
+   REPLICATION REPLICA ADMIN,
+   REPLICATION REPLICA,
+   SHOW DATABASES
+   ON *.*
+   TO 'maxuser'@'%';
+Query OK, 0 rows affected (0.001 sec)
+
 MariaDB [(none)]> GRANT SELECT ON mysql.* TO 'maxuser'@'%';
-Query OK, 0 rows affected (0.001 sec)
-
-MariaDB [(none)]> GRANT SHOW DATABASES ON *.* TO 'maxuser'@'%';
-Query OK, 0 rows affected (0.001 sec)
-
-# USER (maxmon): MariaDBMon user
-# user created for the monitor MariaDBMon, to pull state,
-# do the failover, switchover and rejoin servers part of existing clusters
-
-MariaDB [(none)]> CREATE USER maxmon@'%' IDENTIFIED BY 'secretpassword';
-Query OK, 0 rows affected (0.001 sec)
-
-MariaDB [(none)]> GRANT SUPER, RELOAD, REPLICATION CLIENT, REPLICATION SLAVE ON *.* TO maxmon@'%';
 Query OK, 0 rows affected (0.001 sec)
 
 MariaDB [(none)]> FLUSH PRIVILEGES;
@@ -69,7 +38,7 @@ Query OK, 0 rows affected (0.001 sec)
 
 Once the accounts are created on the Primary database node, verify that these are replciated on the secondary nodes as well. Proceed to configure the MaxScale server.
 
-## MaxScale 2.5 Setup
+## MaxScale Setup
 
 Edit the `/etc/maxscale.cnf` file and delete all the contents to do a clean start. Add the following to the `/etc/maxscale.cnf` file
 
@@ -101,14 +70,14 @@ protocol = MariaDBBackend
 type = monitor
 module = mariadbmon
 servers = Server-1, Server-2, Server-3
-user = maxmon
+user = maxuser
 password = secretpassword
 
 ## In case any !
 # promotion_sql_file = /home/root/scripts/promotion.sql
 # demotion_sql_file = /home/root/scripts/demotion.sql
  
-monitor_interval = 1500
+monitor_interval = 2000
 
 ## Some of the important timeout variables for reference.
 # failcount = 5
@@ -122,7 +91,7 @@ enforce_read_only_slaves = true
 auto_failover = true
 auto_rejoin = true
 
-cooperative_monitoring_locks=majority_of_all
+cooperative_monitoring_locks=majority_of_running
 
 ## This is the replication-rwsplit-service
 [Read-Write-Service]
@@ -145,7 +114,7 @@ prune_sescmd_history = true
 slave_selection_criteria = ADAPTIVE_ROUTING
 
 # For Read Consistency, test this with the value "local" and "global" to always use Slaves for reading 
-causal_reads = true
+causal_reads = global
 transaction_replay_retry_on_deadlock = true
 
 ## To send all the stored procedure calls to Primary DB Server!
@@ -176,7 +145,9 @@ The `Read-Write-Listener` points to `4009` as the port number, this is the port 
 
 Once the configuration is ready, restart trhe MaxScale `systemctl restart maxscale` and execute the command to verify the server's are visible by executing the command: `maxctrl list servers` and `maxctrl list services` to see the running services.
 
-**Note:** With MaxScale 2.5, there is no need to use thirdparty products like KeepAliveD or Corosync/Pacemaker etc, MaxScale alreay has built in "Cooperative Monotiring" capabilities. <https://mariadb.com/kb/en/mariadb-maxscale-25-mariadb-monitor/#cooperative-monitoring>
+**Note:** With MaxScale, there is no need to use thirdparty products like KeepAliveD or Corosync/Pacemaker etc, MaxScale alreay has built in "Cooperative Monotiring" capabilities. <https://mariadb.com/kb/en/mariadb-maxscale-25-mariadb-monitor/#cooperative-monitoring>
+
+Refer to <https://mariadb.com/docs/server/deploy/maxscale-mariadbmon-readwritesplit-mxs22-08/#TOP> for more details
 
 Refer to my YouTube video for an explanation on how Cooperative monitoring works: https://youtu.be/6wc_5O8jHjc
 
