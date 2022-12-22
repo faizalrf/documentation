@@ -78,7 +78,7 @@ password = secretpassword
 # promotion_sql_file = /home/root/scripts/promotion.sql
 # demotion_sql_file = /home/root/scripts/demotion.sql
  
-monitor_interval = 2000
+monitor_interval = 2s
 
 ## Some of the important timeout variables for reference.
 # failcount = 5
