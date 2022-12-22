@@ -43,7 +43,7 @@ Once the accounts are created on the Primary database node, verify that these ar
 
 Edit the `/etc/maxscale.cnf` file and delete all the contents to do a clean start. Add the following to the `/etc/maxscale.cnf` file
 
-```txt
+```
 [maxscale]
 threads = auto
 log_info = false
