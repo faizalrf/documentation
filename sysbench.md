@@ -65,16 +65,12 @@ The `sysbench` will use the following parameters:
   - Use MySQL drivers which works for MariaDB as well
 - `--threads=8`
   - The number of concurrent connections. This should be started with a lower and increased for each test to see the peak performance/limit of the database for the given hardware
-- `--oltp-tables-count=12`
+- `--tables=12`
   - How many tables to create
-- `--oltp-table-size=100000`
+- `--table-size=100000`
   - Number of rows to insert in each table for the loadtest
-- `--oltp-test-mode=complex`
-  - Type of load generation, Complex is the toughest one for the database
-- `--oltp-dist-type=uniform`
-  - If you are using more than one nodes in the cluster, this will distribute the load equally on each node, however with MaxScale, it dosent make any differece since MaxScale will do the distribution automatically, given you have configured only one MaxScale server.
-- `/usr/share/sysbench/tests/include/oltp_legacy/oltp.lua`
-  - You have to look for this file and make sure the path is correct after the installation.
+- `/usr/share/sysbench/oltp_common.lua`
+  - You have to look for this file and make sure the path is correct after the installation, within the above path there are other test LUA files which you might want to use depending on your test scenarios.
 - `--mysql-host=192.168.56.1 --mysql-port=3306 --mysql-user=sb_user --mysql-password=password`
   - These point to your MariaDB server or the MaxScale or directly to your database instance, if you have more than one MaxScale nodes, it can be a coma separated list for `--mysql-host` parameter
 - `--mysql_db=sbtest`
@@ -82,11 +78,13 @@ The `sysbench` will use the following parameters:
 - `prepare`
   - This indicates that we are preparing the envionment before the actual test. This will create those tables and pump the initial data to for the actual performance test
 
-Executing sysbench with above mentioned parameters, we can expect to see the following results. By the end of this, we will have our tables creted and data populated based on our `oltp-table-size=100000` parameter, in this case, 100k rows in each table.
+Executing sysbench with above mentioned parameters, we can expect to see the following results. By the end of this, we will have our tables creted and data populated based on our `table-size=100000` parameter, in this case, 100k rows in each table.
+
+The following variabes and setup works with **sysbench 1.0.20**
 
 ```txt
-shell> sysbench --db-driver=mysql --threads=8 --oltp-tables-count=12 --oltp-table-size=100000 --oltp-test-mode=complex --oltp-dist-type=uniform /usr/share/sysbench/tests/include/oltp_legacy/oltp.lua --mysql-host=192.168.56.1 --mysql-port=3306 --mysql-user=sbuser --mysql-password=password --mysql_db=sbtest prepare
-sysbench 1.0.17 (using bundled LuaJIT 2.1.0-beta2)
+shell> sysbench --db-driver=mysql --threads=8 --tables=20 --table_size=100000 /usr/share/sysbench/oltp_common.lua --mysql-host=192.168.56.1 --mysql-port=3306 --mysql-user=sbuser --mysql-password=P@ssw0rd --mysql_db=sbtest prepare
+sysbench 1.0.20 (using system LuaJIT 2.1.0-beta3)
 
 Creating table 'sbtest1'...
 Inserting 100000 records into 'sbtest1'
@@ -133,8 +131,8 @@ Once the database is ready with tables and dummy data, we can now run the test.
 The following is exactly the same as the previous, just the last parameter, instead of `prepare` we will use `run`
 
 ```txt
-shell> sysbench --db-driver=mysql --threads=8 --oltp-tables-count=12 --oltp-table-size=100000 --oltp-test-mode=complex --oltp-dist-type=uniform /usr/share/sysbench/tests/include/oltp_legacy/oltp.lua --mysql-host=192.168.56.1 --mysql-port=3306 --mysql-user=sbuser --mysql-password=password --mysql_db=sbtest --time=60 --report-interval=10 run
-sysbench 1.0.17 (using bundled LuaJIT 2.1.0-beta2)
+shell> sysbench --db-driver=mysql --threads=8 --tables=20 --table_size=100000 /usr/share/sysbench/oltp_read_write.lua --mysql-host=192.168.56.1 --mysql-port=3306 --mysql-user=sbuser --mysql-password=P@ssw0rd --mysql_db=sbtest --time=120 --report-interval=10 run
+sysbench 1.0.20 (using system LuaJIT 2.1.0-beta3)
 
 Running the test with following options:
 Number of threads: 8
