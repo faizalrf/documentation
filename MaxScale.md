@@ -144,6 +144,8 @@ The `Read-Write-Listener` points to `4009` as the port number, this is the port 
   - But of course, it slows down all the users SELECT tasks even if they are not doing any data changes
     - `causal_reads_timeout=10s` is still applicable and can be configured within MaxScale as to how long to wait for the replication of that particular transaction to catch up.
 
+***Note:** To enable `causal_reads` we must add one configuration **`session_track_system_variables=last_gtid`** in the MariaDB `server.cnf` file under `[mariadb]` section. Without the session tracking sysem variable, causal reads will not work.*
+
 Once the configuration is ready, restart trhe MaxScale `systemctl restart maxscale` and execute the command to verify the server's are visible by executing the command: `maxctrl list servers` and `maxctrl list services` to see the running services.
 
 **Note:** With MaxScale, there is no need to use thirdparty products like KeepAliveD or Corosync/Pacemaker etc, MaxScale alreay has built in "Cooperative Monotiring" capabilities. <https://mariadb.com/kb/en/mariadb-maxscale-25-mariadb-monitor/#cooperative-monitoring>
