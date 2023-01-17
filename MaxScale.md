@@ -116,6 +116,7 @@ slave_selection_criteria = ADAPTIVE_ROUTING
 
 # For Read Consistency, test this with the value "local" and "global" to always use Slaves for reading 
 causal_reads = global
+causal_reads_timeout=1s
 transaction_replay_retry_on_deadlock = true
 
 ## To send all the stored procedure calls to Primary DB Server!
@@ -135,14 +136,14 @@ The `Read-Write-Listener` points to `4009` as the port number, this is the port 
   - If the current connection does any data changes, insert, update, delete, MaxScale will check if no slaves have the data replicated, the subsequent SELECT query will be straight away routed to the Master node.
   - This is the fastest way but in case of the always lagging slaves, master will be constantly pounded by all the reads.
 - **`causal_reads=local`**
-  - If the current connection does any data changes, insert, update, delete, MaxScale will wait up to `causal_reads_timeout=10s` seconds to see if the slaves get that data before running the SELECT query on the slave, 
+  - If the current connection does any data changes, insert, update, delete, MaxScale will wait up to `causal_reads_timeout=1s` seconds to see if the slaves get that data before running the SELECT query on the slave, 
   - This can slowdown the application if the slaves are always lagging behind. Applicable to writes done on the user's own connection.
   - But if the replicaiton is fast enough, this can provided great READ scaling.
 - **`causal_reads=global`**
   - This behaves exactly the same way as `local` with one major change. Instead of considering on the current user connection, MaxScale will identify changes from all the other users who might do some data change and then decide weather to send the SELECT query to a particular slave or to the master node
   - Can be good if read scaling is needed and data consistency across the server is important.
   - But of course, it slows down all the users SELECT tasks even if they are not doing any data changes
-    - `causal_reads_timeout=10s` is still applicable and can be configured within MaxScale as to how long to wait for the replication of that particular transaction to catch up.
+    - `causal_reads_timeout=10s` is the defult value. It is still applicable and can be configured within MaxScale as to how long to wait for the replication of that particular transaction to catch up.
 
 ***Note:** To enable `causal_reads` we must add one configuration **`session_track_system_variables=last_gtid`** in the MariaDB `server.cnf` file under `[mariadb]` section. Without the session tracking sysem variable, causal reads will not work.*
 
