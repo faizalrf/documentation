@@ -304,8 +304,6 @@ innodb_open_files=1000
 innodb_flush_log_at_trx_commit=1
 sync_binlog=1
 sync_master_info=1
-sync_relay_log=1
-sync_relay_log_info=1
 # ACID Config Ends
 
 # Replication
@@ -330,6 +328,7 @@ rpl_semi_sync_slave_enabled=ON
 rpl_semi_sync_master_wait_point=AFTER_SYNC
 rpl_semi_sync_master_timeout=10000
 # Semi-Sync replicaiton Ends
+slave_parallel_threads = 4
 
 bind_address = 0.0.0.0
 
