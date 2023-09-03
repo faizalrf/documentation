@@ -58,7 +58,7 @@ mariadb-enterprise-10.6.14-9-rhel-8-x86_64-rpms/MariaDB-backup-10.6.14_9-1.el8.x
 Go to the extracted folder verify the listing.
 
 ```
-[root@ip-172-31-30-37 mariadb-enterprise-10.6.14-9-rhel-8-x86_64-rpms]# ls -rlt
+[server1 tmp/mariadb-enterprise-10.6.14-9-rhel-8-x86_64-rpms]# ls -rlt
 total 123712
 -rw-rw-r--. 1 1002 1002   445324 Jul  2 22:54 MariaDB-spider-engine-10.6.14_9-1.el8.x86_64.rpm
 -rw-rw-r--. 1 1002 1002   128724 Jul  2 22:54 MariaDB-shared-10.6.14_9-1.el8.x86_64.rpm
@@ -86,7 +86,7 @@ drwxrwxr-x. 2 1002 1002     4096 Jul  2 22:54 repodata
 Before installation, make sure that the Default linux repositories are configured for the dedependencies. These should point to `BaseOS` and `AppStream`. The following is on a RHEL 8.4 linux on AWS but your listing may warry, we just need to ensure that there are references of BaseOS and AppStream both. 
 
 ```
-[root@ip-172-31-26-216 yum.repos.d]# egrep -i "appstream|baseos" *.repo
+[[server1 /etc/yum.repos.d]# egrep -i "appstream|baseos" *.repo
 redhat-rhui-ha.repo:[rhel-8-appstream-rhui-debug-rpms]
 redhat-rhui-ha.repo:name=Red Hat Enterprise Linux 8 for $basearch - AppStream from RHUI (Debug RPMs)
 redhat-rhui-ha.repo:mirrorlist=https://rhui.REGION.aws.ce.redhat.com/pulp/mirror/content/dist/rhel8/rhui/$releasever/$basearch/appstream/debug
@@ -109,16 +109,16 @@ redhat-rhui-ha.repo:mirrorlist=https://rhui.REGION.aws.ce.redhat.com/pulp/mirror
 
 ### Install MariaDB Server
 
-Execute the following `dnf localinstall` command in the same order from the extracted RPM folder.
+Execute the following `dnf localinstall` command in the same order, from within the extracted RPM folder.
 
 ```
-[root@ip-172-31-26-216 mariadb-enterprise-10.6.14-9-rhel-8-x86_64-rpms]# dnf localinstall MariaDB-common-10.6.14_9-1.el8.x86_64.rpm \
-                                                                            MariaDB-compat-10.6.14_9-1.el8.x86_64.rpm \
-                                                                            MariaDB-client-10.6.14_9-1.el8.x86_64.rpm \
-                                                                            MariaDB-shared-10.6.14_9-1.el8.x86_64.rpm \
-                                                                            MariaDB-backup-10.6.14_9-1.el8.x86_64.rpm \
-                                                                            galera-enterprise-4-26.4.14-1.el8.x86_64.rpm \
-                                                                            MariaDB-server-10.6.14_9-1.el8.x86_64.rpm
+[server1 tmp/mariadb-enterprise-10.6.14-9-rhel-8-x86_64-rpms]# dnf localinstall MariaDB-common-10.6.14_9-1.el8.x86_64.rpm \
+                                                                MariaDB-compat-10.6.14_9-1.el8.x86_64.rpm \
+                                                                MariaDB-client-10.6.14_9-1.el8.x86_64.rpm \
+                                                                MariaDB-shared-10.6.14_9-1.el8.x86_64.rpm \
+                                                                MariaDB-backup-10.6.14_9-1.el8.x86_64.rpm \
+                                                                galera-enterprise-4-26.4.14-1.el8.x86_64.rpm \
+                                                                MariaDB-server-10.6.14_9-1.el8.x86_64.rpm
 
 Last metadata expiration check: 0:11:49 ago on Sun 03 Sep 2023 05:48:54 PM UTC.
 Dependencies resolved.
