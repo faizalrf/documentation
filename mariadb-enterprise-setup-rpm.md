@@ -410,10 +410,55 @@ Create a user with grants to execute MariaDB Backup on the server.
 The following user creation is to be done only on the Master node.
 
 ```sql
-CREATE USER 'mariabackup'@'localhost' IDENTIFIED BY 'mypassword';
+CREATE USER 'mariabackup'@'localhost' IDENTIFIED BY 'Password123!';
 GRANT RELOAD, PROCESS, LOCK TABLES, BINLOG MONITOR ON *.* TO 'mariabackup'@'localhost';
 ```
 
-Finally restart the MariaDB service and connect to it to make sure the database is able to connect and we can see the databases and tables within.
+##### MariaDB Test Application User
+
+```
+[root@ip-172-31-26-216 ~]# mariadb
+Welcome to the MariaDB monitor.  Commands end with ; or \g.
+Your MariaDB connection id is 13
+Server version: 10.6.14-9-MariaDB-enterprise MariaDB Enterprise Server
+
+Copyright (c) 2000, 2018, Oracle, MariaDB Corporation Ab and others.
+
+Type 'help;' or '\h' for help. Type '\c' to clear the current input statement.
+
+MariaDB [(none)]> CREATE DATABASE testdb;
+Query OK, 1 row affected (0.000 sec)
+
+MariaDB [(none)]> SHOW DATABASES;
++--------------------+
+| Database           |
++--------------------+
+| information_schema |
+| mysql              |
+| performance_schema |
+| sys                |
+| testdb             |
++--------------------+
+5 rows in set (0.002 sec)
+
+MariaDB [(none)]> use testdb;
+Database changed
+MariaDB [testdb]> CREATE USER 'app_user'@'%' IDENTIFIED BY 'Password123!';
+Query OK, 0 rows affected (0.002 sec)
+
+MariaDB [testdb]> GRANT ALL ON testdb.* TO 'app_user'@'@';
+Query OK, 0 rows affected (0.001 sec)
+
+MariaDB [testdb]> show grants for app_user@'%';
++---------------------------------------------------------------------------------------------------------+
+| Grants for app_user@%                                                                                   |
++---------------------------------------------------------------------------------------------------------+
+| GRANT USAGE ON *.* TO `app_user`@`%` IDENTIFIED BY PASSWORD '*4F56EF3FCEF3F995F03D1E37E2D692D420111476' |
+| GRANT ALL PRIVILEGES ON `testdb`.* TO `app_user`@`%`                                                    |
++---------------------------------------------------------------------------------------------------------+
+2 rows in set (0.000 sec)
+```
+
+This concludes our verification and final touches of the setup.
 
 ##### Thank you!
