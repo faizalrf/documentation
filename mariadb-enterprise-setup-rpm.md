@@ -1,6 +1,6 @@
 # MariaDB Enterprise Server 10.6
 
-This guide discusses how to Install MariaDB enterprise using `**localinstall**` without internet access on the database servers.
+This guide discusses how to Install MariaDB enterprise using **`localinstall`** without internet access on the database servers.
 
 ## Assumptions
 
@@ -86,7 +86,7 @@ drwxrwxr-x. 2 1002 1002     4096 Jul  2 22:54 repodata
 Before installation, make sure that the Default linux repositories are configured for the dedependencies. These should point to `BaseOS` and `AppStream`. The following is on a RHEL 8.4 linux on AWS but your listing may warry, we just need to ensure that there are references of BaseOS and AppStream both. 
 
 ```
-[[server1 /etc/yum.repos.d]# egrep -i "appstream|baseos" *.repo
+[server1 /etc/yum.repos.d]# egrep -i "appstream|baseos" *.repo
 redhat-rhui-ha.repo:[rhel-8-appstream-rhui-debug-rpms]
 redhat-rhui-ha.repo:name=Red Hat Enterprise Linux 8 for $basearch - AppStream from RHUI (Debug RPMs)
 redhat-rhui-ha.repo:mirrorlist=https://rhui.REGION.aws.ce.redhat.com/pulp/mirror/content/dist/rhel8/rhui/$releasever/$basearch/appstream/debug
