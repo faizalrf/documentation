@@ -457,6 +457,10 @@ ssl_ca     = /var/lib/maxscale/maxscale.cnf.d/ssl/ca-cert.pem
 
 Save and restart MaxScale using `systemctl restart maxscale`
 
+The above is a standard MaxScale configuration but the key points to note are the SSL related parameters under the `Server-1`, `Server-2` and the `Read-Write-Listener` sections. These are all the client certs so that the MaxScale can connect to the MariaDB backend.
+
+#### Test Connectivity
+
 Connect to MariaDB using the MaxScale host IP and listener PORT `4009` 
 
 ```
