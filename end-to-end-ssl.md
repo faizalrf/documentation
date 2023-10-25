@@ -461,7 +461,7 @@ The above is a standard MaxScale configuration but the key points to note are th
 
 #### Test Connectivity
 
-Connect to MariaDB using the MaxScale host IP and listener PORT `4009` 
+Connect to MariaDB using the MaxScale host IP `172.31.21.123` and listener PORT `4009` 
 
 ```
 shell> mariadb -urebel -p -h172.31.21.123 -P4009
@@ -473,14 +473,6 @@ We are unable to connect as MaxScale requires SSL connections. To solve the prob
 
 ```
 shell> mariadb -urebel -p -h172.31.21.123 -P4009 --ssl
-Enter password:
-Welcome to the MariaDB monitor.  Commands end with ; or \g.
-Your MariaDB connection id is 2
-Server version: 10.6.15-10-MariaDB-enterprise-log MariaDB Enterprise Server
-
-Copyright (c) 2000, 2018, Oracle, MariaDB Corporation Ab and others.
-
-Type 'help;' or '\h' for help. Type '\c' to clear the current input statement.
 
 MariaDB [(none)]> STATUS;
 --------------
