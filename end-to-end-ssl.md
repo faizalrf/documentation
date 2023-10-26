@@ -108,23 +108,13 @@ The first thing to check would be if the current MariaDB server has SSL support 
 These verifications can be done through the following two steps. 
 
 ```
-MariaDB [(none)]> show global variables like '%ssl%';
+MariaDB [(none)]> show global variables like 'have_ssl';
 +---------------------+---------------------------+
 | Variable_name       | Value                     |
 +---------------------+---------------------------+
-| have_openssl        | YES                       |
 | have_ssl            | DISABLED                  |
-| ssl_ca              |                           |
-| ssl_capath          |                           |
-| ssl_cert            |                           |
-| ssl_cipher          |                           |
-| ssl_crl             |                           |
-| ssl_crlpath         |                           |
-| ssl_key             |                           |
-| version_ssl_library | OpenSSL 3.0.2 15 Mar 2022 |
-| wsrep_ssl_mode      | SERVER                    |
 +---------------------+---------------------------+
-11 rows in set (0.001 sec)
+1 rows in set (0.001 sec)
 ```
 
 The output of `have_ssl` may have a possible of three values
@@ -260,54 +250,23 @@ MariaDB [(none)]> SHOW SLAVE STATUS\G
                    Master_User: rep_user
                    Master_Port: 3306
                  Connect_Retry: 60
-               Master_Log_File: mariadb-bin.000001
-           Read_Master_Log_Pos: 677
-                Relay_Log_File: mysqld-relay-bin.000002
-                 Relay_Log_Pos: 978
-         Relay_Master_Log_File: mariadb-bin.000001
+                              ...
               Slave_IO_Running: Yes
              Slave_SQL_Running: Yes
-               Replicate_Do_DB:
-           Replicate_Ignore_DB:
-            Replicate_Do_Table:
-        Replicate_Ignore_Table:
-       Replicate_Wild_Do_Table:
-   Replicate_Wild_Ignore_Table:
-                    Last_Errno: 0
-                    Last_Error:
-                  Skip_Counter: 0
-           Exec_Master_Log_Pos: 677
-               Relay_Log_Space: 1288
-               Until_Condition: None
-                Until_Log_File:
-                 Until_Log_Pos: 0
+                              ...
             Master_SSL_Allowed: Yes
             Master_SSL_CA_File: /etc/my.cnf.d/ssl/ca-cert.pem
             Master_SSL_CA_Path:
                Master_SSL_Cert: /etc/my.cnf.d/ssl/client-cert.pem
              Master_SSL_Cipher:
                 Master_SSL_Key: /etc/my.cnf.d/ssl/client-key.pem
-         Seconds_Behind_Master: 0
- Master_SSL_Verify_Server_Cert: No
-                 Last_IO_Errno: 0
-                 Last_IO_Error:
-                Last_SQL_Errno: 0
-                Last_SQL_Error:
-   Replicate_Ignore_Server_Ids:
+                              ...
               Master_Server_Id: 1000
                 Master_SSL_Crl:
             Master_SSL_Crlpath:
                     Using_Gtid: Slave_Pos
                    Gtid_IO_Pos: 0-1000-2
-       Replicate_Do_Domain_Ids:
-   Replicate_Ignore_Domain_Ids:
-                 Parallel_Mode: optimistic
-                     SQL_Delay: 0
-           SQL_Remaining_Delay: NULL
-       Slave_SQL_Running_State: Slave has read all relay log; waiting for more updates
-              Slave_DDL_Groups: 2
-Slave_Non_Transactional_Groups: 0
-    Slave_Transactional_Groups: 0
+                              ...
 1 row in set (0.000 sec)
 ```
 
@@ -323,31 +282,7 @@ Connect to the Primary node, `Node1`, and create a MaxScale user with the specif
 MariaDB [(none)]> CREATE USER mxs@'172.31.21.123' IDENTIFIED BY 'P@ssw0rd' REQUIRE SSL;
 Query OK, 0 rows affected (0.003 sec)
 
-MariaDB [(none)]> GRANT SHOW DATABASES ON *.* TO mxs@'172.31.21.123';
-Query OK, 0 rows affected (0.004 sec)
-
-MariaDB [(none)]> GRANT SELECT ON mysql.columns_priv TO mxs@'172.31.21.123';
-Query OK, 0 rows affected (0.003 sec)
-
-MariaDB [(none)]> GRANT SELECT ON mysql.db TO mxs@'172.31.21.123';
-Query OK, 0 rows affected (0.002 sec)
-
-MariaDB [(none)]> GRANT SELECT ON mysql.procs_priv TO mxs@'172.31.21.123';
-Query OK, 0 rows affected (0.003 sec)
-
-MariaDB [(none)]> GRANT SELECT ON mysql.proxies_priv TO mxs@'172.31.21.123';
-Query OK, 0 rows affected (0.003 sec)
-
-MariaDB [(none)]> GRANT SELECT ON mysql.roles_mapping TO mxs@'172.31.21.123';
-Query OK, 0 rows affected (0.003 sec)
-
-MariaDB [(none)]> GRANT SELECT ON mysql.tables_priv TO mxs@'172.31.21.123';
-Query OK, 0 rows affected (0.002 sec)
-
-MariaDB [(none)]> GRANT SELECT ON mysql.user TO mxs@'172.31.21.123';
-Query OK, 0 rows affected (0.003 sec)
-
-MariaDB [(none)]> GRANT BINLOG MONITOR, REPLICA MONITOR ON *.* TO mxs@'172.31.21.123';
+MariaDB [(none)]> GRANT SELECT ON mysql.* TO mxs@'172.31.21.123';
 Query OK, 0 rows affected (0.003 sec)
 
 MariaDB [(none)]> GRANT BINLOG ADMIN,
@@ -357,6 +292,8 @@ MariaDB [(none)]> GRANT BINLOG ADMIN,
     ->    REPLICATION MASTER ADMIN,
     ->    REPLICATION REPLICA ADMIN,
     ->    REPLICATION REPLICA,
+    ->    BINLOG MONITOR, 
+    ->    REPLICA MONITOR,
     ->    SHOW DATABASES
     -> ON *.* TO 'mxs'@'172.31.21.123';
 Query OK, 0 rows affected (0.003 sec)
@@ -437,11 +374,7 @@ prune_sescmd_history = true
 # For Read Consistency, test this with the value "local", "global" and "universal" to always use Slaves for reading 
 causal_reads = universal
 causal_reads_timeout=1s
-
 transaction_replay_retry_on_deadlock = true
-
-## To send all the stored procedure calls to the Primary DB Server!
-# strict_sp_calls = true
 
 [Read-Write-Listener]
 type=listener
@@ -515,5 +448,3 @@ MariaDB [(none)]> SHOW STATUS LIKE 'Ssl_cipher';
 This setup will not let any connection to MaxScale or Database that is not secured by strong TLSv1.2 or TLSv1.3
 
 ##### Thank you!
-
-
