@@ -27,7 +27,7 @@ We assume that
 - MariaDB MaxScale is 23.02 or higher
 - The `root`/`sudo` access is available for this setup. 
 - MaxScale and MariaDB servers are already in place with MaxScale and MariaDB binaries already installed with replication configuration.
-- The replication has not been set up previously.
+- The replication has not been set up previously. If it has, we will need to ALTER the existing replication user instead of creating one.
 - OpenSSL is installed on the nodes.
 
 ### Nodes
@@ -38,21 +38,15 @@ We assume that
 
 ## Creating Certificates
 
-Create the following directories on all of the Nodes
-
-- MaxScale
-  - `mkdir -pv /var/lib/maxscale/maxscale.cnf.d/tls`
-- MariaDB Primary and Replica
-  - `mkdir -pv /etc/my.cnf.d/tls`
-
-Connect to the MaxScale node and generate the following certificates under the `/var/lib/maxscale/maxscale.cnf.d/tls` directory. The server certificates will be moved out to individual nodes while the MaxScale and Client certs will remain on the MaxScale node.
+Connect to the MaxScale node and create the directory `/certs`. Generate the following certificates in the same directory. The server certificates will be moved out to individual nodes while the MaxScale and Client certs will remain on the MaxScale node.
 
 #### CA Cert
 
 For the CA certificate, the lifetime is 3 years, it's a good practice to have the CA live from one to five years depending on the organisation's security standards.
 
 ```
-shell> cd /var/lib/maxscale/maxscale.cnf.d/tls
+shell> mkdir -pv /certs
+shell> cd /certs
 shell> openssl genrsa 2048 > ca-key.pem
 shell> openssl req -new -x509 -nodes -days 1095 -key ca-key.pem > ca-cert.pem
 ```
@@ -116,25 +110,65 @@ The `*-req.pem` files can be removed from the folder tls folder.
 
 ```
 shell> pwd
-/var/lib/maxscale/maxscale.cnf.d/tls
+/certs
 
 shell> rm -rf *-req.pem
 
 shell> ls -lrt
-total 32K
--rw-r--r-- 1 root root 1.7K Oct 25 11:41 ca-key.pem
--rw-r--r-- 1 root root 1.3K Oct 25 11:41 ca-cert.pem
--rw-r--r-- 1 root root 1.7K Oct 25 11:41 server-key.pem
--rw-r--r-- 1 root root 1.2K Oct 25 11:42 server-cert.pem
--rw-r--r-- 1 root root 1.7K Oct 25 11:43 client-key.pem
--rw-r--r-- 1 root root 1.2K Oct 25 11:43 client-cert.pem
--rw-r--r-- 1 root root 1.7K Oct 25 11:45 maxscale-key.pem
--rw-r--r-- 1 root root 1.2K Oct 25 11:45 maxscale-cert.pem
+total 32
+-rw-r--r--. 1 root root 1675 Dec  9 14:09 ca-key.pem
+-rw-r--r--. 1 root root 1273 Dec  9 14:09 ca-cert.pem
+-rw-------. 1 root root 1704 Dec  9 14:09 server-key.pem
+-rw-r--r--. 1 root root 1131 Dec  9 14:10 server-cert.pem
+-rw-------. 1 root root 1675 Dec  9 14:11 client-key.pem
+-rw-r--r--. 1 root root 1131 Dec  9 14:11 client-cert.pem
+-rw-------. 1 root root 1679 Dec  9 14:12 maxscale-key.pem
+-rw-r--r--. 1 root root 1135 Dec  9 14:12 maxscale-cert.pem
+```
+
+It's super important to set up proper security of the folders and files to protect the certificates and the keys to be owned by `maxscale:maxscale`.
+
+```
+shell> chown -R maxscale:maxscale /certs
+shell> chmod -R 500 /certs
+shell> chmod 400 /certs/*
+shell> ls -lrt
+total 32
+-r--------. 1 maxscale maxscale 1675 Dec  9 14:09 ca-key.pem
+-r--------. 1 maxscale maxscale 1273 Dec  9 14:09 ca-cert.pem
+-r--------. 1 maxscale maxscale 1704 Dec  9 14:09 server-key.pem
+-r--------. 1 maxscale maxscale 1131 Dec  9 14:10 server-cert.pem
+-r--------. 1 maxscale maxscale 1675 Dec  9 14:11 client-key.pem
+-r--------. 1 maxscale maxscale 1131 Dec  9 14:11 client-cert.pem
+-r--------. 1 maxscale maxscale 1679 Dec  9 14:12 maxscale-key.pem
+-r--------. 1 maxscale maxscale 1135 Dec  9 14:12 maxscale-cert.pem
 ```
 
 #### Copy Certs to Database Nodes
 
-Now that the TLS certificates are ready, we will have to copy the certs to the Primary and Replica nodes. Since the files are already in the MaxScale node, we don't have to worry about this server. 
+Now that the TLS certificates are ready, we will have to transfer the certs to the Primary and Replica nodes securely. Keep the files in the `/etc/my.cnf.d/tls` directory. The files to copy will include the following list
+
+- ca-cert.pem
+- ca-key.pem
+- server-cert.pem
+- server-key.pem
+- client-cert.pem
+- client-key.pem
+
+Assume the above listed files are already transferred to both MariaDB nodes, set permissions of the `/etc/my.cnf.d/tls` folder and it's contents to least privileged and owned by `mysql:mysql`.
+
+```
+shell> chown -R mysql:mysql /etc/my.cnf.d/tls
+shell> chmod 500 /etc/my.cnf.d/tls
+shell> ls -lrt
+total 24
+-r--------. 1 mysql mysql 1273 Dec  9 15:10 ca-cert.pem
+-r--------. 1 mysql mysql 1675 Dec  9 15:10 ca-key.pem
+-r--------. 1 mysql mysql 1131 Dec  9 15:10 client-cert.pem
+-r--------. 1 mysql mysql 1675 Dec  9 15:10 client-key.pem
+-r--------. 1 mysql mysql 1131 Dec  9 15:10 server-cert.pem
+-r--------. 1 mysql mysql 1704 Dec  9 15:10 server-key.pem
+```
 
 ## Preparing the MariaDB servers
 
@@ -190,7 +224,7 @@ This will enforce 1.2 and 1.3 versions only and reject any connections using 1.1
 
 Now that the verification is completed, we can add a new configuration file specifically for TLS.
 
-Create a new file under the`/etc/my.cnf.d/` directory by the name `tls.cnf` and add the following contents to it. The location will depend on the LINUX distro being used, for Ubuntu, the path will be `/etc/mysql/mariadb.cnf.d`
+Create a new file under the`/etc/my.cnf.d/` directory by the name `tls.cnf` and add the following contents to it. The location will depend on the LINUX distro being used, for Ubuntu, the path will be `/etc/mysql/mariadb.cnf.d`. Ensure that the new file `/etc/my.cnf.d/tls.cnf` is readable by `mysql` user. 
 
 ```
 shell> cat /etc/my.cnf.d/tls.cnf
@@ -213,7 +247,7 @@ Ensure the above is done on both of the MariaDB servers. Restart the MariaDB nod
 After a successful restart, we can verify the TLS status 
 
 ```
-ariaDB [(none)]> show global variables like '%ssl%';
+MariaDB [(none)]> show global variables like '%ssl%';
 +---------------------+-----------------------------------+
 | Variable_name       | Value                             |
 +---------------------+-----------------------------------+
@@ -226,7 +260,7 @@ ariaDB [(none)]> show global variables like '%ssl%';
 | ssl_crl             |                                   |
 | ssl_crlpath         |                                   |
 | ssl_key             | /etc/my.cnf.d/tls/server-key.pem  |
-| version_ssl_library | OpenSSL 3.0.2 15 Mar 2022         |
+| version_ssl_library | OpenSSL 1.1.1k  FIPS 25 Mar 2021  |
 | wsrep_ssl_mode      | SERVER                            |
 +---------------------+-----------------------------------+
 11 rows in set (0.001 sec)
@@ -249,7 +283,7 @@ When `REQUIRE X509` is used, it means that:
 
 This setup is used when security requirements are higher.
 
-In this setup, the host `Node1` has the private IP `172.31.22.121` and the `Node2` has the private IP `172.31.25.123` We can create the replicaiton user with `172.31.%` as the wildcard instead of wildcarding all hosts.
+In this setup, the host `Node1` has the private IP `172.31.32.197` and the `Node2` has the private IP `172.31.42.232` We can create the replicaiton user with `172.31.%` as the wildcard instead of wildcarding all hosts.
 
 Connecto the `Node1` and create the following replication user with the replicaiton grant.
 
@@ -274,14 +308,14 @@ MariaDB [(none)]> SHOW GRANTS FOR rep_user@'172.31.%';
 Connect to the `Node2` and set up a replicaiton link with TLS certificate paths accordingly.
 
 ```
-MariaDB [(none)]> CHANGE MASTER TO MASTER_HOST='172.31.22.12',
-    ->   MASTER_USER='rep_user',
-    ->   MASTER_PASSWORD='P@ssw0rd',
-    ->   MASTER_USE_GTID=SLAVE_POS,
-    ->   MASTER_SSL=1,
-    ->   MASTER_SSL_CA='/etc/my.cnf.d/tls/ca-cert.pem',
-    ->   MASTER_SSL_CERT='/etc/my.cnf.d/tls/client-cert.pem',
-    ->   MASTER_SSL_KEY='/etc/my.cnf.d/tls/client-key.pem';
+MariaDB [(none)]> CHANGE MASTER TO MASTER_HOST='172.31.32.197',
+                  MASTER_USER='rep_user',
+                  MASTER_PASSWORD='P@ssw0rd',
+                  MASTER_USE_GTID=SLAVE_POS,
+                  MASTER_SSL=1,
+                  MASTER_SSL_CA='/etc/my.cnf.d/tls/ca-cert.pem',
+                  MASTER_SSL_CERT='/etc/my.cnf.d/tls/client-cert.pem',
+                  MASTER_SSL_KEY='/etc/my.cnf.d/tls/client-key.pem';
 Query OK, 0 rows affected (0.019 sec)
 
 MariaDB [(none)]> START SLAVE;
@@ -290,7 +324,7 @@ Query OK, 0 rows affected (0.010 sec)
 MariaDB [(none)]> SHOW SLAVE STATUS\G
 *************************** 1. row ***************************
                 Slave_IO_State: Waiting for master to send event
-                   Master_Host: 172.31.22.12
+                   Master_Host: 172.31.32.197
                    Master_User: rep_user
                    Master_Port: 3306
                  Connect_Retry: 60
@@ -323,29 +357,38 @@ We can see the replicaiton is now running and the Node2 database has become a re
 Connect to the Primary node, `Node1`, and create a MaxScale user with the specific grants required for a MaxScale user. This user should also have the `REQIURE SSL` clause. The MaxScale IP for my setup is `172.31.21.123` the user will be created, and fixed for this specific IP.
 
 ```
-MariaDB [(none)]> CREATE USER mxs@'172.31.21.123' IDENTIFIED BY 'P@ssw0rd' REQUIRE SSL;
+MariaDB [(none)]> CREATE USER mxs@'172.31.%' IDENTIFIED BY 'P@ssw0rd' REQUIRE SSL;
 Query OK, 0 rows affected (0.003 sec)
 
-MariaDB [(none)]> GRANT SELECT ON mysql.* TO mxs@'172.31.21.123';
+MariaDB [(none)]> GRANT SELECT ON mysql.* TO mxs@'172.31.%';
 Query OK, 0 rows affected (0.003 sec)
 
 MariaDB [(none)]> GRANT BINLOG ADMIN,
-    ->    READ_ONLY ADMIN,
-    ->    RELOAD,
-    ->    REPLICA MONITOR,
-    ->    REPLICATION MASTER ADMIN,
-    ->    REPLICATION REPLICA ADMIN,
-    ->    REPLICATION REPLICA,
-    ->    BINLOG MONITOR, 
-    ->    REPLICA MONITOR,
-    ->    SHOW DATABASES
-    -> ON *.* TO 'mxs'@'172.31.21.123';
+                    READ_ONLY ADMIN,
+                    RELOAD,
+                    REPLICA MONITOR,
+                    REPLICATION MASTER ADMIN,
+                    REPLICATION REPLICA ADMIN,
+                    REPLICATION REPLICA,
+                    BINLOG MONITOR, 
+                    REPLICA MONITOR,
+                    SHOW DATABASES
+                  ON *.* TO 'mxs'@'172.31.%';
 Query OK, 0 rows affected (0.003 sec)
 ```
 
 ### Configure MaxScale
 
-Connect to the MaxScale Node and generate the encrypted password for the `mxs@'172.31.21.123'` user
+Connect to the MaxScale node and create a new admin user and destroy the existing default `admin` user.
+
+```
+[root@ip-172-31-46-164 tls]# maxctrl create user secured_admin secret_password --type=admin
+OK
+[root@ip-172-31-46-164 tls]# maxctrl destroy user admin
+OK
+```
+
+Now generate the encrypted password for the `mxs@'172.31.%` user
 
 At the `bash` prompt, execute the following.
 
@@ -367,27 +410,27 @@ Replace the default `/etc/maxscale.cnf` file with the following content. This wi
 threads           = auto
 admin_host        = 0.0.0.0
 admin_secure_gui  = true
-admin_ssl_key     = /var/lib/maxscale/maxscale.cnf.d/tls/maxscale-key.pem
-admin_ssl_cert    = /var/lib/maxscale/maxscale.cnf.d/tls/maxscale-cert.pem
-admin_ssl_ca_cert = /var/lib/maxscale/maxscale.cnf.d/tls/ca-cert.pem
+admin_ssl_key     = /certs/maxscale-key.pem
+admin_ssl_cert    = /certs/maxscale-cert.pem
+admin_ssl_ca_cert = /certs/ca-cert.pem
 
 [Server-1]
 type       = server
-address    = 172.31.22.12
+address    = 172.31.32.197
 port       = 3306
 ssl        = true
-ssl_cert   = /var/lib/maxscale/maxscale.cnf.d/tls/client-cert.pem
-ssl_key    = /var/lib/maxscale/maxscale.cnf.d/tls/client-key.pem
-ssl_ca     = /var/lib/maxscale/maxscale.cnf.d/tls/ca-cert.pem
+ssl_cert   = /certs/client-cert.pem
+ssl_key    = /certs/client-key.pem
+ssl_ca     = /certs/ca-cert.pem
 
 [Server-2]
 type       = server
-address    = 172.31.25.123
+address    = 172.31.42.232
 port       = 3306
 ssl        = true
-ssl_cert   = /var/lib/maxscale/maxscale.cnf.d/tls/client-cert.pem
-ssl_key    = /var/lib/maxscale/maxscale.cnf.d/tls/client-key.pem
-ssl_ca     = /var/lib/maxscale/maxscale.cnf.d/tls/ca-cert.pem
+ssl_cert   = /certs/client-cert.pem
+ssl_key    = /certs/client-key.pem
+ssl_ca     = /certs/ca-cert.pem
 
 [MariaDB-Monitor]
 type = monitor
@@ -419,8 +462,9 @@ delayed_retry_timeout = 240s
 prune_sescmd_history = true
 
 # For Read Consistency, test this with the value "local", "global" and "universal" to always use Slaves for reading 
-causal_reads = universal
+causal_reads = global
 causal_reads_timeout=1s
+max_slave_replication_lag=1s
 transaction_replay_retry_on_deadlock = true
 
 [Read-Write-Listener]
@@ -430,29 +474,58 @@ protocol=MariaDBClient
 port = 4009
 address = 0.0.0.0
 ssl        = true
-ssl_cert   = /var/lib/maxscale/maxscale.cnf.d/tls/maxscale-cert.pem
-ssl_key    = /var/lib/maxscale/maxscale.cnf.d/tls/maxscale-key.pem
-ssl_ca     = /var/lib/maxscale/maxscale.cnf.d/tls/ca-cert.pem
+ssl_cert   = /certs/maxscale-cert.pem
+ssl_key    = /certs/maxscale-key.pem
+ssl_ca     = /certs/ca-cert.pem
 ```
 
 Save and restart MaxScale using `systemctl restart maxscale`
 
 The above is a standard MaxScale configuration but the key points to note are the TLS related parameters under the `Server-1`, `Server-2` and the `Read-Write-Listener` sections. These are all the client certs so that the MaxScale can connect to the MariaDB backend.
 
+#### Verify TLS on MaxScale
+
+```
+bash> maxctrl --user=secured_admin --password='' --secure --tls-ca-cert=/certs/ca-cert.pem --tls-verify-server-cert=false show maxscale | grep admin_ssl
+Enter password: ***********
+│              │     "admin_ssl_ca": "/certs/ca-cert.pem",                               │
+│              │     "admin_ssl_cert": "/certs/maxscale-cert.pem",                       │
+│              │     "admin_ssl_key": "/certs/maxscale-key.pem",                         │
+│              │     "admin_ssl_version": "MAX",                                         │
+```
+
+The above output confirms TLS has been setup successfully for the admin access of MaxScale. 
+
+Verify the MaxScale can now connect to the MariaDB backend servers.
+
+```
+[root@ip-172-31-46-164 certs]# maxctrl --user=secured_admin --password='' --secure --tls-ca-cert=/certs/ca-cert.pem --tls-verify-server-cert=false list servers
+Enter password: ***********
+┌──────────┬───────────────┬──────┬─────────────┬─────────────────┬───────────┬─────────────────┐
+│ Server   │ Address       │ Port │ Connections │ State           │ GTID      │ Monitor         │
+├──────────┼───────────────┼──────┼─────────────┼─────────────────┼───────────┼─────────────────┤
+│ Server-1 │ 172.31.32.197 │ 3306 │ 0           │ Master, Running │ 10-1000-8 │ MariaDB-Monitor │
+├──────────┼───────────────┼──────┼─────────────┼─────────────────┼───────────┼─────────────────┤
+│ Server-2 │ 172.31.42.232 │ 3306 │ 0           │ Slave, Running  │ 10-1000-8 │ MariaDB-Monitor │
+└──────────┴───────────────┴──────┴─────────────┴─────────────────┴───────────┴─────────────────┘
+```
+
+Note: For all the `maxctrl` commands, we would now need to use the above format. Best to use the Secured GUI at `https://<maxscale-public-ip>:8989` for monitoring and management. 
+
 #### Test Connectivity
 
-Connect to MariaDB using the MaxScale host IP `172.31.21.123` and listener PORT `4009` 
+Connect to MariaDB using the MaxScale host IP `172.31.46.164` and listener PORT `4009` 
 
 ```
-shell> mariadb -urebel -p -h172.31.21.123 -P4009
+shell> mariadb -urebel -p -h172.31.46.164 -P4009
 Enter password:
-ERROR 1045 (28000): Access denied for user 'rebel'@'172.31.21.123' (using password: YES)
+ERROR 1045 (28000): Access denied for user 'rebel'@'172.31.46.164' (using password: YES)
 ```
 
-We are unable to connect as MaxScale requires TLS connections. To solve the problem we need to pass in an additional argument to tell the MariaDB client to establish a secure connection using TLS.
+We are unable to connect to the MariaDB backend through MaxSclae as MaxScale requires TLS connections. To solve the problem we need to pass in an additional argument to tell the MariaDB client to establish a secure connection using TLS.
 
 ```
-shell> mariadb -urebel -p -h172.31.21.123 -P4009 --ssl
+shell> mariadb -urebel -p -h172.31.46.164 -P4009 --ssl
 
 MariaDB [(none)]> STATUS;
 --------------
@@ -468,7 +541,7 @@ Using delimiter:  ;
 Server:     MariaDB
 Server version:   10.6.15-10-MariaDB-enterprise-log MariaDB Enterprise Server
 Protocol version: 10
-Connection:   172.31.21.123 via TCP/IP
+Connection:   172.31.46.164 via TCP/IP
 Server characterset:  utf8mb4
 Db     characterset:  utf8mb4
 Client characterset:  utf8mb3
