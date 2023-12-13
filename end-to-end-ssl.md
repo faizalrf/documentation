@@ -13,7 +13,7 @@ In this guide, we will discusses how to secure the connections to the database. 
 - Create a self-signed CA Cert
 - Create a certificate for Servers
 - Create a certificate for Clients
-- Encrypt the data from client connections to MaxScale 
+- Encrypt the data in transit from client connections to MaxScale 
 - Encrypt the data in transit from MaxScale to MariaDB servers
 - Encrypt the data in transit from MariaDB Primary to Replica nodes (Encrypted Replication)
 
