@@ -36,6 +36,9 @@ We assume that
 - MariaDB Primary
 - MariaDB Replica
 
+**Reference Architecture**
+![image info](./Images/tls-end-to-end.png)
+
 ## Creating Certificates
 
 Connect to the MaxScale node and create the directory `/certs`. Generate the following certificates in the same directory. The server certificates will be moved out to individual nodes while the MaxScale and Client certs will remain on the MaxScale node.
