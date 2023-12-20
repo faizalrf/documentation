@@ -318,7 +318,8 @@ MariaDB [(none)]> CHANGE MASTER TO MASTER_HOST='172.31.32.197',
                   MASTER_SSL=1,
                   MASTER_SSL_CA='/etc/my.cnf.d/tls/ca-cert.pem',
                   MASTER_SSL_CERT='/etc/my.cnf.d/tls/client-cert.pem',
-                  MASTER_SSL_KEY='/etc/my.cnf.d/tls/client-key.pem';
+                  MASTER_SSL_KEY='/etc/my.cnf.d/tls/client-key.pem',
+                  MASTER_SSL_VERIFY_SERVER_CERT=0;
 Query OK, 0 rows affected (0.019 sec)
 
 MariaDB [(none)]> START SLAVE;
@@ -425,6 +426,10 @@ ssl        = true
 ssl_cert   = /certs/client-cert.pem
 ssl_key    = /certs/client-key.pem
 ssl_ca     = /certs/ca-cert.pem
+replication_custom_options=MASTER_SSL=1,
+                           MASTER_SSL_CERT = '/etc/my.cnf.d/tls/client-cert.pem',
+                           MASTER_SSL_KEY = '/etc/my.cnf.d/tls/client-key.pem',
+                           MASTER_SSL_CA = '/etc/my.cnf.d/tls/ca-cert.pem'
 
 [Server-2]
 type       = server
@@ -434,7 +439,10 @@ ssl        = true
 ssl_cert   = /certs/client-cert.pem
 ssl_key    = /certs/client-key.pem
 ssl_ca     = /certs/ca-cert.pem
-
+replication_custom_options=MASTER_SSL=1,
+                           MASTER_SSL_CERT = '/etc/my.cnf.d/tls/client-cert.pem',
+                           MASTER_SSL_KEY = '/etc/my.cnf.d/tls/client-key.pem',
+                           MASTER_SSL_CA = '/etc/my.cnf.d/tls/ca-cert.pem'
 [MariaDB-Monitor]
 type = monitor
 module = mariadbmon
